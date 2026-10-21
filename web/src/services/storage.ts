@@ -27,10 +27,10 @@ const DEFAULT_RESTRICTED_APPS: RestrictedApp[] = [
 ];
 
 const DEFAULT_USER: UserProfile = {
-  name: 'Alex Rivera',
-  email: 'alex.rivera@university.edu',
-  studentId: 'CS-2026-409',
-  cohort: 'Computer Science - Section B (Minor Project)',
+  name: 'GSFC Student',
+  email: 'student@gsfcuniversity.ac.in',
+  studentId: 'GSFC-CS-2026',
+  cohort: 'GSFC University - B.Tech CSE (Minor Project)',
   signedInAt: new Date().toISOString(),
   isGuest: false
 };
@@ -191,24 +191,44 @@ export class StorageService {
     this.notifyListeners();
   }
 
-  public static signInWithGoogle(customName?: string, customEmail?: string) {
+  public static readonly ALLOWED_EMAIL_DOMAIN = 'gsfcuniversity.ac.in';
+
+  public static isDomainAllowed(email: string): boolean {
+    if (!email) return false;
+    const lower = email.trim().toLowerCase();
+    return lower.endsWith(`@${this.ALLOWED_EMAIL_DOMAIN}`);
+  }
+
+  public static signInWithGoogle(customName?: string, customEmail?: string): boolean {
+    const rawEmail = (customEmail || 'student@gsfcuniversity.ac.in').trim().toLowerCase();
+    
+    if (!this.isDomainAllowed(rawEmail)) {
+      return false;
+    }
+
+    const rollOrName = rawEmail.split('@')[0];
     const profile: UserProfile = {
-      name: customName || 'Alex Rivera',
-      email: customEmail || 'alex.rivera@university.edu',
-      studentId: 'CS-2026-409',
-      cohort: 'Computer Science - Section B (Minor Project)',
+      name: customName || rollOrName.toUpperCase(),
+      email: rawEmail,
+      studentId: rollOrName.toUpperCase(),
+      cohort: 'GSFC University - B.Tech CSE (Minor Project)',
       signedInAt: new Date().toISOString(),
       isGuest: false
     };
     this.saveUserProfile(profile);
+    return true;
+  }
+
+  public static signInWithGsfcAccount(email: string, studentName?: string): boolean {
+    return this.signInWithGoogle(studentName, email);
   }
 
   public static signInAsGuest() {
     const profile: UserProfile = {
-      name: 'Guest Student',
-      email: 'guest@classroom.local',
-      studentId: 'DEMO-USER',
-      cohort: 'Classroom Evaluation Mode',
+      name: 'GSFC Evaluator',
+      email: 'evaluator@gsfcuniversity.ac.in',
+      studentId: 'GSFC-EVAL-2026',
+      cohort: 'GSFC University Faculty / Evaluation Mode',
       signedInAt: new Date().toISOString(),
       isGuest: true
     };

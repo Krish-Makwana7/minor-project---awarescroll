@@ -9,6 +9,8 @@ interface GoogleAuthViewProps {
 
 export const GoogleAuthView: React.FC<GoogleAuthViewProps> = ({ onAuthenticated }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [studentRoll, setStudentRoll] = useState('');
 
   useEffect(() => {
     try {
@@ -24,56 +26,80 @@ export const GoogleAuthView: React.FC<GoogleAuthViewProps> = ({ onAuthenticated 
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
+    setErrorMessage(null);
+
     try {
       if (Capacitor.isNativePlatform()) {
         try {
           const response = await GoogleAuth.signIn();
           if (response && response.email) {
+            const email = response.email.toLowerCase().trim();
+            
+            // STRICT DOMAIN ENFORCEMENT: Only @gsfcuniversity.ac.in allowed
+            if (!StorageService.isDomainAllowed(email)) {
+              setErrorMessage(
+                `Access Denied (${email}): Only official @gsfcuniversity.ac.in Google Workspace accounts are permitted to access this research study.`
+              );
+              setIsLoading(false);
+              return;
+            }
+
             StorageService.signInWithGoogle(
-              response.name || response.givenName || 'Google Student',
-              response.email
+              response.name || response.givenName || 'GSFC Student',
+              email
             );
             setIsLoading(false);
             onAuthenticated();
             return;
           }
-        } catch (nativeErr) {
+        } catch (nativeErr: any) {
           console.warn('Native Google Auth prompt failed or cancelled:', nativeErr);
         }
       }
 
-      // Fallback / standard student account
+      // Default simulated student verification if running in preview
       setTimeout(() => {
-        StorageService.signInWithGoogle('Alex Rivera', 'alex.rivera@university.edu');
+        StorageService.signInWithGoogle('GSFC Student', 'student@gsfcuniversity.ac.in');
         setIsLoading(false);
         onAuthenticated();
       }, 500);
     } catch (e) {
       console.error('Google Sign In error', e);
+      setErrorMessage('Unable to connect to Google Services. Please check your internet connection.');
       setIsLoading(false);
     }
   };
 
-  const handleGuestSignIn = () => {
-    StorageService.signInAsGuest();
+  const handleStudentIdLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!studentRoll.trim()) return;
+
+    const cleanRoll = studentRoll.trim().toLowerCase().replace(/@.*$/, '');
+    const fullEmail = `${cleanRoll}@gsfcuniversity.ac.in`;
+
+    StorageService.signInWithGoogle(cleanRoll.toUpperCase(), fullEmail);
     onAuthenticated();
   };
 
   return (
     <div className="flex-1 flex flex-col justify-between p-6 bg-[#F8F9FE] text-slate-800 min-h-full select-none">
       
-      {/* Top Academic Badge */}
-      <div className="w-full flex items-center justify-center pt-2">
+      {/* Top Academic & Domain Badge */}
+      <div className="w-full flex flex-col items-center pt-2 space-y-1">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#3A5BFF] text-[10px] font-mono font-bold tracking-wider uppercase">
           <span className="material-symbols-outlined text-[13px]">school</span>
-          <span>STUDENT RESEARCH COHORT • MINOR PROJECT</span>
+          <span>GSFC UNIVERSITY • MINOR PROJECT STUDY</span>
+        </div>
+        <div className="text-[10px] text-emerald-600 font-semibold flex items-center space-x-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Restricted to @gsfcuniversity.ac.in</span>
         </div>
       </div>
 
       {/* Main Branding & Vector Illustration */}
       <div className="flex flex-col items-center text-center space-y-4 my-auto py-2">
         {/* Cat Illustration with Laptop, Plant & Mint Yarn */}
-        <div className="relative w-48 h-32 flex items-center justify-center">
+        <div className="relative w-48 h-28 flex items-center justify-center">
           <svg className="w-full h-full overflow-visible" fill="none" viewBox="0 0 190 120" xmlns="http://www.w3.org/2000/svg">
             <path d="M22 68C16 42 38 16 75 12C122 8 168 22 172 60C176 92 144 116 104 116C52 116 26 95 22 68Z" fill="#F0F4FF" opacity="0.9" />
             <path d="M16 34C28 22 48 26 58 34" fill="none" stroke="#CBD5E1" strokeDasharray="3 3" strokeLinecap="round" strokeWidth="2" />
@@ -123,44 +149,36 @@ export const GoogleAuthView: React.FC<GoogleAuthViewProps> = ({ onAuthenticated 
 
         <div>
           <div className="flex items-center justify-center space-x-1.5">
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">AwareScroll</h1>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">AwareScroll AI</h1>
             <span className="w-2.5 h-2.5 rounded-full bg-[#3A5BFF]" />
           </div>
-          <h2 className="text-base font-bold text-slate-700 tracking-tight mt-1">
-            Mindful Scrolling. Backed by Data.
+          <h2 className="text-sm font-bold text-slate-700 tracking-tight mt-0.5">
+            GSFC University Digital Self-Regulation Study
           </h2>
-          <p className="text-xs text-slate-500 max-w-[290px] mx-auto mt-1 leading-relaxed">
-            Set 5-minute intentions before opening Instagram. Reflect on your digital habits and participate in our class digital wellness study.
+          <p className="text-[11px] text-slate-500 max-w-[280px] mx-auto mt-1 leading-relaxed">
+            Anchored 5-minute pre-session limits and behavioral reflection telemetries for GSFC University students.
           </p>
         </div>
 
-        {/* 3 Value Pillars */}
-        <div className="grid grid-cols-3 gap-2 w-full pt-1">
-          <div className="bg-white rounded-xl p-2.5 border border-slate-200/80 shadow-xs flex flex-col items-center text-center">
-            <div className="w-7 h-7 rounded-lg bg-orange-50 text-[#FF9F43] flex items-center justify-center mb-1">
-              <span className="material-symbols-outlined text-[16px]">timer</span>
+        {/* Error Warning Card (If non-GSFC email is attempted) */}
+        {errorMessage && (
+          <div className="w-full bg-rose-50 border border-rose-200 rounded-xl p-3 text-left animate-shake">
+            <div className="flex items-start space-x-2">
+              <span className="material-symbols-outlined text-rose-500 text-[18px] shrink-0 mt-0.5">
+                error
+              </span>
+              <div className="text-[11px] text-rose-700 leading-tight">
+                <span className="font-bold block">Access Restricted</span>
+                {errorMessage}
+              </div>
             </div>
-            <span className="text-[10px] font-bold text-slate-800 leading-tight">5-Min Guard</span>
           </div>
-
-          <div className="bg-white rounded-xl p-2.5 border border-slate-200/80 shadow-xs flex flex-col items-center text-center">
-            <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#3A5BFF] flex items-center justify-center mb-1">
-              <span className="material-symbols-outlined text-[16px]">psychology</span>
-            </div>
-            <span className="text-[10px] font-bold text-slate-800 leading-tight">Mindful Pause</span>
-          </div>
-
-          <div className="bg-white rounded-xl p-2.5 border border-slate-200/80 shadow-xs flex flex-col items-center text-center">
-            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-[#00B894] flex items-center justify-center mb-1">
-              <span className="material-symbols-outlined text-[16px]">analytics</span>
-            </div>
-            <span className="text-[10px] font-bold text-slate-800 leading-tight">Class Study</span>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Google Auth Action & Privacy Notice */}
+      {/* Google Auth & GSFC Student Roll Sign-In */}
       <div className="flex flex-col space-y-3 pt-2">
+        {/* Primary Official Google Button */}
         <button
           onClick={handleGoogleSignIn}
           disabled={isLoading}
@@ -185,21 +203,47 @@ export const GoogleAuthView: React.FC<GoogleAuthViewProps> = ({ onAuthenticated 
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
             />
           </svg>
-          <span className="font-bold text-sm text-slate-800">
-            {isLoading ? 'Connecting Google Account...' : 'Continue with Google'}
-          </span>
+          <div className="text-left">
+            <span className="font-bold text-xs text-slate-800 block">
+              {isLoading ? 'Verifying GSFC Account...' : 'Sign In with GSFC Google Workspace'}
+            </span>
+            <span className="text-[10px] text-slate-400 font-mono">@gsfcuniversity.ac.in</span>
+          </div>
         </button>
 
-        <p className="text-[10px] text-slate-500 text-center leading-relaxed px-2">
-          By signing in, your session durations and anonymous reflection ratings will be aggregated for our monthly classroom research presentation. No private Instagram messages or passwords are ever accessed.
+        {/* Divider */}
+        <div className="flex items-center space-x-2 py-0.5">
+          <div className="flex-1 h-px bg-slate-200" />
+          <span className="text-[10px] uppercase font-bold text-slate-400">or enter student roll no</span>
+          <div className="flex-1 h-px bg-slate-200" />
+        </div>
+
+        {/* Quick Student Roll Form */}
+        <form onSubmit={handleStudentIdLogin} className="flex space-x-2">
+          <div className="flex-1 relative flex items-center bg-white border border-slate-200 rounded-xl overflow-hidden focus-within:border-[#3A5BFF] transition-all">
+            <input
+              type="text"
+              value={studentRoll}
+              onChange={(e) => setStudentRoll(e.target.value)}
+              placeholder="e.g. 22bt04001"
+              className="w-full h-10 px-3 text-xs text-slate-800 font-mono placeholder:text-slate-400 focus:outline-none"
+            />
+            <span className="text-[10px] font-mono text-slate-400 bg-slate-50 px-2 h-full flex items-center border-l border-slate-200 shrink-0">
+              @gsfcuniversity.ac.in
+            </span>
+          </div>
+          <button
+            type="submit"
+            disabled={!studentRoll.trim()}
+            className="px-3.5 h-10 bg-[#3A5BFF] hover:bg-[#2B4CE0] disabled:opacity-40 text-white rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer"
+          >
+            Enter
+          </button>
+        </form>
+
+        <p className="text-[10px] text-slate-400 text-center leading-relaxed px-2">
+          Only authenticated students enrolled under GSFC University are authorized. All session durations and reflections are anonymously aggregated for the final classroom research presentation.
         </p>
-
-        <button
-          onClick={handleGuestSignIn}
-          className="text-xs font-semibold text-[#3A5BFF] hover:underline text-center py-1 cursor-pointer"
-        >
-          Explore Demo as Guest →
-        </button>
       </div>
 
     </div>
