@@ -1,0 +1,87 @@
+# Dependencies
+node_modules/
+web/node_modules/
+.pnp
+.pnp.js
+
+# Build Outputs & Bundles
+dist/
+web/dist/
+dist-ssr/
+*.apk
+*.aab
+awarescroll-demo.apk
+
+# Android Build & Gradle
+.gradle/
+build/
+*/build/
+web/android/.gradle/
+web/android/build/
+web/android/app/build/
+web/android/local.properties
+web/android/captures/
+web/android/.cxx/
+web/android/.externalNativeBuild/
+*.iml
+.idea/
+
+# iOS Build & Xcode
+web/ios/App/build/
+web/ios/App/Pods/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+xcuserdata/
+*.xcscmblueprint
+DerivedData/
+
+# Keystores & Signing Keys (Security & Privacy)
+*.keystore
+*.jks
+debug.keystore
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# Python & ML
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+data-science/.ipynb_checkpoints/
+data-science/mlruns/
+
+# Databases
+*.db
+*.sqlite3
+awarescroll.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+*.swp
+*.swo
+
+# Symlinks / junctions
+awarescroll-focuslock/

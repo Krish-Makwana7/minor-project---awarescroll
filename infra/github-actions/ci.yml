@@ -1,0 +1,90 @@
+name: CI Pipeline - AwareScroll AI + FocusLock
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-test:
+    name: Backend Tests & Lint
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: awarescroll_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "./backend[dev]"
+          pip install -r data-science/requirements.txt
+
+      - name: Run Backend Tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/awarescroll_test
+          REDIS_URL: redis://localhost:6379/0
+          JWT_SECRET_KEY: test_secret_key_ci_environment_32_characters_min
+          ENVIRONMENT: testing
+        run: |
+          cd backend
+          pytest -v --cov=app tests/
+
+      - name: Run Data Science Pipeline Verification
+        run: |
+          python data-science/pipelines/descriptive_analytics.py --test-mode
+          python data-science/pipelines/train_overrun_model.py --test-mode
+
+  mobile-lint:
+    name: Mobile Android Lint & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x mobile/gradlew || true
+
+      - name: Check Mobile Directory Scaffold
+        run: |
+          test -d mobile/app/src/main/java/com/awarescroll/ui
+          test -d mobile/app/src/main/java/com/awarescroll/data
+          test -d mobile/app/src/main/java/com/awarescroll/services

@@ -1,0 +1,92 @@
+
+AwareScroll AI + FocusLock — Product Requirements Document
+Oct 19, 2026 · @Makwana Krish
+Problem statement
+People routinely plan to use Instagram briefly or to focus on a task for a set period, and then don't follow through. Existing screen-time tools only report totals after the fact or impose a hard block, so they don't explain why a session or a focus period went off plan, and they give the person no way to act on that pattern next time.
+This matters for two connected groups of people: those trying to keep social media use within self-set limits, and those trying to protect blocks of focused work (study, assignments, deep work) from getting interrupted by that same social media use. Both failures usually share a root cause — intention drifting from behavior under predictable triggers (boredom, time of day, content type) — but today's tools treat them as separate, unexplained problems.
+AwareScroll AI + FocusLock closes that gap: it captures the user's stated intention before a session, compares it to what actually happened, asks a short reflective question when the two diverge, and turns the resulting data into personalized, evidence-based recommendations rather than a blanket block.
+Target users
+Students and early-career professionals (18–28), comfortable with apps and already using some screen-time or focus tool, who find that generic timers and blockers don't stick because they ignore why a session or a study block fails.
+Self-directed learners and remote workers who set their own study or work hours and need focus sessions to actually hold, not just a reminder they can dismiss.
+Common traits: they already know their Instagram use is heavier than they'd like, they've tried blunt blockers before and abandoned them, and they respond better to being asked a quick reflective question than to being shut out entirely.
+Goal in using the app: understand their own patterns (when, why, under what circumstances they drift) and get specific, personalized suggestions rather than a one-size-fits-all limit.
+Product vision
+To become the behavioral intelligence layer that helps people close the gap between what they intend to do and what they actually do — turning every scroll and every focus session into data that makes the next one easier to get right.
+Core features
+Feature
+Description
+Priority
+Goal setup
+User defines personal limits (e.g. 30 min/day Instagram, no use during study hours) at first launch
+Must-have
+Intention capture
+Before a session, user states intended duration/purpose (Instagram) or task/duration (FocusLock)
+Must-have
+Instagram usage monitoring
+Tracks session start/end, actual vs. intended duration, overruns, time of day (where OS permits)
+Must-have
+Reflection prompt at limit
+Replaces a plain warning with a short prompt when the user hits their stated limit
+Must-have
+Behavioral feedback capture
+Quick questions when user continues past limit — motivation, content type, impact on plans, mood
+Must-have
+Focus session controls
+Set task + duration, apply available restriction mechanism, start/stop tracking
+Must-have
+Interruption logging
+Records early exits from a focus session and the stated reason
+Must-have
+Work-evidence upload
+Optional image upload as supporting (not conclusive) evidence of task completion
+Nice-to-have
+Behavioral dataset + CSV export
+Structured storage of all sessions, feedback, and outcomes; exportable for analysis
+Must-have
+Descriptive analytics
+Average usage, overrun rate, continuation rate, focus-completion rate
+Must-have
+Pattern discovery
+Correlates reported reasons/situations with continuation or interruption
+Nice-to-have
+Predictive model
+Estimates likelihood of an overrun or interruption before it happens (logistic regression / decision tree / random forest)
+Nice-to-have
+Personalized recommendations
+Suggestions based on the user's own data (shorter evening limit, shorter focus intervals, etc.)
+Nice-to-have
+Progress dashboard
+Shows change in overruns, excess duration, completion rate and interruptions over time
+Nice-to-have
+App flow
+[embed: node/f14feb7e-3886]
+The user states an intention, which branches into an Instagram session (AwareScroll AI) or a focus session (FocusLock); both outcomes land in one shared dataset that feeds analysis, recommendations and evaluation — and the evaluation informs the user's next stated intention.
+MVP scope
+The MVP ships every must-have feature from Core features above: goal setup, intention capture, Instagram usage monitoring, the reflection prompt, behavioral feedback capture, focus session controls, interruption logging, the dataset with CSV export, and descriptive analytics (averages, overrun rate, continuation rate, completion rate) shown on a simple dashboard.
+It deliberately excludes any predictive model — descriptive analytics on the collected dataset is enough to validate that people will record intentions and respond to reflection prompts before investing in prediction.
+Success metrics
+Metric
+What it tells us
+Goal + intention completion rate
+Share of sessions where the user actually records an intention before starting
+Instagram limit adherence rate
+Share of sessions that stay within the user's stated limit
+Reflection-prompt response rate
+Share of over-limit moments where the user answers the feedback questions
+Focus-session completion rate
+Share of focus sessions finished without an early exit
+Interruption rate trend
+Change in focus-session interruptions over time, per user
+7-day and 30-day retention
+Share of users still logging sessions after 1 and 4 weeks
+Recommendation adoption
+Share of personalized suggestions the user acts on (once shipped)
+These are tracked per user from day one and in aggregate; the adherence and completion rates in particular are the signal that the reflection prompt and focus restriction are changing behavior, not just logging it.
+Out of scope for v1
+Predictive models (logistic regression, decision trees, random forest) for overrun or interruption risk
+Automated, adaptive personalized recommendations — v1 surfaces descriptive stats only, not generated suggestions
+Hard OS-level blocking of Instagram beyond whatever restriction mechanism the platform natively exposes
+Verifying uploaded work-evidence images (OCR, task matching, or any automated check of completion)
+Social or comparative features (leaderboards, sharing streaks, multi-user accounts)
+Support for apps or platforms other than Instagram in AwareScroll AI
+A public or third-party API for the behavioral dataset

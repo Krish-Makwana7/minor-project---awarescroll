@@ -1,0 +1,16 @@
+{
+  "appId": "com.awarescroll.app",
+  "appName": "AwareScroll",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "plugins": {
+    "GoogleAuth": {
+      "scopes": ["profile", "email"],
+      "serverClientId": "193782140723-dt17ap4nhfiktal8k2ocdorkpl2r5f1q.apps.googleusercontent.com",
+      "forceCodeForRefreshToken": true
+    }
+  }
+}

@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AwareScroll</string>
+    <string name="title_activity_main">AwareScroll</string>
+    <string name="package_name">com.awarescroll.app</string>
+    <string name="custom_url_scheme">com.awarescroll.app</string>
+    <string name="server_client_id">193782140723-dt17ap4nhfiktal8k2ocdorkpl2r5f1q.apps.googleusercontent.com</string>
+</resources>

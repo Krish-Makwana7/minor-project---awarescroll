@@ -1,0 +1,205 @@
+
+AwareScroll AI + FocusLock — Technical Architecture Document
+Prepared as a senior-software-architect pass on the AwareScroll AI + FocusLock concept: a two-feature digital self-regulation app (Instagram usage awareness + focus-session enforcement) feeding a shared Behavioral Intelligence Engine.
+1. Architecture Overview
+The product has three moving parts that need different technology:
+A mobile client that can observe real app usage (Instagram sessions) and optionally restrict access during focus periods. This rules out a pure web app — usage-monitoring and app-blocking require OS-level permissions only a native or near-native mobile app can request.
+A backend API + database that stores goals, intentions, sessions, interruptions, feedback, and the resulting behavioral dataset, and serves recommendations back to the client.
+A data science layer (descriptive analytics + predictive models) that runs on the same dataset, either as scheduled batch jobs or an on-demand service.
+Reasoning for the stack below prioritizes: (a) Android-first feasibility, since Android's UsageStatsAccessibility APIs make real usage monitoring possible, while iOS sharply restricts this (Screen Time API is read-only and not available to third-party apps without Apple's special entitlement); (b) a Python backend so the same language and libraries serve the API and the ML layer, avoiding a translation layer between "how data is produced" and "how it's modeled"; (c) a relational database, since the dataset is fundamentally structured, relational records (sessions belong to users belong to goals), not document blobs.
+2. Tech Stack
+Mobile Client
+Layer
+Choice
+Why
+Platform
+Android native (Kotlin), Android 10+
+Only platform with the UsageStatsManager and AccessibilityService APIs needed to detect Instagram sessions and enforce FocusLock restrictions. Build iOS later as a lighter "manual logging" companion app once core analytics are proven.
+UI
+Jetpack Compose
+Modern declarative UI, less boilerplate than XML layouts, easier to keep the reflection-prompt and feedback-survey screens consistent.
+Local storage
+Room (SQLite wrapper)
+Caches goals/intentions locally so the app still works offline and only syncs events when connectivity returns.
+Background work
+WorkManager
+Reliable background sync of usage/focus events to the backend even if the app is killed.
+Networking
+Retrofit + OkHttp
+Standard, well-supported REST client with easy auth-token interceptors.
+Backend
+Layer
+Choice
+Why
+API framework
+Python 3.12 + FastAPI
+Async, typed, auto-generates OpenAPI docs the mobile team can code against; same language as the data science layer so feature-engineering code can be shared, not reimplemented.
+ORM
+SQLAlchemy 2.0 + Alembic
+Mature ORM with migration tooling for evolving the schema as new event types are added.
+Auth
+JWT (access + refresh tokens) via fastapi-users or a hand-rolled service
+Stateless auth is simplest for a single mobile client; avoids a separate session store.
+| | Background jobs | Celery + Redis | Runs nightly aggregation (descriptive analytics, model retraining) without blocking the request/response cycle. |
+Database
+Layer
+Choice
+Why
+Primary DB
+PostgreSQL 16
+Relational integrity for users → goals → sessions → events; native JSONB columns let you store flexible payload fields (e.g., feedback answers) without a schema migration for every new question.
+Analytics export
+CSV export job (pandas to_csv) + optional read replica
+Matches the project's own stated need for "a CSV file for further analysis"; a read replica keeps heavy analytical queries off the production write path.
+Data Science / Behavioral Intelligence Engine
+Layer
+Choice
+Why
+Core libraries
+pandas, NumPy, scikit-learn
+Covers descriptive analytics, feature engineering, and the three suggested model families (Logistic Regression, Decision Trees, Random Forest) without heavier infra.
+Experiment tracking
+MLflow (local or self-hosted)
+Tracks model versions and evaluation metrics so "the system should not assume predictions are accurate" is enforced by process, not memory.
+Scheduling
+Celery beat (reuses backend worker)
+Nightly/weekly retraining and recommendation-generation jobs.
+Serving
+Model loaded inside a FastAPI route (/predictions), not a separate service, until load requires otherwise
+Keeps infra minimal for an MVP; a dedicated model-serving layer (e.g., BentoML) can be introduced later if latency or scale demands it.
+Hosting & DevOps
+Layer
+Choice
+Why
+API hosting
+Render or Railway (MVP) → AWS ECS/Fargate (scale)
+Cheap, fast to deploy for an MVP; clear upgrade path to containers on AWS without a rewrite.
+Database hosting
+Managed Postgres (Render/Neon/RDS)
+Avoids self-managing backups, failover, and patching.
+Object storage
+AWS S3 (or Cloudflare R2)
+Stores the optional "work evidence" images from FocusLock sessions.
+CI/CD
+GitHub Actions
+Lints, runs tests, and deploys API + runs Alembic migrations on merge to main.
+Error monitoring
+Sentry (mobile + backend)
+Surfaces crashes in usage-tracking code, which is exactly the code most likely to break silently across Android OS versions.
+3. File & Folder Structure
+awarescroll-focuslock/
+├── mobile/                          # Android app (Kotlin, Jetpack Compose)
+│   ├── app/src/main/java/com/awarescroll/
+│   │   ├── ui/
+│   │   │   ├── goals/               # Goal-setting screens
+│   │   │   ├── intention/           # Pre-session intention capture
+│   │   │   ├── awarescroll/         # Reflection prompt, feedback survey
+│   │   │   ├── focuslock/           # Focus timer, lock screen, evidence upload
+│   │   │   └── insights/            # Dashboard, recommendations, trend charts
+│   │   ├── data/
+│   │   │   ├── local/                # Room entities, DAOs
+│   │   │   ├── remote/               # Retrofit API services, DTOs
+│   │   │   └── repository/           # Repositories bridging local/remote
+│   │   ├── services/
+│   │   │   ├── UsageMonitorService.kt     # UsageStatsManager polling
+│   │   │   └── FocusLockAccessibilityService.kt
+│   │   └── sync/                     # WorkManager sync workers
+│   └── build.gradle.kts
+│
+├── backend/                         # FastAPI service
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── routes/
+│   │   │   │   ├── auth.py
+│   │   │   │   ├── goals.py
+│   │   │   │   ├── intentions.py
+│   │   │   │   ├── usage_sessions.py
+│   │   │   │   ├── focus_sessions.py
+│   │   │   │   ├── feedback.py
+│   │   │   │   ├── insights.py       # Recommendations + dashboard data
+│   │   │   │   └── predictions.py
+│   │   │   └── deps.py               # Shared FastAPI dependencies (auth, db session)
+│   │   ├── models/                   # SQLAlchemy models (one file per table group)
+│   │   ├── schemas/                  # Pydantic request/response schemas
+│   │   ├── services/                 # Business logic (kept out of routes)
+│   │   ├── core/                     # Config, security, logging
+│   │   └── main.py
+│   ├── alembic/                      # DB migrations
+│   ├── tests/
+│   └── pyproject.toml
+│
+├── data-science/                    # Behavioral Intelligence Engine
+│   ├── notebooks/                    # Exploratory analysis
+│   ├── pipelines/
+│   │   ├── descriptive_analytics.py
+│   │   ├── feature_engineering.py
+│   │   ├── train_overrun_model.py        # AwareScroll "will exceed limit" model
+│   │   ├── train_interruption_model.py   # FocusLock "will be interrupted" model
+│   │   └── generate_recommendations.py
+│   ├── models/                       # Serialized trained models (or MLflow registry pointer)
+│   └── requirements.txt
+│
+├── infra/
+│   ├── docker-compose.yml            # Local Postgres + Redis + API
+│   ├── Dockerfile.backend
+│   └── github-actions/
+│
+└── docs/
+    └── architecture.md               # This document, kept in-repo
+4. Database Schema
+All tables share id (UUID, primary key) and created_at (timestamp) unless noted. Foreign keys are named <table>_id.
+users — one row per person.
+email, password_hash, timezone, created_at.
+goals — the personal targets the user sets in Step 1 (e.g., "limit Instagram to 30 min/day").
+user_id → users
+goal_type (enum: instagram_time_limit, avoid_hours, focus_session_target, reduce_presleep_scrolling)
+target_value (numeric), unit (e.g., "minutes"), active (boolean)
+intentions — what the user says they're about to do, captured in Step 2, before either kind of session starts.
+user_id → users
+session_type (enum: instagram, focus)
+intended_duration_minutes, intended_purpose (free text, e.g., "reply to a message")
+usage_sessions — one row per Instagram session (AwareScroll AI, Step 3).
+user_id → users, intention_id → intentions (nullable, if no intention was logged)
+start_time, end_time, actual_duration_minutes
+exceeded_limit (boolean), reminder_count (int), time_of_day_bucket (e.g., "evening")
+focus_sessions — one row per FocusLock session (Step 6).
+user_id → users, intention_id → intentions
+task_category, task_description
+planned_duration_minutes, start_time, end_time
+completed (boolean), interrupted (boolean)
+interruptions — a focus session can have zero or more early-exit attempts.
+focus_session_id → focus_sessions
+interruption_time, reason_text, reason_category (enum, e.g., boredom, notification, external)
+work_evidence — optional proof-of-work uploads tied to a focus session (Step 6).
+focus_session_id → focus_sessions
+image_url (points to S3/R2 object), uploaded_at
+verification_status (enum: unverified, self_reported, flagged) — modeled as supporting information, not proof, per the project's own caveat.
+feedback — the short behavioral survey captured when a user continues past their Instagram limit (Step 5).
+usage_session_id → usage_sessions
+original_intention (text), continuation_motivation (text/enum), content_type (text), delayed_planned_work (boolean), mood_after (enum/scale)
+behavioral_events — a flattened, append-only table that unifies AwareScroll and FocusLock activity for analysis and CSV export (Step 7).
+user_id → users, event_source (enum: awarescroll, focuslock), event_type (text), payload (JSONB), occurred_at
+predictions — output of the Behavioral Intelligence Engine's models (Step 9).
+user_id → users, model_type (enum: logistic_regression, decision_tree, random_forest), target (enum: usage_overrun, focus_interruption)
+predicted_probability (float), predicted_outcome (boolean), actual_outcome (boolean, filled in after the fact for evaluation), model_version
+recommendations — personalized suggestions shown to the user (Step 10).
+user_id → users, recommendation_type (enum), recommendation_text, based_on_pattern (text, explains the "why" for transparency)
+shown_at, accepted (boolean, nullable until the user responds) — this field is what powers Step 11's before/after comparison.
+Relationships in plain English: a user has many goals, intentions, usage sessions, and focus sessions. Each usage session may trace back to one intention and generates at most one feedback record. Each focus session may trace back to one intention, can have many interruptions, and optionally one or more pieces of work evidence. All sessions and feedback ultimately get mirrored into behavioral_events for the analytics layer, which in turn produces rows in predictions and recommendations.
+5. Environment & Config
+Backend .env (never commit; load via pydantic-settings):
+DATABASE_URL — Postgres connection string
+REDIS_URL — for Celery broker/result backend
+JWT_SECRET_KEY, JWT_ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
+S3_BUCKET_NAME, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_REGION — for work-evidence uploads
+SENTRY_DSN
+ML_MODEL_REGISTRY_PATH or MLFLOW_TRACKING_URI
+ENVIRONMENT (local / staging / production)
+Mobile (local.properties / build config fields, never hardcoded in source):
+API_BASE_URL
+SENTRY_DSN_ANDROID
+Security notes:
+Never hardcode the JWT secret or S3 keys in source; inject via CI/CD secrets and the hosting provider's environment-variable store.
+work_evidence images should use signed, time-limited S3 URLs rather than public bucket access, since they may contain personal study material.
+Usage-monitoring permissions (PACKAGE_USAGE_STATS, Accessibility Service) must be requested with clear in-app explanation screens — Android will reject Play Store submissions that request these without a visible, justified user flow.
+Treat all behavioral and feedback data as sensitive personal data: encrypt at rest (managed Postgres defaults usually cover this) and avoid including free-text reason_text fields in any analytics export shared outside the core team without review.

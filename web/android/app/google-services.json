@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "193782140723",
+    "project_id": "awarescroll",
+    "storage_bucket": "awarescroll.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:193782140723:android:6d03645d0d845a61a77846",
+        "android_client_info": {
+          "package_name": "com.awarescroll.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCk5QEdPAfD96UTqQ5TqVwqE5YYPGaxCiM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

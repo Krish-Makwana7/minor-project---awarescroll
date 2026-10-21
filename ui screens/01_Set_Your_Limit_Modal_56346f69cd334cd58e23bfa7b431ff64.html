@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>AwareScroll - Set Your Limit</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#3A5BFF",
+            "primary-hover": "#2B4CE0",
+            "orange-accent": "#FF9F43",
+            "mint": "#00B894",
+            "dark-slate": "#0E1021",
+            "backdrop-overlay": "rgba(14, 16, 33, 0.65)"
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['"IBM Plex Mono"', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    body {
+      overscroll-behavior: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); }
+    .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+  </style>
+</head>
+<body class="bg-[#121324] text-slate-900 font-sans antialiased min-h-screen flex flex-col justify-between relative overflow-x-hidden selection:bg-[#3A5BFF]/20">
+<!-- Mobile Native Top Status Bar (Dark icons / Light backdrop mode) -->
+<header class="w-full pt-safe select-none z-30 fixed top-0 left-0 right-0">
+<div class="w-full px-6 h-10 flex items-center justify-between text-white font-medium text-xs tracking-tight">
+<span class="font-mono text-sm font-semibold tracking-normal">09:41</span>
+<div class="flex items-center gap-1.5 opacity-90">
+<span class="material-symbols-outlined text-[17px]">signal_cellular_alt</span>
+<span class="material-symbols-outlined text-[17px]">wifi</span>
+<span class="material-symbols-outlined text-[19px]">battery_full</span>
+</div>
+</div>
+</header>
+<!-- Ambient Blurred Background (representing the dimmed feed behind the modal) -->
+<div class="fixed inset-0 z-0 bg-cover bg-center filter blur-md opacity-25 scale-105" style="background-image: radial-gradient(circle at 50% 30%, #3a5bff 0%, #1e1b4b 60%, #0e1021 100%);">
+</div>
+<!-- Dimmed Modal Backdrop Overlay -->
+<div class="fixed inset-0 bg-[#0E1021]/65 backdrop-blur-[6px] z-10 transition-all duration-300"></div>
+<!-- Main Viewport Area hosting Modal Container -->
+<main class="relative z-20 flex-1 flex flex-col items-center justify-center px-4 py-8 pt-12 min-h-screen w-full max-w-[430px] mx-auto">
+<!-- Modal Card Surface -->
+<div class="w-full bg-white rounded-[28px] shadow-[0_20px_50px_rgba(0,0,0,0.35)] p-6 flex flex-col gap-5 border border-white/60 relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+<!-- Top Subtle Grab Handle -->
+<div class="w-full flex items-center justify-center -mt-2">
+<div class="w-10 h-1 bg-slate-200 rounded-full"></div>
+</div>
+<!-- Illustration Section: Flat vector cute cats, laptop, plant & yarn -->
+<div class="flex items-center justify-center mt-[-4px] mb-[-6px]">
+<div class="relative w-44 h-28 flex items-center justify-center">
+<svg class="w-full h-full overflow-visible" fill="none" viewbox="0 0 190 120" xmlns="http://www.w3.org/2000/svg">
+<!-- Organic soft backdrop doodle -->
+<path d="M22 68C16 42 38 16 75 12C122 8 168 22 172 60C176 92 144 116 104 116C52 116 26 95 22 68Z" fill="#F0F4FF" opacity="0.9"></path>
+<!-- Decorative dots & dashes -->
+<path d="M16 34C28 22 48 26 58 34" fill="none" stroke="#CBD5E1" stroke-dasharray="3 3" stroke-linecap="round" stroke-width="2"></path>
+<circle cx="160" cy="28" fill="#FED7AA" r="3"></circle>
+<path d="M136 18C150 14 165 24 162 38" fill="none" stroke="#FED7AA" stroke-linecap="round" stroke-width="2"></path>
+<!-- Small Potted Plant on Desk (Left) -->
+<path d="M25 83L28 99H38L41 83H25Z" fill="#E2E8F0"></path>
+<path d="M24 83H42V80H24V83Z" fill="#CBD5E1" rx="1"></path>
+<!-- Leaves -->
+<path d="M33 80C28 72 20 72 22 65C27 65 32 72 33 80Z" fill="#00B894"></path>
+<path d="M33 80C38 69 47 71 45 64C40 64 34 71 33 80Z" fill="#55EFC4"></path>
+<!-- Mini Laptop in middle -->
+<rect fill="#64748B" height="24" rx="2" width="34" x="84" y="66"></rect>
+<rect fill="#F8FAFC" height="20" rx="1" width="30" x="86" y="68"></rect>
+<path d="M96 77L106 77" stroke="#94A3B8" stroke-linecap="round" stroke-width="1.5"></path>
+<path d="M99 82L103 82" stroke="#CBD5E1" stroke-linecap="round" stroke-width="1.5"></path>
+<path d="M80 90H122C123 90 124 91 123 92.5L120 93.5H82L79 92.5C78 91 79 90 80 90Z" fill="#94A3B8"></path>
+<!-- Left Cute Ginger Cat -->
+<path d="M44 94C44 74 55 63 67 63C79 63 85 74 85 94H44Z" fill="#FF9F43"></path>
+<!-- Ginger cat ears -->
+<path d="M48 67L52 53L61 64" fill="#FDA4AF" stroke="#FF9F43" stroke-width="2"></path>
+<path d="M71 64L80 53L84 67" fill="#FDA4AF" stroke="#FF9F43" stroke-width="2"></path>
+<!-- Ginger cat face -->
+<path d="M55 74C57 76 59 76 61 74" fill="none" stroke="#5C2900" stroke-linecap="round" stroke-width="1.6"></path>
+<path d="M69 74C71 76 73 76 75 74" fill="none" stroke="#5C2900" stroke-linecap="round" stroke-width="1.6"></path>
+<circle cx="65" cy="76" fill="#5C2900" r="1.5"></circle>
+<!-- White chin patch & cute front paws -->
+<ellipse cx="65" cy="85" fill="#FFF5EB" rx="8" ry="5"></ellipse>
+<ellipse cx="73" cy="87" fill="#FFEAA7" rx="5" ry="3.5"></ellipse>
+<!-- Right Playful Calico / White Cat with Blue Spot -->
+<path d="M116 94C116 76 127 65 139 65C151 65 159 76 159 94H116Z" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.2"></path>
+<path d="M125 67C128 61 135 62 138 67" fill="#3A5BFF"></path>
+<!-- Right cat ears -->
+<path d="M120 69L125 56L132 67" fill="#FECDD3" stroke="#CBD5E1" stroke-width="1.5"></path>
+<path d="M143 67L150 56L155 69" fill="#FECDD3" stroke="#CBD5E1" stroke-width="1.5"></path>
+<!-- Right cat happy eyes & muzzle -->
+<path d="M128 75C130 73 132 73 134 75" fill="none" stroke="#334155" stroke-linecap="round" stroke-width="1.6"></path>
+<path d="M142 75C144 73 146 73 148 75" fill="none" stroke="#334155" stroke-linecap="round" stroke-width="1.6"></path>
+<circle cx="138" cy="77" fill="#E11D48" r="1.4"></circle>
+<!-- Paw extended playing with ball -->
+<ellipse cx="120" cy="87" fill="#FFFFFF" rx="6" ry="4" stroke="#CBD5E1" stroke-width="1"></ellipse>
+<!-- Mint-Green Ball of Yarn (#00B894) -->
+<circle cx="98" cy="93" fill="#00B894" r="9.5"></circle>
+<path d="M93 91C96 88 101 89 104 92" fill="none" stroke="#A7F3D0" stroke-linecap="round" stroke-width="1.6"></path>
+<path d="M95 96C98 94 102 95 105 97" fill="none" stroke="#A7F3D0" stroke-linecap="round" stroke-width="1.6"></path>
+<!-- Looped Playful Thread -->
+<path d="M102 96C109 98 113 91 108 87C103 83 96 87 91 84" fill="none" stroke="#00B894" stroke-linecap="round" stroke-width="1.8"></path>
+</svg>
+</div>
+</div>
+<!-- Header Section -->
+<div class="text-center flex flex-col items-center gap-1">
+<span class="text-[11px] font-bold tracking-wider text-[#3A5BFF] uppercase">PLANNED SCROLL LIMIT</span>
+<h2 class="text-[26px] font-bold text-[#0E1021] tracking-tight leading-tight">Set Your Limit</h2>
+<p class="text-[13px] text-slate-500 font-normal max-w-[280px] leading-relaxed">
+          Decide your limit before opening Instagram to stay in control.
+        </p>
+</div>
+<!-- Timer Input Display Card -->
+<div class="flex flex-col items-center justify-center bg-[#F8FAFC] rounded-2xl py-3 px-4 border border-slate-100">
+<div class="flex flex-col items-center justify-center">
+<span class="text-5xl font-semibold font-mono tracking-tight text-[#0E1021] leading-none" id="selected-minutes">05:00</span>
+<span class="text-[10px] font-bold tracking-widest uppercase text-slate-400 mt-1">MINUTES</span>
+</div>
+<!-- Quick Presets -->
+<div class="flex items-center gap-2 mt-3.5 w-full justify-center">
+<button class="preset-chip px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 font-mono text-xs font-semibold shadow-xs hover:bg-slate-50 active:scale-95 transition" data-time="03:00" type="button">
+            3m
+          </button>
+<button class="preset-chip active-chip px-3.5 py-1.5 rounded-full bg-[#3A5BFF] text-white shadow-sm font-mono text-xs font-semibold flex items-center gap-1 active:scale-95 transition" data-time="05:00" type="button">
+<span>5m</span>
+<span class="material-symbols-outlined text-[13px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</button>
+<button class="preset-chip px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 font-mono text-xs font-semibold shadow-xs hover:bg-slate-50 active:scale-95 transition" data-time="10:00" type="button">
+            10m
+          </button>
+<button class="preset-chip px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 font-mono text-xs font-semibold shadow-xs hover:bg-slate-50 active:scale-95 transition" data-time="15:00" type="button">
+            15m
+          </button>
+</div>
+</div>
+<!-- Intention Tags Section -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">WHAT IS YOUR INTENTION?</span>
+<span class="material-symbols-outlined text-slate-400 text-[16px] cursor-pointer hover:text-slate-600">help</span>
+</div>
+<!-- Pills Grid / Flow -->
+<div class="flex flex-wrap gap-2" id="intention-chips">
+<button class="intention-pill flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FF9F43] text-white text-xs font-medium shadow-xs active:scale-95 transition" type="button">
+<span class="material-symbols-outlined text-[14px]">chat</span>
+<span>Reply to DMs</span>
+</button>
+<button class="intention-pill flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-medium active:scale-95 transition" type="button">
+<span class="material-symbols-outlined text-[14px]">bolt</span>
+<span>Quick check</span>
+</button>
+<button class="intention-pill flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-medium active:scale-95 transition" type="button">
+<span class="material-symbols-outlined text-[14px]">group</span>
+<span>Catch up with friends</span>
+</button>
+<button class="intention-pill flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-medium active:scale-95 transition" type="button">
+<span class="material-symbols-outlined text-[14px]">movie</span>
+<span>Watch Reels</span>
+</button>
+</div>
+<!-- Custom Reason Input Field -->
+<div class="mt-1">
+<div class="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus-within:border-[#3A5BFF] focus-within:ring-1 focus-within:ring-[#3A5BFF] transition bg-white/60">
+<span class="material-symbols-outlined text-slate-400 text-[16px] mr-2">edit_note</span>
+<input class="bg-transparent border-none p-0 outline-none focus:ring-0 text-slate-800 placeholder:text-slate-400 text-xs w-full" id="custom-reason-input" placeholder="Or type a custom reason..." type="text"/>
+</div>
+</div>
+</div>
+<!-- Action Controls -->
+<div class="flex flex-col gap-2 pt-1">
+<!-- 48px Pill Button in vibrant Electric Blue #3A5BFF -->
+<button class="w-full h-12 rounded-full bg-[#3A5BFF] hover:bg-[#2B4CE0] active:scale-[0.98] text-white text-xs font-bold tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-[#3A5BFF]/30 transition uppercase cursor-pointer" id="cta-button" type="button">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+<span id="cta-text">OPEN INSTAGRAM (5 MIN LIMIT)</span>
+</button>
+<!-- Ghost Cancel Button -->
+<button class="w-full h-9 rounded-full bg-transparent hover:bg-slate-100 text-slate-500 text-xs font-medium flex items-center justify-center transition active:scale-[0.99] cursor-pointer" type="button">
+          Cancel
+        </button>
+</div>
+</div>
+</main>
+<!-- Mobile Bottom Virtual Navigation Bar (Android/iOS System bar) -->
+<footer class="w-full pb-safe select-none z-30 fixed bottom-0 left-0 right-0 pointer-events-none">
+<div class="h-10 w-full flex items-center justify-center">
+<div class="w-32 h-1 bg-white/40 rounded-full"></div>
+</div>
+</footer>
+<script>
+    (function() {
+      // Preset Chip Interactivity
+      const presetChips = document.querySelectorAll('.preset-chip');
+      const minDisplay = document.getElementById('selected-minutes');
+      const ctaText = document.getElementById('cta-text');
+
+      presetChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+          presetChips.forEach(c => {
+            c.classList.remove('active-chip', 'bg-[#3A5BFF]', 'text-white', 'shadow-sm');
+            c.classList.add('bg-white', 'border', 'border-slate-200', 'text-slate-700', 'shadow-xs');
+            // Remove star icon if any
+            const star = c.querySelector('.material-symbols-outlined');
+            if (star) star.remove();
+          });
+
+          chip.classList.add('active-chip', 'bg-[#3A5BFF]', 'text-white', 'shadow-sm');
+          chip.classList.remove('bg-white', 'border', 'border-slate-200', 'text-slate-700', 'shadow-xs');
+
+          // Add star icon back to newly active chip
+          const starIcon = document.createElement('span');
+          starIcon.className = "material-symbols-outlined text-[13px]";
+          starIcon.style.fontVariationSettings = "'FILL' 1";
+          starIcon.textContent = "star";
+          chip.appendChild(starIcon);
+
+          const timeVal = chip.getAttribute('data-time');
+          minDisplay.textContent = timeVal;
+          const minsOnly = parseInt(timeVal.split(':')[0], 10);
+          ctaText.textContent = `OPEN INSTAGRAM (${minsOnly} MIN LIMIT)`;
+        });
+      });
+
+      // Intention Pill Selection
+      const pills = document.querySelectorAll('.intention-pill');
+      pills.forEach(pill => {
+        pill.addEventListener('click', () => {
+          pills.forEach(p => {
+            p.classList.remove('bg-[#FF9F43]', 'text-white', 'shadow-xs');
+            p.classList.add('bg-slate-100', 'text-slate-600');
+          });
+          pill.classList.add('bg-[#FF9F43]', 'text-white', 'shadow-xs');
+          pill.classList.remove('bg-slate-100', 'text-slate-600');
+        });
+      });
+    })();
+  </script>
+</body></html>

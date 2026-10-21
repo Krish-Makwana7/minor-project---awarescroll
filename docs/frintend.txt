@@ -1,0 +1,226 @@
+
+Frontend Specification Document
+AwareScroll AI + FocusLock
+Oct 19, 2026 · @Makwana Krish
+Color Palette
+The palette stays calm by default and only turns warm when the app needs the user's attention — at a reflection prompt, an interruption, or a broken focus session.
+Token
+Hex
+Usage
+Primary
+#3A5BFF
+Primary buttons, active nav, FocusLock active state, links
+Primary Dark
+#22348F
+Primary button pressed/hover, header on dark surfaces
+Secondary
+#00B894
+Positive streaks, completed focus sessions, success charts
+Accent (Reflect)
+#FF9F43
+Reflection prompts, "limit reached" moments — warm, not alarming
+Background
+#F7F8FC
+App background (light mode)
+Background Dark
+#0E1021
+App background (dark mode)
+Surface
+#FFFFFF / #171A2E
+Cards, modals, sheets (light / dark)
+Text Primary
+#14152B
+Headings, primary body text
+Text Secondary
+#6B6F8C
+Captions, timestamps, helper text
+Error
+#E5484D
+Interruption alerts, failed uploads, destructive actions
+Success
+#00B894
+Confirmations, completed sessions, goals met
+Border / Divider
+#E2E4F0
+Card borders, input outlines, dividers
+Dark mode swaps Background/Surface/Text tokens only; Primary, Accent, Error and Success stay fixed so charts and status colors read the same in both modes.
+Typography
+Font family: Inter for UI text (headings, body, buttons, labels); IBM Plex Mono for session timers, stat counters and the behavioral dashboard's numbers, so time and metrics are visually distinct from narrative text.
+Style
+Font / Weight
+Size / Line height
+Usage
+H1
+Inter Bold
+28px / 34px
+Screen titles ("FocusLock", "Your Patterns")
+H2
+Inter SemiBold
+22px / 28px
+Section headers, card group titles
+H3
+Inter SemiBold
+18px / 24px
+Card titles, modal titles
+Body
+Inter Regular
+16px / 24px
+Primary reading text, feedback prompts
+Body Small
+Inter Regular
+14px / 20px
+Secondary descriptions, form helper text
+Caption
+Inter Medium
+12px / 16px
+Timestamps, metadata, chart axis labels
+Button Label
+Inter SemiBold
+16px / 20px, uppercase tracking 0.2px
+All button text
+Stat / Timer
+IBM Plex Mono SemiBold
+32px / 36px
+FocusLock countdown, Instagram session duration
+Stat Label
+Inter Medium
+12px / 16px, uppercase
+Label under a stat number (e.g. "MINUTES TODAY")
+Body and caption sizes never go below 12px for accessibility. Timer/stat type uses tabular (monospaced) figures so numbers don't jitter as they count up or down.
+Component Styles
+Buttons
+Variant
+Style
+Used for
+Primary
+Filled Primary (#3A5BFF), white text, 12px radius, 48px height
+Start focus session, Save goal, Continue
+Secondary
+1.5px Primary outline, Primary text, transparent fill
+Cancel, Edit goal, Skip
+Destructive
+Filled Error (#E5484D), white text
+End session early, Delete goal
+Reflect (special)
+Filled Accent (#FF9F43), white text, pill-shaped (24px radius)
+"I'll close Instagram" / "Continue anyway" on the reflection prompt — pill shape visually separates it from normal flow
+Text / Ghost
+No fill, no border, Primary text
+Tertiary actions ("Not now", "Learn more")
+All buttons: 44px minimum tap target, disabled state at 40% opacity, 150ms ease-out press scale (0.97).
+Inputs
+Fields use a 12px-radius box, 1.5px Border (#E2E4F0), 16px internal padding, Primary-colored 2px focus ring. Error state swaps the border to Error red and shows inline helper text below in Error red, Caption size. Goal-setting inputs (e.g. "minutes per day") use a stepper control, not free text, to keep intention data structured.
+Cards
+Surface background, 16px radius, 1px Border, 1-level soft shadow (0 2px 8px rgba(20,21,43,0.06)), 20px internal padding. Three card types:
+Insight card — used on the dashboard for a single pattern/recommendation; icon + H3 title + Body Small description + optional small chart.
+Session card — used in history lists; shows intention vs. actual duration as a small horizontal bar, task/app icon, timestamp.
+Stat card — Stat/Timer type front and center, Stat Label beneath, minimal chrome.
+Modals / Sheets
+Two patterns:
+Reflection modal (AwareScroll) — bottom sheet, non-full-screen, Accent-tinted header strip, short feedback questions (single-tap chips, not free text, wherever possible), two buttons (Reflect-style above).
+FocusLock restriction sheet — full-screen, Background Dark regardless of system theme (reinforces "you're in a session"), large Stat/Timer countdown, single Destructive "End session" button requiring a confirmation step (tap-and-hold or type-to-confirm) so exits are deliberate, not accidental.
+All modals use a 200ms ease-in-out slide/fade, dismiss via explicit button only (no swipe-to-dismiss on FocusLock sheets, to preserve the restriction's intent).
+Spacing & Layout
+Base unit: 4px. All padding, margins and gaps are multiples of it.
+Token
+Value
+Usage
+space-1
+4px
+Icon-to-label gap, tight chip padding
+space-2
+8px
+Between related elements (label + input)
+space-3
+12px
+Internal button padding (vertical)
+space-4
+16px
+Card internal padding, standard gap between fields
+space-5
+24px
+Between cards, internal section spacing
+space-6
+32px
+Between major sections on a screen
+space-8
+48px
+Screen top padding below status bar / header
+Grid: 4-column on mobile (375–428px reference width), 16px screen-edge margins, 16px gutters. Cards and lists are single-column full-bleed within margins; the dashboard's stat cards use a 2-column grid on mobile, 3–4 on tablet.
+Breakpoints: mobile ≤ 428px (primary target — this is a phone-first app), tablet 429–1024px (2-column dashboard, side-by-side goal/history views), desktop ≥ 1025px (dashboard only — FocusLock/AwareScroll session flows remain mobile-first since they govern phone usage).
+Touch targets ≥ 44×44px everywhere, 8px minimum spacing between adjacent tappable elements to avoid accidental taps during a reflection prompt or session-end confirmation.
+API & Integrations
+Service
+Role
+Firebase Auth
+User sign-up/sign-in, session tokens
+Firebase Firestore (or Supabase Postgres)
+Goals, intentions, session records, feedback — the structured behavioral dataset
+Behavioral Intelligence Engine (custom FastAPI backend)
+Descriptive/behavioral/predictive analytics, recommendations
+iOS Screen Time API (Family Controls / DeviceActivity)
+Instagram usage monitoring + restriction on iOS
+Android UsageStatsManager + AccessibilityService
+Instagram usage monitoring + restriction on Android
+Firebase Cloud Messaging
+Reminder and reflection-prompt push notifications
+Firebase Storage
+Optional FocusLock work-evidence image uploads
+Note on platform limits: neither iOS nor Android lets a third-party app fully block another app or guarantee precise foreground-time tracking without the user granting Screen Time / Usage Access permissions, and iOS in particular restricts what Family Controls exposes to non-parental apps. The frontend must handle a "permission not granted" state gracefully (degrade to manual check-ins) rather than assume monitoring always works.
+1. Firebase Auth
+Endpoints called via Firebase SDK (not raw REST): signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged listener. Sends: email, password (or OAuth token). Returns: User object with uid, used as the foreign key on every record below.
+2. Firestore — behavioral dataset
+Collection
+Sent on write
+Returned on read
+users/{uid}/goals
+goalType, targetMinutes/targetSessions, createdAt
+goal list for Goals screen
+users/{uid}/intentions
+app/task, plannedDuration, startedAt
+current intention, for the active-session header
+users/{uid}/sessions
+type (instagram/focus), start/end time, plannedVsActual, exceeded (bool), interruptions[]
+session history list, dashboard aggregates
+users/{uid}/feedback
+sessionId, motivation, contentType, mood, delayedWork (bool)
+feedback shown back in the reflection history
+All writes are append-only from the client; the Behavioral Intelligence Engine reads this data server-side — the frontend never computes patterns or trains models itself.
+3. Behavioral Intelligence Engine (custom backend)
+Endpoint
+Method
+Sends
+Returns
+/api/v1/analytics/summary
+GET ?uid=&range=
+uid, date range
+avg duration, overrun rate, focus completion rate — powers dashboard stat cards
+/api/v1/analytics/patterns
+GET ?uid=
+uid
+ranked list of {pattern, confidence, evidenceCount} — powers Insight cards
+/api/v1/predict/overrun
+POST
+uid, current intention (app, plannedDuration, timeOfDay)
+{riskScore: 0-1, suggestedLimit} — shown before an Instagram session starts
+/api/v1/predict/interruption
+POST
+uid, task, plannedDuration, timeOfDay
+{riskScore: 0-1, suggestedDuration} — shown before a FocusLock session starts
+/api/v1/recommendations
+GET ?uid=
+uid
+ordered list of {title, body, basedOnPattern} for the Recommendations screen
+/api/v1/export
+GET ?uid=&format=csv
+uid
+signed download URL for the user's CSV export
+All Engine endpoints require the Firebase Auth ID token in an Authorization: Bearer header; the Engine verifies it server-side before touching Firestore data for that uid.
+4. iOS Screen Time API
+Frontend calls AuthorizationCenter.shared.requestAuthorization() once, then sets DeviceActivitySchedule + DeviceActivityEvent thresholds for Instagram's bundle id. On threshold, the system delivers a DeviceActivityMonitor callback the app uses to trigger the in-app reflection modal — this is OS-driven, not a network call.
+5. Android Usage Access
+Frontend requests PACKAGE_USAGE_STATS permission, polls UsageStatsManager.queryEvents() for Instagram foreground/background events, and uses an AccessibilityService (optional, user-opted) to detect and soft-block app switches during an active FocusLock session.
+6. Firebase Cloud Messaging
+Backend (Engine or a Cloud Function) sends a push when a predicted risk score crosses a threshold or a scheduled check-in is due. Payload: {type: "reflection_reminder"|"checkin", uid, sessionId?}. Frontend's notification handler routes the tap to the matching screen.
+7. Firebase Storage (work evidence)
+Frontend uploads via uploadBytes(ref(storage, 'evidence/{uid}/{sessionId}.jpg'), file). Returns a storage path saved onto the session record. The UI must label this as supporting evidence only, consistent with the product's own framing that an image can't fully verify task completion.

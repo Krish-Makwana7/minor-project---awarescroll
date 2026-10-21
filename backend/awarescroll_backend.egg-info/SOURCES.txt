@@ -1,0 +1,6 @@
+pyproject.toml
+awarescroll_backend.egg-info/PKG-INFO
+awarescroll_backend.egg-info/SOURCES.txt
+awarescroll_backend.egg-info/dependency_links.txt
+awarescroll_backend.egg-info/requires.txt
+awarescroll_backend.egg-info/top_level.txt

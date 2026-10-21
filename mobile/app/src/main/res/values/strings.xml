@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">AwareScroll AI + FocusLock</string>
+    <string name="accessibility_service_description">Protects your FocusLock sessions by gently redirecting you back to your active focus block when Instagram or distracting apps are opened.</string>
+</resources>
