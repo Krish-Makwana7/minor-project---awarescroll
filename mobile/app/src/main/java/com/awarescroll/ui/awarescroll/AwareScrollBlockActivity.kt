@@ -125,10 +125,11 @@ fun AwareScrollBlockScreen(
     var state by remember { mutableStateOf(InterruptionState.LIMIT_EXPIRED) }
 
     // Survey state
-    var decisionTrigger by remember { mutableStateOf("Boredom") }
+    var usagePurpose by remember { mutableStateOf("Reply to a message") }
+    var decisionTrigger by remember { mutableStateOf("Interesting content") }
     var contentCategory by remember { mutableStateOf("Comedy / Memes") }
-    var workImpact by remember { mutableStateOf("Delayed a task") }
-    var feeling by remember { mutableStateOf("Neutral") }
+    var workImpact by remember { mutableStateOf("No task planned") }
+    var feeling by remember { mutableStateOf("Satisfied") }
     var supposedToDo by remember { mutableStateOf("Studying") }
     var helpfulStopper by remember { mutableStateOf("Time warning") }
 
@@ -297,9 +298,25 @@ fun AwareScrollBlockScreen(
                     color = TextSecondaryLight
                 )
 
+                // Q0: Purpose
+                SurveyQuestionCard(
+                    title = "Why do you want use it, clearly mension your purpose ?",
+                    options = listOf(
+                        "Reply to a message",
+                        "Checking someone's reply",
+                        "Check updates",
+                        "Nothing to do, so watch reels",
+                        "Finished all tasks, want to watch reels",
+                        "Study or research",
+                        "Opened automatically / out of habit"
+                    ),
+                    selectedOption = usagePurpose,
+                    onSelect = { usagePurpose = it }
+                )
+
                 // Q1: Decision Trigger
                 SurveyQuestionCard(
-                    title = "1. What most influenced your decision to continue?",
+                    title = "Q. What most influenced your decision to continue?",
                     options = listOf(
                         "Interesting content",
                         "Boredom",
@@ -314,7 +331,7 @@ fun AwareScrollBlockScreen(
 
                 // Q2: Content Category
                 SurveyQuestionCard(
-                    title = "2. Which content category kept you engaged?",
+                    title = "Q. Which content category kept you engaged?",
                     options = listOf(
                         "Comedy / Memes",
                         "Education / Technology",
@@ -330,7 +347,7 @@ fun AwareScrollBlockScreen(
 
                 // Q3: Work Impact
                 SurveyQuestionCard(
-                    title = "3. How did this session affect your planned work?",
+                    title = "Q. How did this session affect your planned work?",
                     options = listOf(
                         "No task planned",
                         "Delayed a task",
@@ -343,21 +360,34 @@ fun AwareScrollBlockScreen(
 
                 // Q4: Post-Scroll Feeling
                 SurveyQuestionCard(
-                    title = "4. How do you feel after scrolling?",
+                    title = "Q. How do you feel after scrolling?",
                     options = listOf(
                         "Satisfied",
                         "Relaxed",
                         "Neutral",
                         "Bored",
-                        "Stressed / regretful"
+                        "Stressed / regretful",
+                        "Copy sample responses"
                     ),
                     selectedOption = feeling,
-                    onSelect = { feeling = it }
+                    onSelect = {
+                        if (it == "Copy sample responses") {
+                            usagePurpose = "Check updates"
+                            decisionTrigger = "Interesting content"
+                            contentCategory = "Education / Technology"
+                            workImpact = "No negative impact / planned break"
+                            feeling = "Relaxed"
+                            supposedToDo = "Relaxing"
+                            helpfulStopper = "Break suggestion"
+                        } else {
+                            feeling = it
+                        }
+                    }
                 )
 
                 // Q5: Supposed to be doing
                 SurveyQuestionCard(
-                    title = "5. What were you supposed to be doing?",
+                    title = "What were you supposed to be doing?",
                     options = listOf(
                         "Studying",
                         "Working",
@@ -372,7 +402,7 @@ fun AwareScrollBlockScreen(
 
                 // Q6: Helpful Stopper
                 SurveyQuestionCard(
-                    title = "6. What would have helped you stop?",
+                    title = "What would have helped you stop?",
                     options = listOf(
                         "Time warning",
                         "Original-purpose reminder",
@@ -407,7 +437,7 @@ fun AwareScrollBlockScreen(
 
                             val feedback = FeedbackEntity(
                                 usageSessionId = sessionId,
-                                originalIntention = "Scroll $appName",
+                                originalIntention = usagePurpose,
                                 continuationMotivation = decisionTrigger,
                                 contentType = contentCategory,
                                 delayedPlannedWork = workImpact.contains("Delayed") || workImpact.contains("Interrupted"),

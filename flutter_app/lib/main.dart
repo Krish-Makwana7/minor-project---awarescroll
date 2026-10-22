@@ -472,9 +472,21 @@ class DashboardView extends StatelessWidget {
                 elevation: 0.5,
                 child: ListTile(
                   title: Text(s.appName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  subtitle: Text(
-                    '${s.timeOfDay.toUpperCase()} • ${s.actualMinutes.toInt()} mins • ${s.closedOnFirstReminder ? "Closed on 1st" : "Extended (Survey filled)"}',
-                    style: const TextStyle(fontSize: 11),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${s.timeOfDay.toUpperCase()} • ${s.actualMinutes.toInt()} mins • ${s.closedOnFirstReminder ? "Closed on 1st" : "Extended (Survey filled)"}',
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      if (s.feedback != null) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          'Purpose: "${s.feedback!['purpose'] ?? 'General'}" • Mood: ${s.feedback!['feeling'] ?? 'N/A'}',
+                          style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ],
                   ),
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -619,11 +631,12 @@ class InterruptionFlowModal extends StatefulWidget {
 class _InterruptionFlowModalState extends State<InterruptionFlowModal> {
   int _step = 0; // 0: Expiry Alert, 1: Survey Form, 2: Quote & 5m Free
 
-  // Survey responses
-  String _decisionTrigger = 'Boredom';
+  // Survey responses (Exact research survey questions)
+  String _usagePurpose = 'Reply to a message';
+  String _decisionTrigger = 'Interesting content';
   String _contentCategory = 'Comedy / Memes';
-  String _workImpact = 'Delayed a task';
-  String _feeling = 'Neutral';
+  String _workImpact = 'No task planned';
+  String _feeling = 'Satisfied';
   String _supposedToDo = 'Studying';
   String _helpfulStopper = 'Time warning';
 
@@ -631,33 +644,43 @@ class _InterruptionFlowModalState extends State<InterruptionFlowModal> {
   String _quoteAuthor = '';
 
   void _generateQuote() {
-    if (_supposedToDo.contains('Studying')) {
+    if (_supposedToDo.contains('Studying') || _supposedToDo.contains('Working')) {
       _quoteText = 'You have power over your mind - not outside events. Realize this, and you will find strength.';
       _quoteAuthor = 'Marcus Aurelius';
-    } else if (_decisionTrigger.contains('Boredom') || _decisionTrigger.contains('Habitual')) {
+    } else if (_decisionTrigger.contains('Boredom') || _usagePurpose.contains('habit')) {
       _quoteText = 'It is not that we have a short time to live, but that we waste a lot of it.';
       _quoteAuthor = 'Seneca';
-    } else {
+    } else if (_feeling.contains('regretful') || _workImpact.contains('Delayed') || _workImpact.contains('Interrupted')) {
       _quoteText = 'Clarity about what matters provides clarity about what does not.';
       _quoteAuthor = 'Cal Newport';
+    } else if (_helpfulStopper.contains('Original-purpose') || _helpfulStopper.contains('Time warning')) {
+      _quoteText = 'The impediment to action advances action. What stands in the way becomes the way.';
+      _quoteAuthor = 'Marcus Aurelius';
+    } else {
+      _quoteText = 'Concentrate every minute like a Roman on doing what is in front of you with precise seriousness.';
+      _quoteAuthor = 'Marcus Aurelius';
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 250),
-        child: _step == 0
-            ? _buildExpiryPrompt()
-            : _step == 1
-                ? _buildSurveyForm()
-                : _buildQuoteAndExtension(),
+    final maxHeight = MediaQuery.of(context).size.height * 0.88;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          child: _step == 0
+              ? _buildExpiryPrompt()
+              : _step == 1
+                  ? _buildSurveyForm()
+                  : _buildQuoteAndExtension(),
+        ),
       ),
     );
   }
@@ -735,59 +758,135 @@ class _InterruptionFlowModalState extends State<InterruptionFlowModal> {
   // Phase 2: Rapid 3-5s Survey Form
   Widget _buildSurveyForm() {
     return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('Quick 3-Second Reflection', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Quick Reflection Survey', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              IconButton(
+                icon: const Icon(Icons.close, size: 20),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
           const Text('Select your immediate answers to receive your tailored quote.', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
-          _buildChipQuestion('1. What kept you scrolling?', [
-            'Interesting content',
-            'Boredom',
-            'Stress / mood',
-            'Notifications',
-            'Habitual scrolling',
-          ], _decisionTrigger, (val) => setState(() => _decisionTrigger = val)),
+          _buildChipQuestion(
+            'Why do you want use it, clearly mension your purpose ?',
+            [
+              'Reply to a message',
+              "Checking someone's reply",
+              'Check updates',
+              'Nothing to do, so watch reels',
+              'Finished all tasks, want to watch reels',
+              'Study or research',
+              'Opened automatically / out of habit',
+            ],
+            _usagePurpose,
+            (val) => setState(() => _usagePurpose = val),
+          ),
 
-          _buildChipQuestion('2. Content category?', [
-            'Comedy / Memes',
-            'Education / Tech',
-            'News / Politics',
-            'Stories / Personal',
-            'Entertainment',
-          ], _contentCategory, (val) => setState(() => _contentCategory = val)),
+          _buildChipQuestion(
+            'Q. What most influenced your decision to continue?',
+            [
+              'Interesting content',
+              'Boredom',
+              'Stress / mood',
+              'Notifications / messages',
+              'Habitual scrolling',
+              'Unfinished original purpose',
+            ],
+            _decisionTrigger,
+            (val) => setState(() => _decisionTrigger = val),
+          ),
 
-          _buildChipQuestion('3. What were you supposed to be doing?', [
-            'Studying',
-            'Working',
-            'Sleeping',
-            'Socializing',
-            'Nothing planned',
-          ], _supposedToDo, (val) => setState(() => _supposedToDo = val)),
+          _buildChipQuestion(
+            'Q. Which content category kept you engaged?',
+            [
+              'Comedy / Memes',
+              'Education / Technology',
+              'News / Politics',
+              'Stories / Personal content',
+              'Fitness / Lifestyle',
+              'Music / Entertainment',
+              'Other / Mixed',
+            ],
+            _contentCategory,
+            (val) => setState(() => _contentCategory = val),
+          ),
 
-          _buildChipQuestion('4. How do you feel right now?', [
-            'Satisfied',
-            'Relaxed',
-            'Neutral',
-            'Bored',
-            'Regretful',
-          ], _feeling, (val) => setState(() => _feeling = val)),
+          _buildChipQuestion(
+            'Q. How did this session affect your planned work?',
+            [
+              'No task planned',
+              'Delayed a task',
+              'Interrupted a task',
+              'No negative impact / planned break',
+            ],
+            _workImpact,
+            (val) => setState(() => _workImpact = val),
+          ),
 
-          _buildChipQuestion('5. Did scrolling impact planned tasks?', [
-            'No impact',
-            'Delayed a task',
-            'Skipped completely',
-          ], _workImpact, (val) => setState(() => _workImpact = val)),
+          _buildChipQuestion(
+            'Q. How do you feel after scrolling?',
+            [
+              'Satisfied',
+              'Relaxed',
+              'Neutral',
+              'Bored',
+              'Stressed / regretful',
+              'Copy sample responses',
+            ],
+            _feeling,
+            (val) {
+              if (val == 'Copy sample responses') {
+                setState(() {
+                  _usagePurpose = 'Check updates';
+                  _decisionTrigger = 'Interesting content';
+                  _contentCategory = 'Education / Technology';
+                  _workImpact = 'No negative impact / planned break';
+                  _feeling = 'Relaxed';
+                  _supposedToDo = 'Relaxing';
+                  _helpfulStopper = 'Break suggestion';
+                });
+              } else {
+                setState(() => _feeling = val);
+              }
+            },
+          ),
 
-          _buildChipQuestion('6. What would help you stop?', [
-            'Time warning',
-            'Screen lock',
-            'Accountability prompt',
-            'Mindful pause',
-          ], _helpfulStopper, (val) => setState(() => _helpfulStopper = val)),
+          _buildChipQuestion(
+            'What were you supposed to be doing?',
+            [
+              'Studying',
+              'Working',
+              'Sleeping',
+              'Socializing',
+              'Relaxing',
+              'Nothing planned',
+            ],
+            _supposedToDo,
+            (val) => setState(() => _supposedToDo = val),
+          ),
+
+          _buildChipQuestion(
+            'What would have helped you stop?',
+            [
+              'Time warning',
+              'Original-purpose reminder',
+              'Mood check',
+              'Break suggestion',
+              'App closure',
+            ],
+            _helpfulStopper,
+            (val) => setState(() => _helpfulStopper = val),
+          ),
 
           const SizedBox(height: 16),
           SizedBox(
@@ -805,6 +904,7 @@ class _InterruptionFlowModalState extends State<InterruptionFlowModal> {
               child: const Text('SUBMIT & GET QUOTE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -862,11 +962,12 @@ class _InterruptionFlowModalState extends State<InterruptionFlowModal> {
                 timeOfDay: _getCurrentTimeBucket(),
                 timestamp: DateTime.now(),
                 feedback: {
+                  'purpose': _usagePurpose,
                   'decision': _decisionTrigger,
                   'contentCategory': _contentCategory,
-                  'supposedToDo': _supposedToDo,
-                  'feeling': _feeling,
                   'workImpact': _workImpact,
+                  'feeling': _feeling,
+                  'supposedToDo': _supposedToDo,
                   'helpfulStopper': _helpfulStopper,
                 },
               ));
