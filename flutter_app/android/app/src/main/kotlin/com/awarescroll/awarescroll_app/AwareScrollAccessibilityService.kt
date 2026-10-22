@@ -16,6 +16,13 @@ class AwareScrollAccessibilityService : AccessibilityService() {
 
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             val pkg = event.packageName?.toString() ?: return
+
+            // If time limit is reached / restricted, block immediately when user opens target app
+            if (AwareScrollMonitor.isRestricted && AwareScrollMonitor.isMatchingPackage(pkg, AwareScrollMonitor.targetPackageName)) {
+                AwareScrollMonitor.triggerBlocker()
+                return
+            }
+
             AwareScrollMonitor.onAccessibilityWindowStateChanged(pkg)
         }
     }

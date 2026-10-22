@@ -60,6 +60,10 @@ class AwareScrollUsageService : Service() {
                     if (fgPackage != null) {
                         val isTarget = isMatchingPackage(fgPackage, AwareScrollMonitor.targetPackageName)
                         AwareScrollMonitor.updateForegroundStatus(isTarget)
+
+                        if (isTarget && AwareScrollMonitor.isRestricted && !AwareScrollMonitor.isBlockerShowing) {
+                            AwareScrollMonitor.triggerBlocker()
+                        }
                     }
 
                     // Update persistent notification with live timer
