@@ -80,6 +80,24 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
       'icon': Icons.facebook,
       'color': Colors.blue,
     },
+    {
+      'name': 'Reddit',
+      'package': 'com.reddit.frontpage',
+      'icon': Icons.forum,
+      'color': Colors.deepOrange,
+    },
+    {
+      'name': 'X / Twitter',
+      'package': 'com.twitter.android',
+      'icon': Icons.tag,
+      'color': Colors.black87,
+    },
+    {
+      'name': 'WhatsApp',
+      'package': 'com.whatsapp',
+      'icon': Icons.chat,
+      'color': Colors.teal,
+    },
   ];
 
   @override
@@ -219,6 +237,101 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
     try {
       _channel.invokeMethod(method);
     } catch (_) {}
+  }
+
+  Future<void> _showAppPickerDialog() async {
+    List<Map<String, String>> installed = [];
+    try {
+      final res = await _channel.invokeMethod<List>('getInstalledApps');
+      if (res != null) {
+        installed = res.map((item) => Map<String, String>.from(item as Map)).toList();
+      }
+    } catch (_) {}
+
+    if (!mounted) return;
+
+    if (installed.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not fetch installed apps list.')),
+      );
+      return;
+    }
+
+    String search = '';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final filtered = installed.where((a) {
+              final name = a['name']?.toLowerCase() ?? '';
+              final pkg = a['package']?.toLowerCase() ?? '';
+              return name.contains(search.toLowerCase()) || pkg.contains(search.toLowerCase());
+            }).toList();
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.75,
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Select Any Installed App', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  const Text('Pick any application on your device to restrict its usage.', style: TextStyle(fontSize: 12, color: Color(0xFF6B6F8C))),
+                  const SizedBox(height: 12),
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Search apps...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    ),
+                    onChanged: (val) {
+                      setModalState(() => search = val);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        final app = filtered[index];
+                        final name = app['name'] ?? '';
+                        final pkg = app['package'] ?? '';
+                        final isSel = pkg == _selectedPackage;
+
+                        return ListTile(
+                          leading: const CircleAvatar(
+                            backgroundColor: Color(0xFFF0F2FA),
+                            child: Icon(Icons.android, color: Color(0xFF3A5BFF), size: 20),
+                          ),
+                          title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          subtitle: Text(pkg, style: const TextStyle(fontSize: 11, color: Color(0xFF6B6F8C))),
+                          trailing: isSel
+                              ? const Icon(Icons.check_circle, color: Color(0xFF3A5BFF))
+                              : null,
+                          onTap: () {
+                            setState(() {
+                              _selectedAppName = name;
+                              _selectedPackage = pkg;
+                            });
+                            Navigator.pop(ctx);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _testRestrictionScreen() {
@@ -473,6 +586,48 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
               ),
             );
           }),
+
+          // If user picked a custom app not in default presets:
+          if (!_targetApps.any((a) => a['package'] == _selectedPackage)) ...[
+            Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: const BorderSide(color: Color(0xFF3A5BFF), width: 2),
+              ),
+              color: Colors.white,
+              child: ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFE8EBFF),
+                  child: Icon(Icons.android, color: Color(0xFF3A5BFF)),
+                ),
+                title: Text(_selectedAppName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                subtitle: Text(_selectedPackage, style: const TextStyle(fontSize: 11, color: Color(0xFF6B6F8C))),
+                trailing: const Icon(Icons.check_circle, color: Color(0xFF3A5BFF)),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 6),
+
+          // Choose Any Other App on Phone Button
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                side: const BorderSide(color: Color(0xFF3A5BFF)),
+              ),
+              icon: const Icon(Icons.apps, color: Color(0xFF3A5BFF), size: 18),
+              label: const Text(
+                '+ Choose Any Other App on My Phone',
+                style: TextStyle(color: Color(0xFF3A5BFF), fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              onPressed: _showAppPickerDialog,
+            ),
+          ),
 
           const SizedBox(height: 16),
 

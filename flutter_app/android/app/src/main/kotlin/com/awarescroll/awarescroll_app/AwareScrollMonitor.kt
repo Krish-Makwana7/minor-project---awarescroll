@@ -56,15 +56,27 @@ object AwareScrollMonitor {
     fun onAccessibilityWindowStateChanged(packageName: String) {
         if (!isRunning) return
 
-        if (packageName == targetPackageName || 
-            (targetPackageName.contains("youtube") && packageName.contains("youtube")) ||
-            (targetPackageName.contains("instagram") && packageName.contains("instagram")) ||
-            (targetPackageName.contains("facebook") && (packageName.contains("facebook") || packageName.contains("katana"))) ||
-            (targetPackageName.contains("snapchat") && packageName.contains("snapchat"))) {
+        if (isMatchingPackage(packageName, targetPackageName)) {
             isTargetInForeground = true
         } else if (packageName != "com.awarescroll.awarescroll_app" && packageName != "com.android.systemui") {
             isTargetInForeground = false
         }
+    }
+
+    fun isMatchingPackage(fgPackage: String, targetPackage: String): Boolean {
+        if (fgPackage.equals(targetPackage, ignoreCase = true)) return true
+        if (fgPackage.startsWith(targetPackage) || targetPackage.startsWith(fgPackage)) return true
+
+        // Known ecosystem aliases
+        if (targetPackage.contains("youtube", ignoreCase = true) && fgPackage.contains("youtube", ignoreCase = true)) return true
+        if (targetPackage.contains("instagram", ignoreCase = true) && fgPackage.contains("instagram", ignoreCase = true)) return true
+        if (targetPackage.contains("facebook", ignoreCase = true) && (fgPackage.contains("facebook", ignoreCase = true) || fgPackage.contains("katana", ignoreCase = true))) return true
+        if (targetPackage.contains("snapchat", ignoreCase = true) && fgPackage.contains("snapchat", ignoreCase = true)) return true
+        if (targetPackage.contains("reddit", ignoreCase = true) && fgPackage.contains("reddit", ignoreCase = true)) return true
+        if ((targetPackage.contains("twitter", ignoreCase = true) || targetPackage.contains("x", ignoreCase = true)) && (fgPackage.contains("twitter", ignoreCase = true) || fgPackage.contains("x", ignoreCase = true))) return true
+        if (targetPackage.contains("musically", ignoreCase = true) && (fgPackage.contains("musically", ignoreCase = true) || fgPackage.contains("tiktok", ignoreCase = true))) return true
+
+        return false
     }
 
     fun grantExtension(minutes: Int) {

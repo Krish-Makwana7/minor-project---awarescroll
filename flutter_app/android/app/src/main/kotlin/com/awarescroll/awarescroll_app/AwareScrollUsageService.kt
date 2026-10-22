@@ -125,15 +125,7 @@ class AwareScrollUsageService : Service() {
     }
 
     private fun isMatchingPackage(fgPackage: String, targetPackage: String): Boolean {
-        if (fgPackage == targetPackage) return true
-
-        // Handle variants (e.g. YouTube, YouTube Vanced, Instagram clone apps)
-        if (targetPackage.contains("youtube") && fgPackage.contains("youtube")) return true
-        if (targetPackage.contains("instagram") && fgPackage.contains("instagram")) return true
-        if (targetPackage.contains("facebook") && (fgPackage.contains("facebook") || fgPackage.contains("katana"))) return true
-        if (targetPackage.contains("snapchat") && fgPackage.contains("snapchat")) return true
-
-        return false
+        return AwareScrollMonitor.isMatchingPackage(fgPackage, targetPackage)
     }
 
     private fun updateNotification() {
