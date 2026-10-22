@@ -1,7 +1,8 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'models.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(const AwareScrollApp());
@@ -13,72 +14,190 @@ class AwareScrollApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AwareScroll AI',
+      title: 'AwareScroll',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        scaffoldBackgroundColor: AppColors.bgLight,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
-          primary: AppColors.primary,
-          secondary: AppColors.secondary,
-        ),
-        fontFamily: 'Inter',
         useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFFF8F9FE),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF3A5BFF),
+          primary: const Color(0xFF3A5BFF),
+        ),
       ),
-      home: const MainNavigationScreen(),
+      home: const RestrictionHomeScreen(),
     );
   }
 }
 
-class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({super.key});
+class RestrictionHomeScreen extends StatefulWidget {
+  const RestrictionHomeScreen({super.key});
 
   @override
-  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
+  State<RestrictionHomeScreen> createState() => _RestrictionHomeScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _currentIndex = 0;
-  bool _isAuthenticated = false;
-  String _userEmail = '';
+class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
+  static const MethodChannel _channel = MethodChannel('com.awarescroll/restriction');
 
-  // Local state telemetry for sessions
-  final List<SessionRecord> _sessions = [
-    SessionRecord(
-      id: 'session-1',
-      appName: 'Instagram',
-      intendedMinutes: 5,
-      actualMinutes: 5.0,
-      closedOnFirstReminder: true,
-      timeOfDay: 'morning',
-      timestamp: DateTime.now().subtract(const Duration(hours: 4)),
-    ),
-    SessionRecord(
-      id: 'session-2',
-      appName: 'YouTube',
-      intendedMinutes: 5,
-      actualMinutes: 10.0,
-      closedOnFirstReminder: false,
-      timeOfDay: 'afternoon',
-      timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-      feedback: {
-        'decision': 'Interesting content',
-        'feeling': 'Relaxed',
-      },
-    ),
+  // Scene 1 State: Selected app & time limit
+  String _selectedAppName = 'Instagram';
+  String _selectedPackage = 'com.instagram.android';
+  int _limitMinutes = 5;
+
+  bool _isRestricting = false;
+  int _elapsedSeconds = 0;
+  Timer? _statusTimer;
+
+  // Permissions state
+  bool _hasUsage = false;
+  bool _hasOverlay = false;
+  bool _hasAccessibility = false;
+
+  final List<Map<String, dynamic>> _targetApps = [
+    {
+      'name': 'Instagram',
+      'package': 'com.instagram.android',
+      'icon': Icons.camera_alt,
+      'color': Colors.purple,
+    },
+    {
+      'name': 'YouTube',
+      'package': 'com.google.android.youtube',
+      'icon': Icons.play_circle_fill,
+      'color': Colors.red,
+    },
+    {
+      'name': 'Snapchat',
+      'package': 'com.snapchat.android',
+      'icon': Icons.chat_bubble,
+      'color': Colors.amber,
+    },
+    {
+      'name': 'Facebook',
+      'package': 'com.facebook.katana',
+      'icon': Icons.facebook,
+      'color': Colors.blue,
+    },
   ];
 
-  void _triggerInterruptionModal({String appName = 'Instagram'}) {
+  @override
+  void initState() {
+    super.initState();
+    _checkPermissions();
+    _refreshStatus();
+
+    // Poll status every 2 seconds when app is foregrounded
+    _statusTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      if (mounted) {
+        _checkPermissions();
+        _refreshStatus();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _statusTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _checkPermissions() async {
+    try {
+      final res = await _channel.invokeMethod<Map>('checkPermissions');
+      if (res != null && mounted) {
+        setState(() {
+          _hasUsage = res['usage'] == true;
+          _hasOverlay = res['overlay'] == true;
+          _hasAccessibility = res['accessibility'] == true;
+        });
+      }
+    } catch (_) {
+      // Running on non-Android platform or method channel unavailable
+    }
+  }
+
+  Future<void> _refreshStatus() async {
+    try {
+      final res = await _channel.invokeMethod<Map>('getStatus');
+      if (res != null && mounted) {
+        setState(() {
+          _isRestricting = res['isRunning'] == true;
+          _elapsedSeconds = (res['elapsedSeconds'] as int?) ?? 0;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _toggleRestriction() async {
+    if (_isRestricting) {
+      try {
+        await _channel.invokeMethod('stopRestriction');
+      } catch (_) {}
+      setState(() {
+        _isRestricting = false;
+        _elapsedSeconds = 0;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('AwareScroll restriction stopped.')),
+        );
+      }
+    } else {
+      // Start restriction
+      try {
+        await _channel.invokeMethod('startRestriction', {
+          'appName': _selectedAppName,
+          'packageName': _selectedPackage,
+          'minutes': _limitMinutes,
+        });
+      } catch (_) {}
+      setState(() {
+        _isRestricting = true;
+        _elapsedSeconds = 0;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFF00B894),
+            content: Text('AwareScroll Active! Guarding $_selectedAppName for $_limitMinutes minutes.'),
+          ),
+        );
+      }
+    }
+  }
+
+  void _openSettings(String method) {
+    try {
+      _channel.invokeMethod(method);
+    } catch (_) {}
+  }
+
+  void _testRestrictionScreen() {
+    // 1. Try launching native Android overlay blocker
+    try {
+      _channel.invokeMethod('testBlocker');
+    } catch (_) {}
+
+    // 2. Also show in Flutter directly for immediate interactive review
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => InterruptionFlowModal(
-        appName: appName,
-        onSessionCompleted: (record) {
-          setState(() {
-            _sessions.insert(0, record);
-          });
+      builder: (ctx) => RestrictionModal(
+        appName: _selectedAppName,
+        limitMinutes: _limitMinutes,
+        onCloseApp: () {
+          Navigator.pop(ctx);
+          SystemNavigator.pop();
+        },
+        onContinueGranted: (extensionMin) {
+          Navigator.pop(ctx);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: const Color(0xFF00B894),
+              content: Text('$extensionMin-minute extension granted. Use it mindfully!'),
+            ),
+          );
         },
       ),
     );
@@ -86,947 +205,569 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isAuthenticated) {
-      return AuthScreen(
-        onAuthenticated: (email) {
-          setState(() {
-            _userEmail = email;
-            _isAuthenticated = true;
-          });
-        },
-      );
-    }
-
-    final screens = [
-      DashboardView(
-        sessions: _sessions,
-        userEmail: _userEmail,
-        onTriggerTestInterruption: () => _triggerInterruptionModal(),
-      ),
-      AppSelectorView(
-        onSelectApp: (appName) => _triggerInterruptionModal(appName: appName),
-      ),
-    ];
+    final permissionsAllGranted = _hasUsage && _hasOverlay && _hasAccessibility;
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        scrolledUnderElevation: 0.5,
         title: Row(
           children: [
             Container(
               width: 32,
               height: 32,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.borderLight),
               ),
               child: ClipOval(
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  fit: BoxFit.cover,
-                ),
+                child: Image.asset('assets/images/logo.png', fit: BoxFit.cover),
               ),
             ),
-            const SizedBox(width: 8),
-            Column(
+            const SizedBox(width: 10),
+            const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'AwareScroll AI',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
+                Text(
+                  'AwareScroll',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF14152B)),
                 ),
                 Text(
-                  _userEmail.isNotEmpty ? _userEmail : 'GSFC University Study',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textSecondary,
-                  ),
+                  'App Time Boundary & Habit Control',
+                  style: TextStyle(fontSize: 10, color: Color(0xFF6B6F8C)),
                 ),
               ],
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: AppColors.textSecondary, size: 20),
-            onPressed: () => setState(() => _isAuthenticated = false),
-          ),
-        ],
       ),
-      body: screens[_currentIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard, color: AppColors.primary),
-            label: 'Dashboard',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.apps_outlined),
-            selectedIcon: Icon(Icons.apps, color: AppColors.primary),
-            label: 'Apps',
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _triggerInterruptionModal(),
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.timer_outlined, color: Colors.white),
-        label: const Text('Simulate 5m Expiry', style: TextStyle(color: Colors.white)),
-      ),
-    );
-  }
-}
+      body: ListView(
+        padding: const EdgeInsets.all(18),
+        children: [
+          // Active Monitoring Status Card
+          if (_isRestricting) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF14152B),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF3A5BFF).withOpacity(0.2),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF00B894),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'RESTRICTION ACTIVE',
+                            style: TextStyle(color: Color(0xFF00B894), fontWeight: FontWeight.bold, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        'Limit: ${_limitMinutes}m',
+                        style: const TextStyle(color: Color(0xFFFF9F43), fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Guarding $_selectedAppName',
+                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Open Instagram normally. Once you reach your time limit, AwareScroll will automatically block access.',
+                    style: TextStyle(color: Color(0xFFA0A5BD), fontSize: 12),
+                  ),
+                  const SizedBox(height: 12),
+                  LinearProgressIndicator(
+                    value: (_elapsedSeconds / (_limitMinutes * 60)).clamp(0.0, 1.0),
+                    backgroundColor: Colors.white12,
+                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF3A5BFF)),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Foreground usage: ${_elapsedSeconds ~/ 60}m ${_elapsedSeconds % 60}s',
+                    style: const TextStyle(color: Colors.white70, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+          ],
 
-// ==========================================
-// SCREEN 1: GOOGLE WORKSPACE AUTH SCREEN
-// ==========================================
-class AuthScreen extends StatefulWidget {
-  final Function(String email) onAuthenticated;
-  const AuthScreen({super.key, required this.onAuthenticated});
+          // Step 1: Select Application
+          const Text('1. Select Application to Restrict', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          const SizedBox(height: 4),
+          const Text('Choose the app where scrolling habits need to be controlled.', style: TextStyle(fontSize: 12, color: Color(0xFF6B6F8C))),
+          const SizedBox(height: 10),
 
-  @override
-  State<AuthScreen> createState() => _AuthScreenState();
-}
-
-class _AuthScreenState extends State<AuthScreen> {
-  final TextEditingController _rollController = TextEditingController();
-  String? _errorMessage;
-
-  void _verifyAndSignIn(String email) {
-    final clean = email.trim().toLowerCase();
-    if (!clean.endsWith('@gsfcuniversity.ac.in')) {
-      setState(() {
-        _errorMessage = 'Access Restricted: Only official @gsfcuniversity.ac.in accounts are permitted.';
-      });
-      return;
-    }
-    setState(() => _errorMessage = null);
-    widget.onAuthenticated(clean);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Top Institutional Badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+          ..._targetApps.map((app) {
+            final isSelected = app['name'] == _selectedAppName;
+            return Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              elevation: isSelected ? 1.5 : 0.2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(
+                  color: isSelected ? const Color(0xFF3A5BFF) : const Color(0xFFE2E4F0),
+                  width: isSelected ? 1.8 : 1,
                 ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
+              ),
+              color: Colors.white,
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: (app['color'] as Color).withOpacity(0.12),
+                  child: Icon(app['icon'] as IconData, color: app['color'] as Color, size: 22),
+                ),
+                title: Text(app['name'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                subtitle: Text(app['package'] as String, style: const TextStyle(fontSize: 11, color: Color(0xFF6B6F8C))),
+                trailing: isSelected
+                    ? const Icon(Icons.check_circle, color: Color(0xFF3A5BFF))
+                    : const Icon(Icons.radio_button_unchecked, color: Colors.grey),
+                onTap: () {
+                  setState(() {
+                    _selectedAppName = app['name'] as String;
+                    _selectedPackage = app['package'] as String;
+                  });
+                },
+              ),
+            );
+          }),
+
+          const SizedBox(height: 16),
+
+          // Step 2: Set Time Limit
+          const Text('2. Set Usage Time Limit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          const SizedBox(height: 4),
+          const Text('The restriction screen appears the moment you reach this limit.', style: TextStyle(fontSize: 12, color: Color(0xFF6B6F8C))),
+          const SizedBox(height: 10),
+
+          Wrap(
+            spacing: 8,
+            children: [1, 5, 10, 15, 30].map((min) {
+              final isSel = min == _limitMinutes;
+              return ChoiceChip(
+                label: Text(
+                  min == 1 ? '1 Min (Test)' : min == 5 ? '5 Min (Default)' : '$min Mins',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: isSel ? Colors.white : const Color(0xFF14152B),
+                  ),
+                ),
+                selected: isSel,
+                selectedColor: const Color(0xFF3A5BFF),
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: isSel ? const Color(0xFF3A5BFF) : const Color(0xFFE2E4F0)),
+                ),
+                onSelected: (_) => setState(() => _limitMinutes = min),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Step 3: Required Android Permissions
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE2E4F0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(Icons.school, size: 14, color: AppColors.primary),
-                    SizedBox(width: 6),
-                    Text(
-                      'GSFC UNIVERSITY • BEHAVIORAL STUDY',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                        letterSpacing: 0.5,
+                    const Text('Android System Permissions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: permissionsAllGranted
+                            ? const Color(0xFF00B894).withOpacity(0.12)
+                            : const Color(0xFFFF9F43).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        permissionsAllGranted ? 'READY' : 'SETUP NEEDED',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: permissionsAllGranted ? const Color(0xFF00B894) : const Color(0xFFFF9F43),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Android requires Accessibility & Usage access so AwareScroll can track Instagram and show the restriction screen over it.',
+                  style: TextStyle(fontSize: 11, color: Color(0xFF6B6F8C)),
+                ),
+                const SizedBox(height: 12),
 
-              // Center Illustration & Pitch
-              Column(
-                children: [
-                  Container(
-                    width: 90,
-                    height: 90,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.25),
-                          blurRadius: 18,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/logo.png',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'AwareScroll AI',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Social Media Time Restriction & Rapid Survey',
-                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  if (_errorMessage != null)
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppColors.error.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.error.withOpacity(0.3)),
-                      ),
-                      child: Text(
-                        _errorMessage!,
-                        style: const TextStyle(fontSize: 11, color: AppColors.error, fontWeight: FontWeight.w600),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                ],
-              ),
+                // 1. Accessibility Service
+                _buildPermissionRow(
+                  title: 'Accessibility Service (App Blocker)',
+                  isGranted: _hasAccessibility,
+                  onEnable: () => _openSettings('openAccessibilitySettings'),
+                ),
 
-              // Bottom Authentication Options
-              Column(
-                children: [
-                  // Primary 1-Tap Google Workspace Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: AppColors.textPrimary,
-                        elevation: 1,
-                        shape: RoundedCornerShape(14),
-                        side: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      icon: const Icon(Icons.g_mobiledata, size: 28, color: Colors.blue),
-                      label: const Text(
-                        'Sign In with GSFC Google Account',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                      onPressed: () {
-                        // Instant simulated verification for study demo
-                        _verifyAndSignIn('student@gsfcuniversity.ac.in');
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(child: Divider(color: Colors.grey.shade300)),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text(
-                          'OR ENTER ROLL NO',
-                          style: TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      Expanded(child: Divider(color: Colors.grey.shade300)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _rollController,
-                          decoration: InputDecoration(
-                            hintText: 'e.g. 22bt04001',
-                            suffixText: '@gsfcuniversity.ac.in',
-                            suffixStyle: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          shape: RoundedCornerShape(12),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        ),
-                        onPressed: () {
-                          if (_rollController.text.isNotEmpty) {
-                            _verifyAndSignIn('${_rollController.text.trim()}@gsfcuniversity.ac.in');
-                          }
-                        },
-                        child: const Text('Enter', style: TextStyle(color: Colors.white)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Exclusive to GSFC University students & faculty. Telemetry data is anonymously aggregated for class presentations.',
-                    style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                // 2. Display Over Other Apps
+                _buildPermissionRow(
+                  title: 'Display Over Other Apps (Overlay)',
+                  isGranted: _hasOverlay,
+                  onEnable: () => _openSettings('openOverlaySettings'),
+                ),
+
+                // 3. Usage Access
+                _buildPermissionRow(
+                  title: 'Usage Access (Time Tracker)',
+                  isGranted: _hasUsage,
+                  onEnable: () => _openSettings('openUsageSettings'),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Primary Action: ACTIVATE / STOP
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _isRestricting ? const Color(0xFFE5484D) : const Color(0xFF3A5BFF),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                elevation: 1,
+              ),
+              onPressed: _toggleRestriction,
+              child: Text(
+                _isRestricting ? 'STOP RESTRICTION' : 'ACTIVATE RESTRICTION ($_limitMinutes MIN)',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Test Blocker Directly
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                side: const BorderSide(color: Color(0xFFE2E4F0)),
+              ),
+              icon: const Icon(Icons.preview, size: 18, color: Color(0xFF3A5BFF)),
+              label: const Text(
+                'Test Restriction Screen Now',
+                style: TextStyle(color: Color(0xFF3A5BFF), fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              onPressed: _testRestrictionScreen,
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPermissionRow({
+    required String title,
+    required bool isGranted,
+    required VoidCallback onEnable,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isGranted ? Icons.check_circle : Icons.error_outline,
+                size: 16,
+                color: isGranted ? const Color(0xFF00B894) : const Color(0xFFFF9F43),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isGranted ? FontWeight.w500 : FontWeight.bold,
+                  color: const Color(0xFF14152B),
+                ),
               ),
             ],
           ),
-        ),
+          if (!isGranted)
+            TextButton(
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              onPressed: onEnable,
+              child: const Text('Enable', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+            ),
+        ],
       ),
     );
   }
 }
 
 // ==========================================
-// SCREEN 2: IN-BUILT DASHBOARD & CHRONOTYPE
+// SCENE 3 & 4: RESTRICTION SCREEN & FOLLOW-UP
 // ==========================================
-class DashboardView extends StatelessWidget {
-  final List<SessionRecord> sessions;
-  final String userEmail;
-  final VoidCallback onTriggerTestInterruption;
+class RestrictionModal extends StatefulWidget {
+  final String appName;
+  final int limitMinutes;
+  final VoidCallback onCloseApp;
+  final Function(int extensionMin) onContinueGranted;
 
-  const DashboardView({
+  const RestrictionModal({
     super.key,
-    required this.sessions,
-    required this.userEmail,
-    required this.onTriggerTestInterruption,
+    required this.appName,
+    required this.limitMinutes,
+    required this.onCloseApp,
+    required this.onContinueGranted,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final totalMinutesToday = sessions.fold<double>(0, (sum, s) => sum + s.actualMinutes).toInt();
-    final firstReminderRate = sessions.isNotEmpty
-        ? (sessions.where((s) => s.closedOnFirstReminder).length * 100) ~/ sessions.length
-        : 100;
-
-    final morningMins = sessions.where((s) => s.timeOfDay == 'morning').fold<double>(0, (sum, s) => sum + s.actualMinutes).toInt();
-    final afternoonMins = sessions.where((s) => s.timeOfDay == 'afternoon').fold<double>(0, (sum, s) => sum + s.actualMinutes).toInt();
-    final eveningMins = sessions.where((s) => s.timeOfDay == 'evening').fold<double>(0, (sum, s) => sum + s.actualMinutes).toInt();
-    final nightMins = sessions.where((s) => s.timeOfDay == 'night').fold<double>(0, (sum, s) => sum + s.actualMinutes).toInt();
-
-    return ListView(
-      padding: const EdgeInsets.all(16.0),
-      children: [
-        // 2x2 Telemetry Cards
-        Row(
-          children: [
-            Expanded(child: _StatCard(title: 'Time Today', value: '$totalMinutesToday min', subtitle: 'Social media usage')),
-            const SizedBox(width: 12),
-            Expanded(child: _StatCard(title: '1st Reminder Success', value: '$firstReminderRate%', subtitle: 'Closed on 5m alarm', valueColor: AppColors.secondary)),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(child: _StatCard(title: 'Recorded Sessions', value: '${sessions.length}', subtitle: 'Total logs')),
-            const SizedBox(width: 12),
-            Expanded(child: _StatCard(title: 'Limit Enforcement', value: 'Strict 5m', subtitle: 'Auto-lock active', valueColor: AppColors.accentReflect)),
-          ],
-        ),
-
-        const SizedBox(height: 20),
-
-        // Chronotype Analysis Card
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.borderLight),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Peak Usage Times (Chronotype)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  Icon(Icons.schedule, size: 16, color: AppColors.primary),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _ChronotypeCol(label: 'Morning', time: '6am-12pm', minutes: morningMins),
-                  _ChronotypeCol(label: 'Afternoon', time: '12-5pm', minutes: afternoonMins),
-                  _ChronotypeCol(label: 'Evening', time: '5-9pm', minutes: eveningMins),
-                  _ChronotypeCol(label: 'Night', time: '9pm-6am', minutes: nightMins),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 20),
-
-        // Session History Header
-        const Text('Recent Session History & Surveys', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        const SizedBox(height: 8),
-
-        if (sessions.isEmpty)
-          const Center(child: Padding(padding: EdgeInsets.all(24.0), child: Text('No sessions logged yet.')))
-        else
-          ...sessions.map((s) => Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                shape: RoundedCornerShape(12),
-                color: Colors.white,
-                elevation: 0.5,
-                child: ListTile(
-                  title: Text(s.appName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${s.timeOfDay.toUpperCase()} • ${s.actualMinutes.toInt()} mins • ${s.closedOnFirstReminder ? "Closed on 1st" : "Extended (Survey filled)"}',
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                      if (s.feedback != null) ...[
-                        const SizedBox(height: 3),
-                        Text(
-                          'Purpose: "${s.feedback!['purpose'] ?? 'General'}" • Mood: ${s.feedback!['feeling'] ?? 'N/A'}',
-                          style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-                        ),
-                      ],
-                    ],
-                  ),
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: (s.closedOnFirstReminder ? AppColors.secondary : AppColors.accentReflect).withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      s.closedOnFirstReminder ? 'Protected' : 'Extended',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: s.closedOnFirstReminder ? AppColors.secondary : AppColors.accentReflect,
-                      ),
-                    ),
-                  ),
-                ),
-              )),
-      ],
-    );
-  }
+  State<RestrictionModal> createState() => _RestrictionModalState();
 }
 
-class _StatCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final String subtitle;
-  final Color? valueColor;
+class _RestrictionModalState extends State<RestrictionModal> {
+  int _step = 0; // 0: Scene 3 (Close vs Continue), 1: Scene 4 (Follow-up Question)
+  String _selectedReason = 'Interesting content';
 
-  const _StatCard({required this.title, required this.value, required this.subtitle, this.valueColor});
+  final List<String> _reasons = [
+    'Interesting content',
+    'Boredom',
+    'Stress / mood',
+    'Notifications / messages',
+    'Habitual scrolling',
+    'Unfinished original purpose',
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderLight),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+      decoration: const BoxDecoration(
+        color: Color(0xFF14152B), // Dark cosmic background
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-          const SizedBox(height: 6),
-          Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: valueColor ?? AppColors.textPrimary)),
-          const SizedBox(height: 4),
-          Text(subtitle, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
-        ],
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        child: _step == 0 ? _buildScene3Expiry() : _buildScene4FollowUp(),
       ),
     );
   }
-}
 
-class _ChronotypeCol extends StatelessWidget {
-  final String label;
-  final String time;
-  final int minutes;
-  const _ChronotypeCol({required this.label, required this.time, required this.minutes});
-
-  @override
-  Widget build(BuildContext context) {
+  // Scene 3: "Your time is up! What would you like to do?"
+  Widget _buildScene3Expiry() {
     return Column(
-      children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-        Text(time, style: const TextStyle(fontSize: 9, color: AppColors.textSecondary)),
-        const SizedBox(height: 4),
-        Text('$minutes m', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primary)),
-      ],
-    );
-  }
-}
-
-// ==========================================
-// SCREEN 3: APP SELECTION & TIME LIMITS
-// ==========================================
-class AppSelectorView extends StatelessWidget {
-  final Function(String appName) onSelectApp;
-  const AppSelectorView({super.key, required this.onSelectApp});
-
-  @override
-  Widget build(BuildContext context) {
-    final apps = [
-      {'name': 'Instagram', 'category': 'Reels & Feed', 'icon': Icons.camera_alt, 'color': Colors.purple},
-      {'name': 'YouTube', 'category': 'Shorts & Videos', 'icon': Icons.play_circle_fill, 'color': Colors.red},
-      {'name': 'Snapchat', 'category': 'Spotlight & Stories', 'icon': Icons.chat_bubble, 'color': Colors.amber},
-      {'name': 'Facebook', 'category': 'Feed & Watch', 'icon': Icons.facebook, 'color': Colors.blue},
-    ];
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        const Text('Guarded Social Apps', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        const SizedBox(height: 6),
-        const Text('Click an app to set limit and simulate 5-minute scrolling interruption.', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-        const SizedBox(height: 16),
-        ...apps.map((app) => Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              shape: RoundedCornerShape(14),
-              color: Colors.white,
-              elevation: 0.5,
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: (app['color'] as Color).withOpacity(0.12),
-                  child: Icon(app['icon'] as IconData, color: app['color'] as Color),
-                ),
-                title: Text(app['name'] as String, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(app['category'] as String, style: const TextStyle(fontSize: 11)),
-                trailing: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedCornerShape(10),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  ),
-                  onPressed: () => onSelectApp(app['name'] as String),
-                  child: const Text('Set 5m', style: TextStyle(color: Colors.white, fontSize: 11)),
-                ),
-              ),
-            )),
-      ],
-    );
-  }
-}
-
-// ==========================================
-// SCREEN 4: 5-MIN INTERRUPTION & RAPID SURVEY
-// ==========================================
-class InterruptionFlowModal extends StatefulWidget {
-  final String appName;
-  final Function(SessionRecord) onSessionCompleted;
-
-  const InterruptionFlowModal({
-    super.key,
-    required this.appName,
-    required this.onSessionCompleted,
-  });
-
-  @override
-  State<InterruptionFlowModal> createState() => _InterruptionFlowModalState();
-}
-
-class _InterruptionFlowModalState extends State<InterruptionFlowModal> {
-  int _step = 0; // 0: Expiry Alert, 1: Survey Form, 2: Quote & 5m Free
-
-  // Survey responses (Exact research survey questions)
-  String _usagePurpose = 'Reply to a message';
-  String _decisionTrigger = 'Interesting content';
-  String _contentCategory = 'Comedy / Memes';
-  String _workImpact = 'No task planned';
-  String _feeling = 'Satisfied';
-  String _supposedToDo = 'Studying';
-  String _helpfulStopper = 'Time warning';
-
-  String _quoteText = '';
-  String _quoteAuthor = '';
-
-  void _generateQuote() {
-    if (_supposedToDo.contains('Studying') || _supposedToDo.contains('Working')) {
-      _quoteText = 'You have power over your mind - not outside events. Realize this, and you will find strength.';
-      _quoteAuthor = 'Marcus Aurelius';
-    } else if (_decisionTrigger.contains('Boredom') || _usagePurpose.contains('habit')) {
-      _quoteText = 'It is not that we have a short time to live, but that we waste a lot of it.';
-      _quoteAuthor = 'Seneca';
-    } else if (_feeling.contains('regretful') || _workImpact.contains('Delayed') || _workImpact.contains('Interrupted')) {
-      _quoteText = 'Clarity about what matters provides clarity about what does not.';
-      _quoteAuthor = 'Cal Newport';
-    } else if (_helpfulStopper.contains('Original-purpose') || _helpfulStopper.contains('Time warning')) {
-      _quoteText = 'The impediment to action advances action. What stands in the way becomes the way.';
-      _quoteAuthor = 'Marcus Aurelius';
-    } else {
-      _quoteText = 'Concentrate every minute like a Roman on doing what is in front of you with precise seriousness.';
-      _quoteAuthor = 'Marcus Aurelius';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final maxHeight = MediaQuery.of(context).size.height * 0.88;
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxHeight: maxHeight),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 250),
-          child: _step == 0
-              ? _buildExpiryPrompt()
-              : _step == 1
-                  ? _buildSurveyForm()
-                  : _buildQuoteAndExtension(),
-        ),
-      ),
-    );
-  }
-
-  // Phase 1: 5-Minute Limit Expiry (CLOSE vs CONTINUE)
-  Widget _buildExpiryPrompt() {
-    return Column(
+      key: const ValueKey(0),
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Badge
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
           decoration: BoxDecoration(
-            color: AppColors.accentReflect.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(12),
+            color: const Color(0xFFFF9F43).withOpacity(0.18),
+            borderRadius: BorderRadius.circular(14),
           ),
-          child: const Text(
-            '5:00 LIMIT REACHED',
-            style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.accentReflect, fontSize: 11),
+          child: Text(
+            '${widget.limitMinutes.toString().padLeft(2, '0')}:00 LIMIT REACHED',
+            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF9F43), fontSize: 11),
+          ),
+        ),
+        const SizedBox(height: 18),
+
+        // Main Question
+        const Text(
+          'Your time is up! What would you like to do?',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            height: 1.25,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 10),
+
+        Text(
+          'You configured a ${widget.limitMinutes}-minute limit for ${widget.appName}.\nTake a mindful pause before deciding.',
+          style: const TextStyle(fontSize: 13, color: Color(0xFFA0A5BD), height: 1.3),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 28),
+
+        // Option 1: Close App
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF3A5BFF),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+            onPressed: widget.onCloseApp,
+            child: Text(
+              'Close ${widget.appName}',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Option 2: Continue
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              backgroundColor: const Color(0xFF1C1E3A),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              side: const BorderSide(color: Color(0xFF2E335B)),
+            ),
+            onPressed: () {
+              setState(() => _step = 1);
+            },
+            child: const Text(
+              'Continue',
+              style: TextStyle(color: Color(0xFFCBD0E2), fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Scene 4: Follow-up question asking user to consciously reconsider
+  Widget _buildScene4FollowUp() {
+    return Column(
+      key: const ValueKey(1),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF00B894).withOpacity(0.18),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Text(
+              'CONSCIOUS RECONSIDERATION',
+              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF00B894), fontSize: 10),
+            ),
           ),
         ),
         const SizedBox(height: 14),
-        Text(
-          'Take a breath? 5 minutes completed on ${widget.appName}.',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Mindful pause: Would you like to close the app now, or answer a rapid 3-second survey to continue?',
-          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 24),
-        SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              shape: RoundedCornerShape(14),
-            ),
-            onPressed: () {
-              // Positive compliance logged!
-              widget.onSessionCompleted(SessionRecord(
-                id: 'sess-${DateTime.now().millisecondsSinceEpoch}',
-                appName: widget.appName,
-                intendedMinutes: 5,
-                actualMinutes: 5.0,
-                closedOnFirstReminder: true,
-                timeOfDay: _getCurrentTimeBucket(),
-                timestamp: DateTime.now(),
-              ));
-              Navigator.pop(context);
-            },
-            child: Text('CLOSE ${widget.appName.toUpperCase()}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+
+        const Center(
+          child: Text(
+            'What most influenced your decision to continue scrolling?',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white, height: 1.25),
+            textAlign: TextAlign.center,
           ),
         ),
-        const SizedBox(height: 10),
-        SizedBox(
-          width: double.infinity,
-          height: 44,
-          child: OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              shape: RoundedCornerShape(14),
-              side: const BorderSide(color: AppColors.borderLight),
-            ),
-            onPressed: () => setState(() => _step = 1),
-            child: const Text('Continue scrolling anyway', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-        ),
-      ],
-    );
-  }
+        const SizedBox(height: 6),
 
-  // Phase 2: Rapid 3-5s Survey Form
-  Widget _buildSurveyForm() {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Quick Reflection Survey', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              IconButton(
-                icon: const Icon(Icons.close, size: 20),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          const Text('Select your immediate answers to receive your tailored quote.', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-          const SizedBox(height: 14),
-
-          _buildChipQuestion(
-            'Why do you want use it, clearly mension your purpose ?',
-            [
-              'Reply to a message',
-              "Checking someone's reply",
-              'Check updates',
-              'Nothing to do, so watch reels',
-              'Finished all tasks, want to watch reels',
-              'Study or research',
-              'Opened automatically / out of habit',
-            ],
-            _usagePurpose,
-            (val) => setState(() => _usagePurpose = val),
-          ),
-
-          _buildChipQuestion(
-            'Q. What most influenced your decision to continue?',
-            [
-              'Interesting content',
-              'Boredom',
-              'Stress / mood',
-              'Notifications / messages',
-              'Habitual scrolling',
-              'Unfinished original purpose',
-            ],
-            _decisionTrigger,
-            (val) => setState(() => _decisionTrigger = val),
-          ),
-
-          _buildChipQuestion(
-            'Q. Which content category kept you engaged?',
-            [
-              'Comedy / Memes',
-              'Education / Technology',
-              'News / Politics',
-              'Stories / Personal content',
-              'Fitness / Lifestyle',
-              'Music / Entertainment',
-              'Other / Mixed',
-            ],
-            _contentCategory,
-            (val) => setState(() => _contentCategory = val),
-          ),
-
-          _buildChipQuestion(
-            'Q. How did this session affect your planned work?',
-            [
-              'No task planned',
-              'Delayed a task',
-              'Interrupted a task',
-              'No negative impact / planned break',
-            ],
-            _workImpact,
-            (val) => setState(() => _workImpact = val),
-          ),
-
-          _buildChipQuestion(
-            'Q. How do you feel after scrolling?',
-            [
-              'Satisfied',
-              'Relaxed',
-              'Neutral',
-              'Bored',
-              'Stressed / regretful',
-              'Copy sample responses',
-            ],
-            _feeling,
-            (val) {
-              if (val == 'Copy sample responses') {
-                setState(() {
-                  _usagePurpose = 'Check updates';
-                  _decisionTrigger = 'Interesting content';
-                  _contentCategory = 'Education / Technology';
-                  _workImpact = 'No negative impact / planned break';
-                  _feeling = 'Relaxed';
-                  _supposedToDo = 'Relaxing';
-                  _helpfulStopper = 'Break suggestion';
-                });
-              } else {
-                setState(() => _feeling = val);
-              }
-            },
-          ),
-
-          _buildChipQuestion(
-            'What were you supposed to be doing?',
-            [
-              'Studying',
-              'Working',
-              'Sleeping',
-              'Socializing',
-              'Relaxing',
-              'Nothing planned',
-            ],
-            _supposedToDo,
-            (val) => setState(() => _supposedToDo = val),
-          ),
-
-          _buildChipQuestion(
-            'What would have helped you stop?',
-            [
-              'Time warning',
-              'Original-purpose reminder',
-              'Mood check',
-              'Break suggestion',
-              'App closure',
-            ],
-            _helpfulStopper,
-            (val) => setState(() => _helpfulStopper = val),
-          ),
-
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedCornerShape(14),
-              ),
-              onPressed: () {
-                _generateQuote();
-                setState(() => _step = 2);
-              },
-              child: const Text('SUBMIT & GET QUOTE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-
-  // Phase 3: Quote & 5-Min Extension
-  Widget _buildQuoteAndExtension() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.secondary.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Text(
-            '5-MINUTE EXTENSION UNLOCKED',
-            style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.secondary, fontSize: 11),
+        const Center(
+          child: Text(
+            'Please select an answer to confirm your continuation.',
+            style: TextStyle(fontSize: 12, color: Color(0xFFA0A5BD)),
           ),
         ),
         const SizedBox(height: 16),
-        Text(
-          '“$_quoteText”',
-          style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic, fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          '— $_quoteAuthor',
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
-        ),
-        const SizedBox(height: 16),
-        const Text(
-          'Notice: After this 5-minute extension, the app will strictly lock to protect your focus.',
-          style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 20),
+
+        ..._reasons.map((reason) {
+          final isSelected = reason == _selectedReason;
+          return GestureDetector(
+            onTap: () => setState(() => _selectedReason = reason),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFF29357A) : const Color(0xFF1C1E3A),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected ? const Color(0xFF3A5BFF) : const Color(0xFF252847),
+                  width: isSelected ? 1.5 : 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                    color: isSelected ? const Color(0xFF3A5BFF) : Colors.grey,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    reason,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isSelected ? Colors.white : const Color(0xFF8E94B3),
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+
+        const SizedBox(height: 14),
+
         SizedBox(
           width: double.infinity,
-          height: 48,
+          height: 50,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              shape: RoundedCornerShape(14),
+              backgroundColor: const Color(0xFF00B894),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
             onPressed: () {
-              widget.onSessionCompleted(SessionRecord(
-                id: 'sess-${DateTime.now().millisecondsSinceEpoch}',
-                appName: widget.appName,
-                intendedMinutes: 5,
-                actualMinutes: 10.0,
-                closedOnFirstReminder: false,
-                timeOfDay: _getCurrentTimeBucket(),
-                timestamp: DateTime.now(),
-                feedback: {
-                  'purpose': _usagePurpose,
-                  'decision': _decisionTrigger,
-                  'contentCategory': _contentCategory,
-                  'workImpact': _workImpact,
-                  'feeling': _feeling,
-                  'supposedToDo': _supposedToDo,
-                  'helpfulStopper': _helpfulStopper,
-                },
-              ));
-              Navigator.pop(context);
+              widget.onContinueGranted(5);
             },
-            child: Text('CONTINUE TO ${widget.appName.toUpperCase()} (5 MIN)', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Confirm & Continue (5 min extension)',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+            ),
           ),
         ),
       ],
     );
-  }
-
-  Widget _buildChipQuestion(String title, List<String> options, String selected, Function(String) onSelect) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-        const SizedBox(height: 6),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: options.map((opt) {
-            final isSel = opt == selected;
-            return ChoiceChip(
-              label: Text(opt, style: TextStyle(fontSize: 11, color: isSel ? Colors.white : AppColors.textPrimary)),
-              selected: isSel,
-              selectedColor: AppColors.primary,
-              backgroundColor: AppColors.bgLight,
-              onSelected: (_) => onSelect(opt),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 10),
-      ],
-    );
-  }
-
-  String _getCurrentTimeBucket() {
-    final hour = DateTime.now().hour;
-    if (hour >= 5 && hour < 12) return 'morning';
-    if (hour >= 12 && hour < 17) return 'afternoon';
-    if (hour >= 17 && hour < 21) return 'evening';
-    return 'night';
   }
 }

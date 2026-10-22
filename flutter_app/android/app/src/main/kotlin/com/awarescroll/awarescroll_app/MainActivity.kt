@@ -1,5 +1,133 @@
 package com.awarescroll.awarescroll_app
 
+import android.app.AppOpsManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.Process
+import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
 
-class MainActivity : FlutterActivity()
+class MainActivity : FlutterActivity() {
+
+    private val CHANNEL = "com.awarescroll/restriction"
+
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "checkPermissions" -> {
+                    result.success(
+                        mapOf(
+                            "usage" to hasUsageAccess(),
+                            "overlay" to hasOverlayPermission(),
+                            "accessibility" to hasAccessibilityPermission()
+                        )
+                    )
+                }
+
+                "openUsageSettings" -> {
+                    startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                    result.success(true)
+                }
+
+                "openOverlaySettings" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        val intent = Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:$packageName")
+                        )
+                        startActivity(intent)
+                    }
+                    result.success(true)
+                }
+
+                "openAccessibilitySettings" -> {
+                    startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    result.success(true)
+                }
+
+                "startRestriction" -> {
+                    val appName = call.argument<String>("appName") ?: "Instagram"
+                    val pkgName = call.argument<String>("packageName") ?: "com.instagram.android"
+                    val minutes = call.argument<Int>("minutes") ?: 5
+
+                    val serviceIntent = Intent(this, AwareScrollUsageService::class.java).apply {
+                        putExtra("APP_NAME", appName)
+                        putExtra("PACKAGE_NAME", pkgName)
+                        putExtra("LIMIT_MINUTES", minutes)
+                    }
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(serviceIntent)
+                    } else {
+                        startService(serviceIntent)
+                    }
+
+                    result.success(true)
+                }
+
+                "stopRestriction" -> {
+                    val serviceIntent = Intent(this, AwareScrollUsageService::class.java)
+                    stopService(serviceIntent)
+                    AwareScrollMonitor.stop()
+                    result.success(true)
+                }
+
+                "getStatus" -> {
+                    result.success(
+                        mapOf(
+                            "isRunning" to AwareScrollMonitor.isRunning,
+                            "appName" to AwareScrollMonitor.targetAppName,
+                            "packageName" to AwareScrollMonitor.targetPackageName,
+                            "limitMinutes" to AwareScrollMonitor.limitMinutes,
+                            "elapsedSeconds" to AwareScrollMonitor.elapsedSeconds
+                        )
+                    )
+                }
+
+                "testBlocker" -> {
+                    AwareScrollMonitor.triggerBlocker()
+                    result.success(true)
+                }
+
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    private fun hasUsageAccess(): Boolean {
+        val appOps = getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager ?: return false
+        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            appOps.unsafeCheckOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                Process.myUid(),
+                packageName
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            appOps.checkOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                Process.myUid(),
+                packageName
+            )
+        }
+        return mode == AppOpsManager.MODE_ALLOWED
+    }
+
+    private fun hasOverlayPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.canDrawOverlays(this)
+        } else {
+            true
+        }
+    }
+
+    private fun hasAccessibilityPermission(): Boolean {
+        return AwareScrollAccessibilityService.instance != null
+    }
+}

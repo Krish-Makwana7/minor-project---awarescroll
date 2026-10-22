@@ -4,6 +4,6 @@ import 'package:awarescroll_app/main.dart';
 void main() {
   testWidgets('AwareScrollApp smoke test', (WidgetTester tester) async {
     await tester.pumpWidget(const AwareScrollApp());
-    expect(find.text('AwareScroll AI'), findsWidgets);
+    expect(find.text('AwareScroll'), findsWidgets);
   });
 }
