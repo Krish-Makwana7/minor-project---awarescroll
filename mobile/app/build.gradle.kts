@@ -24,9 +24,22 @@ android {
         buildConfigField("String", "SENTRY_DSN_ANDROID", "\"\"")
     }
 
+    signingConfigs {
+        create("release") {
+            val keystoreFile = file(System.getProperty("user.home") + "/.android/debug.keystore")
+            if (keystoreFile.exists()) {
+                storeFile = keystoreFile
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

@@ -182,7 +182,7 @@ class AppRepository(
                 PredictOverrunRequestDto(
                     intendedDurationMinutes = duration,
                     intendedPurpose = purpose,
-                    time_of_day = null
+                    timeOfDay = null
                 )
             )
             if (res.isSuccessful && res.body() != null) {

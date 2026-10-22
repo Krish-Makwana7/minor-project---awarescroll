@@ -26,11 +26,15 @@ data class IntentionEntity(
 @Entity(tableName = "usage_sessions")
 data class UsageSessionEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
-    val intentionId: String?,
+    val intentionId: String? = null,
+    val appName: String = "Instagram",
     val startTime: Long,
-    val endTime: Long?,
+    val endTime: Long? = null,
     val actualDurationMinutes: Double,
     val exceededLimit: Boolean,
+    val closedOnFirstReminder: Boolean = false,
+    val extensionGranted: Boolean = false,
+    val hardLocked: Boolean = false,
     val reminderCount: Int = 0,
     val timeOfDayBucket: String?,
     val isSynced: Boolean = false,
@@ -66,11 +70,17 @@ data class InterruptionEntity(
 data class FeedbackEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val usageSessionId: String,
-    val originalIntention: String?,
-    val continuationMotivation: String,
-    val contentType: String,
-    val delayedPlannedWork: Boolean,
-    val moodAfter: String,
+    val originalIntention: String? = null,
+    val continuationMotivation: String, // Decision trigger
+    val contentType: String, // Content category
+    val delayedPlannedWork: Boolean = false,
+    val workImpact: String = "No task planned",
+    val moodAfter: String, // Post-scroll feeling
+    val supposedToBeDoing: String = "Nothing planned",
+    val helpfulStopper: String = "App closure",
+    val timePerception: String = "Felt like 5 mins",
+    val quoteText: String? = null,
+    val quoteAuthor: String? = null,
     val isSynced: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()
 )

@@ -37,6 +37,16 @@
             </intent-filter>
         </activity>
 
+        <!-- AwareScroll Screen Blocker & Rapid Survey Interruption -->
+        <activity
+            android:name=".ui.awarescroll.AwareScrollBlockActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:excludeFromRecents="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.AwareScrollFocusLock" />
+
         <!-- Foreground Usage Monitor Service -->
         <service
             android:name=".services.UsageMonitorService"

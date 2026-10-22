@@ -7,6 +7,11 @@ import com.awarescroll.ui.MainActivity
 
 class FocusLockAccessibilityService : AccessibilityService() {
 
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        instance = this
+    }
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null || !isFocusSessionActive) return
 
@@ -25,19 +30,35 @@ class FocusLockAccessibilityService : AccessibilityService() {
         }
     }
 
+    fun closeCurrentApp(): Boolean {
+        return performGlobalAction(GLOBAL_ACTION_HOME)
+    }
+
     override fun onInterrupt() {
         // Accessibility service interrupted by system
     }
 
+    override fun onDestroy() {
+        instance = null
+        super.onDestroy()
+    }
+
     companion object {
+        @Volatile
+        var instance: FocusLockAccessibilityService? = null
+
         @Volatile
         var isFocusSessionActive: Boolean = false
 
-        private val DISTRACTING_PACKAGES = setOf(
+        val DISTRACTING_PACKAGES = setOf(
             "com.instagram.android",
+            "com.facebook.katana",
+            "com.snapchat.android",
+            "com.google.android.youtube",
+            "com.reddit.frontpage",
             "com.zhiliaoapp.musically", // TikTok
             "com.twitter.android",
-            "com.facebook.katana"
+            "com.x.android"
         )
     }
 }
