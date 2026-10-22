@@ -202,50 +202,32 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab> with 
         _showPermissionRequiredDialog();
         return;
       }
-      // Open Intention Gateway first
-      _showIntentionGateway();
+      
+      // Start guard directly with configured time limit - no start questions!
+      try {
+        await _channel.invokeMethod('startRestriction', {
+          'appName': targetAppName,
+          'packageName': targetPackage,
+          'minutes': _limitMinutes,
+          'seconds': _limitSeconds,
+        });
+      } catch (_) {}
+      setState(() {
+        _isRestricting = true;
+        _elapsedSeconds = 0;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFF00E676),
+            content: Text(
+              'AwareScroll Guard Active! Guarding Instagram for ${_limitSeconds >= 60 ? "$_limitMinutes min" : "$_limitSeconds sec"}.',
+              style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+            ),
+          ),
+        );
+      }
     }
-  }
-
-  void _showIntentionGateway() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => IntentionGatewayModal(
-        onIntentCommitted: (intent, durationMinutes) async {
-          Navigator.pop(ctx);
-          final sec = durationMinutes * 60;
-          setState(() {
-            _limitMinutes = durationMinutes;
-            _limitSeconds = sec;
-          });
-          try {
-            await _channel.invokeMethod('startRestriction', {
-              'appName': targetAppName,
-              'packageName': targetPackage,
-              'minutes': durationMinutes,
-              'seconds': sec,
-            });
-          } catch (_) {}
-          setState(() {
-            _isRestricting = true;
-            _elapsedSeconds = 0;
-          });
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                backgroundColor: const Color(0xFF00E676),
-                content: Text(
-                  'Mindful Guard Active: $intent ($durationMinutes min limit)',
-                  style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
-                ),
-              ),
-            );
-          }
-        },
-      ),
-    );
   }
 
   void _showPostSessionDebrief() {
@@ -784,10 +766,14 @@ class InteractiveBlockerTab extends StatefulWidget {
 class _InteractiveBlockerTabState extends State<InteractiveBlockerTab> {
   int _activeState = 1; // 1: Gate, 2: Reflect, 3: Unlock
 
-  // State 2 selections
-  String _selectedTrigger = 'Boredom / nothing else to do';
-  String _selectedIntention = 'Working';
+  // State 2 selections for extension survey
+  String _selectedPurpose = 'Reply to a message';
+  String _selectedTrigger = 'Interesting content';
   String _selectedCategory = 'Reels / Entertainment';
+  String _selectedWorkImpact = 'Delayed a task';
+  String _selectedFeeling = 'Neutral';
+  String _selectedSupposedActivity = 'Working';
+  String _selectedHelpStop = 'Time warning';
   int _selectedExtensionMin = 5;
 
   // State 3 countdown ticker
@@ -1001,7 +987,7 @@ class _InteractiveBlockerTabState extends State<InteractiveBlockerTab> {
     );
   }
 
-  // STATE 2: REFLECT (QUESTIONNAIRE)
+  // STATE 2: REFLECT (SURVEY FORM)
   Widget _buildState2Reflect() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1019,7 +1005,7 @@ class _InteractiveBlockerTabState extends State<InteractiveBlockerTab> {
                 ],
               ),
             ),
-            const Text('● RECONSIDERATION', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF00E676), letterSpacing: 0.8)),
+            const Text('● EXTENSION SURVEY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF00E676), letterSpacing: 0.8)),
           ],
         ),
         const SizedBox(height: 12),
@@ -1031,99 +1017,51 @@ class _InteractiveBlockerTabState extends State<InteractiveBlockerTab> {
             color: const Color(0xFF1E2333),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
-              widthFactor: 0.66,
+              widthFactor: 0.75,
               child: Container(color: const Color(0xFFE1306C)),
             ),
           ),
         ),
         const SizedBox(height: 16),
-        const Text('Conscious Reflection', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+        const Text('Mindful Extension Survey', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
         const SizedBox(height: 4),
-        const Text('Answer the following reflections to unlock a temporary extension.', style: TextStyle(fontSize: 12, color: Color(0xFF7E869E))),
+        const Text('Please complete these reflections to consciously unlock an extension.', style: TextStyle(fontSize: 12, color: Color(0xFF7E869E))),
         const SizedBox(height: 20),
 
-        // Q1: Trigger
+        // Q1: Purpose
         _buildQuestionCard(
           number: '1',
-          title: 'Psychological Trigger',
-          subtitle: 'What most influenced your decision to continue?',
+          title: 'Purpose of Usage',
+          subtitle: 'Why do you want use it, clearly mention your purpose?',
           child: Column(
             children: [
-              'Interesting content / dopamine hook',
-              'Boredom / nothing else to do',
-              'Stress / emotional escape',
-              'Checking notifications / messages',
-              'Habitual / mindless reflex',
-              'Unfinished original task',
-            ].map((opt) {
-              final isSel = opt == _selectedTrigger;
-              return GestureDetector(
-                onTap: () => setState(() => _selectedTrigger = opt),
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isSel ? const Color(0xFFE1306C).withOpacity(0.18) : const Color(0xFF151824),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: isSel ? const Color(0xFFE1306C) : const Color(0xFF262B3D)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(opt, style: TextStyle(fontSize: 13, color: isSel ? Colors.white : const Color(0xFFB0B7C3), fontWeight: isSel ? FontWeight.bold : FontWeight.normal)),
-                      Icon(isSel ? Icons.radio_button_checked : Icons.radio_button_off, size: 16, color: isSel ? const Color(0xFFE1306C) : Colors.white24),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
+              'Reply to a message',
+              "Checking someone's reply",
+              'Check updates',
+              'Nothing to do, so watch reels',
+              'Finished all tasks, want to watch reels',
+              'Study or research',
+              'Opened automatically / out of habit',
+            ].map((opt) => _buildRadioOption(opt, _selectedPurpose, (v) => setState(() => _selectedPurpose = v))).toList(),
           ),
         ),
 
         const SizedBox(height: 16),
 
-        // Q2: Displaced Intention
+        // Q2: Decision to Continue
         _buildQuestionCard(
           number: '2',
-          title: 'Displaced Intention',
-          subtitle: 'What were you supposed to be doing right now?',
-          child: GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 2.6,
+          title: 'Decision Factor',
+          subtitle: 'What most influenced your decision to continue?',
+          child: Column(
             children: [
-              {'name': 'Studying', 'icon': Icons.menu_book},
-              {'name': 'Working', 'icon': Icons.work_outline},
-              {'name': 'Sleeping', 'icon': Icons.bedtime},
-              {'name': 'Socializing', 'icon': Icons.people_outline},
-              {'name': 'Planned break', 'icon': Icons.coffee},
-              {'name': 'Nothing planned', 'icon': Icons.hourglass_empty},
-            ].map((item) {
-              final name = item['name'] as String;
-              final icon = item['icon'] as IconData;
-              final isSel = name == _selectedIntention;
-              return GestureDetector(
-                onTap: () => setState(() => _selectedIntention = name),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: isSel ? const Color(0xFFE1306C).withOpacity(0.18) : const Color(0xFF151824),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: isSel ? const Color(0xFFE1306C) : const Color(0xFF262B3D)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(icon, size: 16, color: isSel ? const Color(0xFFE1306C) : const Color(0xFF7E869E)),
-                      const SizedBox(width: 8),
-                      Text(name, style: TextStyle(fontSize: 12, fontWeight: isSel ? FontWeight.bold : FontWeight.normal, color: isSel ? Colors.white : const Color(0xFFB0B7C3))),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
+              'Interesting content',
+              'Boredom',
+              'Stress / mood',
+              'Notifications / messages',
+              'Habitual scrolling',
+              'Unfinished original purpose',
+            ].map((opt) => _buildRadioOption(opt, _selectedTrigger, (v) => setState(() => _selectedTrigger = v))).toList(),
           ),
         ),
 
@@ -1133,17 +1071,18 @@ class _InteractiveBlockerTabState extends State<InteractiveBlockerTab> {
         _buildQuestionCard(
           number: '3',
           title: 'Content Category',
-          subtitle: 'Which category kept you engaged?',
+          subtitle: 'Which content category kept you engaged?',
           child: Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
               'Comedy / Memes',
-              'Education / Tech',
+              'Education / Technology',
               'News / Politics',
-              'Stories / Personal',
+              'Stories / Personal content',
               'Fitness / Lifestyle',
-              'Reels / Entertainment',
+              'Music / Entertainment',
+              'Other / Mixed',
             ].map((cat) {
               final isSel = cat == _selectedCategory;
               return GestureDetector(
@@ -1164,18 +1103,92 @@ class _InteractiveBlockerTabState extends State<InteractiveBlockerTab> {
 
         const SizedBox(height: 16),
 
-        // Q4: Extension Selector
+        // Q4: Effect on planned work
         _buildQuestionCard(
           number: '4',
-          title: 'Extension Commitment',
-          subtitle: 'Choose your conscious extension duration:',
+          title: 'Effect on Planned Work',
+          subtitle: 'How did this session affect your planned work?',
+          child: Column(
+            children: [
+              'No task planned',
+              'Delayed a task',
+              'Interrupted a task',
+              'No negative impact / planned break',
+            ].map((opt) => _buildRadioOption(opt, _selectedWorkImpact, (v) => setState(() => _selectedWorkImpact = v))).toList(),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Q5: Feeling after scrolling
+        _buildQuestionCard(
+          number: '5',
+          title: 'Emotional State',
+          subtitle: 'How do you feel after scrolling?',
+          child: Column(
+            children: [
+              'Satisfied',
+              'Relaxed',
+              'Neutral',
+              'Bored',
+              'Stressed / regretful',
+            ].map((opt) => _buildRadioOption(opt, _selectedFeeling, (v) => setState(() => _selectedFeeling = v))).toList(),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Q6: Supposed to be doing
+        _buildQuestionCard(
+          number: '6',
+          title: 'Intended Activity',
+          subtitle: 'What were you supposed to be doing?',
+          child: Column(
+            children: [
+              'Studying',
+              'Working',
+              'Sleeping',
+              'Socializing',
+              'Relaxing',
+              'Nothing planned',
+            ].map((opt) => _buildRadioOption(opt, _selectedSupposedActivity, (v) => setState(() => _selectedSupposedActivity = v))).toList(),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Q7: What would have helped stop
+        _buildQuestionCard(
+          number: '7',
+          title: 'Intervention Help',
+          subtitle: 'What would have helped you stop?',
+          child: Column(
+            children: [
+              'Time warning',
+              'Original-purpose reminder',
+              'Mood check',
+              'Break suggestion',
+              'App closure',
+            ].map((opt) => _buildRadioOption(opt, _selectedHelpStop, (v) => setState(() => _selectedHelpStop = v))).toList(),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Q8: Extension Duration
+        _buildQuestionCard(
+          number: '8',
+          title: 'Extension Duration',
+          subtitle: 'How much time do you consciously commit to extend?',
           child: Row(
             children: [
               _buildExtCard(2, 'Quick check'),
               const SizedBox(width: 8),
-              _buildExtCard(5, 'Recommended', isRecommended: true),
+              _buildExtCard(5, 'Default', isRecommended: true),
               const SizedBox(width: 8),
-              _buildExtCard(10, 'Final cap'),
+              _buildExtCard(10, '+10m'),
+              const SizedBox(width: 8),
+              _buildExtCard(15, '+15m'),
             ],
           ),
         ),
@@ -1192,11 +1205,36 @@ class _InteractiveBlockerTabState extends State<InteractiveBlockerTab> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             icon: const Icon(Icons.lock_open, size: 20),
-            label: Text('Confirm & Unlock (+${_selectedExtensionMin}m Extension)', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            label: Text('Confirm & Extend Time (+${_selectedExtensionMin}m)', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             onPressed: () => _switchState(3),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildRadioOption(String opt, String selectedVal, Function(String) onSelect) {
+    final isSel = opt == selectedVal;
+    return GestureDetector(
+      onTap: () => onSelect(opt),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSel ? const Color(0xFFE1306C).withOpacity(0.18) : const Color(0xFF151824),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isSel ? const Color(0xFFE1306C) : const Color(0xFF262B3D)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(opt, style: TextStyle(fontSize: 13, color: isSel ? Colors.white : const Color(0xFFB0B7C3), fontWeight: isSel ? FontWeight.bold : FontWeight.normal)),
+            ),
+            Icon(isSel ? Icons.radio_button_checked : Icons.radio_button_off, size: 16, color: isSel ? const Color(0xFFE1306C) : Colors.white24),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1306,9 +1344,11 @@ class _InteractiveBlockerTabState extends State<InteractiveBlockerTab> {
           decoration: BoxDecoration(color: const Color(0xFF111319), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFF202538))),
           child: Column(
             children: [
-              _buildRecapRow('Psychological Trigger', _selectedTrigger),
+              _buildRecapRow('Stated Purpose', _selectedPurpose),
               const Divider(color: Color(0xFF1E2335), height: 16),
-              _buildRecapRow('Supposed to be doing', _selectedIntention),
+              _buildRecapRow('Continue Trigger', _selectedTrigger),
+              const Divider(color: Color(0xFF1E2335), height: 16),
+              _buildRecapRow('Supposed to be doing', _selectedSupposedActivity),
               const Divider(color: Color(0xFF1E2335), height: 16),
               _buildRecapRow('Extension Allowance', '+$_selectedExtensionMin Minutes'),
             ],
@@ -1581,158 +1621,6 @@ class UserAccountInsightsTab extends StatelessWidget {
               minHeight: 6,
               backgroundColor: const Color(0xFF0F111A),
               valueColor: AlwaysStoppedAnimation<Color>(col),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ==========================================
-// SCREEN 4: INTENTION GATEWAY MODAL
-// ==========================================
-class IntentionGatewayModal extends StatefulWidget {
-  final Function(String intent, int durationMinutes) onIntentCommitted;
-
-  const IntentionGatewayModal({super.key, required this.onIntentCommitted});
-
-  @override
-  State<IntentionGatewayModal> createState() => _IntentionGatewayModalState();
-}
-
-class _IntentionGatewayModalState extends State<IntentionGatewayModal> {
-  String _selectedIntent = 'Reply to DM';
-  int _selectedMinutes = 5;
-
-  final List<Map<String, dynamic>> _intentions = [
-    {'title': 'Reply to DM', 'sub': 'Direct chat or query', 'icon': Icons.chat_bubble_outline},
-    {'title': 'Specific update', 'sub': "A friend's post or story", 'icon': Icons.search},
-    {'title': 'Watch Reels', 'sub': 'Mindful short break', 'icon': Icons.play_circle_outline},
-    {'title': 'Research & Save', 'sub': 'Art, recipes, study', 'icon': Icons.menu_book},
-    {'title': 'Muscle Memory', 'sub': 'Auto-opened phone (Reflex)', 'icon': Icons.sync_problem},
-    {'title': 'Boredom Check', 'sub': 'Seeking stimulation', 'icon': Icons.hourglass_empty},
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-      decoration: const BoxDecoration(
-        color: Color(0xFF111319),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border(top: BorderSide(color: Color(0xFF262B3D), width: 1.5)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(width: 36, height: 4, margin: const EdgeInsets.only(bottom: 20), decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
-          ),
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(color: const Color(0xFF833AB4).withOpacity(0.2), borderRadius: BorderRadius.circular(16)),
-              child: const Text('CONSCIOUS INTENTION ANCHOR', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFE1306C))),
-            ),
-          ),
-          const SizedBox(height: 12),
-          const Center(
-            child: Text(
-              'Why are you opening Instagram?',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Center(
-            child: Text(
-              'Set an intention to avoid mindless scrolling before you dive in.',
-              style: TextStyle(fontSize: 12, color: Color(0xFF7E869E)),
-            ),
-          ),
-          const SizedBox(height: 20),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 2.2,
-            children: _intentions.map((item) {
-              final title = item['title'] as String;
-              final sub = item['sub'] as String;
-              final icon = item['icon'] as IconData;
-              final isSel = title == _selectedIntent;
-              return GestureDetector(
-                onTap: () => setState(() => _selectedIntent = title),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isSel ? const Color(0xFFE1306C).withOpacity(0.18) : const Color(0xFF151824),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: isSel ? const Color(0xFFE1306C) : const Color(0xFF262B3D)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(icon, size: 18, color: isSel ? const Color(0xFFE1306C) : const Color(0xFF7E869E)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(title, style: TextStyle(fontSize: 12, fontWeight: isSel ? FontWeight.bold : FontWeight.w500, color: Colors.white)),
-                            Text(sub, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 9, color: Color(0xFF7E869E))),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 18),
-          const Text('I plan to spend:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [3, 5, 10, 15].map((m) {
-              final isSel = _selectedMinutes == m;
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _selectedMinutes = m),
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: isSel ? const Color(0xFFE1306C) : const Color(0xFF151824),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: isSel ? const Color(0xFFE1306C) : const Color(0xFF262B3D)),
-                    ),
-                    child: Center(
-                      child: Text(
-                        '$m Mins',
-                        style: TextStyle(fontSize: 12, fontWeight: isSel ? FontWeight.bold : FontWeight.normal, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE1306C),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              onPressed: () => widget.onIntentCommitted(_selectedIntent, _selectedMinutes),
-              child: Text('Enter Mindfully ($_selectedMinutes Min Limit) →', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14)),
             ),
           ),
         ],

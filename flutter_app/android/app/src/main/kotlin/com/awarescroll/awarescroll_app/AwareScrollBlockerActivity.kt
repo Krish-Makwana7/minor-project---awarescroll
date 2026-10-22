@@ -145,8 +145,11 @@ class AwareScrollBlockerActivity : Activity() {
     }
 
     // ==========================================
-    // SCENE 4: CONSCIOUS FOLLOW-UP QUESTION
+    // SCENE 4: EXTENSION SURVEY FORM
     // ==========================================
+    private var selectedExtensionMin = 5
+    private lateinit var confirmBtn: Button
+
     private fun showFollowUpQuestion() {
         container.removeAllViews()
 
@@ -161,119 +164,168 @@ class AwareScrollBlockerActivity : Activity() {
         val inner = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(0, dpToPx(16), 0, dpToPx(16))
+            setPadding(0, dpToPx(8), 0, dpToPx(32))
         }
         scroll.addView(inner)
         container.addView(scroll)
 
-        // Tag
+        // Header Tag
         val tag = TextView(this).apply {
-            text = "CONSCIOUS REFLECTION"
-            setTextColor(Color.parseColor("#00B894")) // Green
+            text = "● EXTENSION SURVEY"
+            setTextColor(Color.parseColor("#00E676")) // Green
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
             setPadding(dpToPx(12), dpToPx(4), dpToPx(12), dpToPx(4))
             background = GradientDrawable().apply {
-                setColor(Color.parseColor("#2600B894"))
+                setColor(Color.parseColor("#2600E676"))
                 cornerRadius = dpToPx(12).toFloat()
             }
         }
         inner.addView(tag)
 
-        inner.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(1, dpToPx(14)) })
+        inner.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(1, dpToPx(10)) })
 
-        // Follow-Up Question
-        val question = TextView(this).apply {
-            text = "What most influenced your decision to continue scrolling?"
+        // Title & Description
+        val heading = TextView(this).apply {
+            text = "Mindful Extension Survey"
             setTextColor(Color.WHITE)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f)
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
-            setLineSpacing(0f, 1.2f)
         }
-        inner.addView(question)
+        inner.addView(heading)
 
-        inner.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(1, dpToPx(8)) })
+        inner.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(1, dpToPx(4)) })
 
         val hint = TextView(this).apply {
-            text = "Please choose a reason before proceeding."
-            setTextColor(Color.parseColor("#A0A5BD"))
+            text = "Please complete these reflections to consciously unlock an extension."
+            setTextColor(Color.parseColor("#8E97B0"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             gravity = Gravity.CENTER
         }
         inner.addView(hint)
 
-        inner.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(1, dpToPx(20)) })
+        inner.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(1, dpToPx(18)) })
 
-        // Answer Options
-        val options = listOf(
-            "Interesting content",
-            "Boredom",
-            "Stress / mood",
-            "Notifications / messages",
-            "Habitual scrolling",
-            "Unfinished original purpose"
+        // Q1: Purpose
+        addSurveyQuestion(
+            inner,
+            number = "1",
+            title = "Purpose of Usage",
+            subtitle = "Why do you want use it, clearly mention your purpose?",
+            options = listOf(
+                "Reply to a message",
+                "Checking someone's reply",
+                "Check updates",
+                "Nothing to do, so watch reels",
+                "Finished all tasks, want to watch reels",
+                "Study or research",
+                "Opened automatically / out of habit"
+            )
         )
 
-        var selectedIndex = 0
-        val optionViews = mutableListOf<TextView>()
+        // Q2: Decision to continue
+        addSurveyQuestion(
+            inner,
+            number = "2",
+            title = "Decision Factor",
+            subtitle = "What most influenced your decision to continue?",
+            options = listOf(
+                "Interesting content",
+                "Boredom",
+                "Stress / mood",
+                "Notifications / messages",
+                "Habitual scrolling",
+                "Unfinished original purpose"
+            )
+        )
 
-        for (i in options.indices) {
-            val opt = options[i]
-            val tv = TextView(this).apply {
-                text = opt
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-                setPadding(dpToPx(16), dpToPx(14), dpToPx(16), dpToPx(14))
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    bottomMargin = dpToPx(8)
-                }
-            }
+        // Q3: Content Category
+        addSurveyQuestion(
+            inner,
+            number = "3",
+            title = "Content Category",
+            subtitle = "Which content category kept you engaged?",
+            options = listOf(
+                "Comedy / Memes",
+                "Education / Technology",
+                "News / Politics",
+                "Stories / Personal content",
+                "Fitness / Lifestyle",
+                "Music / Entertainment",
+                "Other / Mixed"
+            )
+        )
 
-            fun updateSelection() {
-                for (j in optionViews.indices) {
-                    val isSel = (j == selectedIndex)
-                    optionViews[j].apply {
-                        setTextColor(if (isSel) Color.WHITE else Color.parseColor("#8E94B3"))
-                        background = GradientDrawable().apply {
-                            setColor(if (isSel) Color.parseColor("#2A1B2E") else Color.parseColor("#151824"))
-                            setStroke(dpToPx(if (isSel) 2 else 1), if (isSel) Color.parseColor("#E1306C") else Color.parseColor("#232738"))
-                            cornerRadius = dpToPx(14).toFloat()
-                        }
-                    }
-                }
-            }
+        // Q4: Effect on planned work
+        addSurveyQuestion(
+            inner,
+            number = "4",
+            title = "Effect on Planned Work",
+            subtitle = "How did this session affect your planned work?",
+            options = listOf(
+                "No task planned",
+                "Delayed a task",
+                "Interrupted a task",
+                "No negative impact / planned break"
+            )
+        )
 
-            tv.setOnClickListener {
-                selectedIndex = i
-                updateSelection()
-            }
+        // Q5: Feeling after scrolling
+        addSurveyQuestion(
+            inner,
+            number = "5",
+            title = "Emotional State",
+            subtitle = "How do you feel after scrolling?",
+            options = listOf(
+                "Satisfied",
+                "Relaxed",
+                "Neutral",
+                "Bored",
+                "Stressed / regretful"
+            )
+        )
 
-            optionViews.add(tv)
-            inner.addView(tv)
-        }
+        // Q6: Supposed to be doing
+        addSurveyQuestion(
+            inner,
+            number = "6",
+            title = "Intended Activity",
+            subtitle = "What were you supposed to be doing?",
+            options = listOf(
+                "Studying",
+                "Working",
+                "Sleeping",
+                "Socializing",
+                "Relaxing",
+                "Nothing planned"
+            )
+        )
 
-        // Initialize selection styling
-        for (j in optionViews.indices) {
-            val isSel = (j == 0)
-            optionViews[j].apply {
-                setTextColor(if (isSel) Color.WHITE else Color.parseColor("#8E94B3"))
-                background = GradientDrawable().apply {
-                    setColor(if (isSel) Color.parseColor("#2A1B2E") else Color.parseColor("#151824"))
-                    setStroke(dpToPx(if (isSel) 2 else 1), if (isSel) Color.parseColor("#E1306C") else Color.parseColor("#232738"))
-                    cornerRadius = dpToPx(14).toFloat()
-                }
-            }
-        }
+        // Q7: What would have helped stop
+        addSurveyQuestion(
+            inner,
+            number = "7",
+            title = "Intervention Help",
+            subtitle = "What would have helped you stop?",
+            options = listOf(
+                "Time warning",
+                "Original-purpose reminder",
+                "Mood check",
+                "Break suggestion",
+                "App closure"
+            )
+        )
+
+        // Q8: Extension Duration
+        addExtensionDurationSection(inner)
 
         inner.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(1, dpToPx(16)) })
 
         // Confirm & Continue Button
-        val confirmBtn = Button(this).apply {
-            text = "Confirm & Continue (5m Extension)"
+        confirmBtn = Button(this).apply {
+            text = "Confirm & Extend Time (+${selectedExtensionMin}m)"
             setTextColor(Color.parseColor("#0B0D13"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
             typeface = Typeface.DEFAULT_BOLD
@@ -286,12 +338,206 @@ class AwareScrollBlockerActivity : Activity() {
                 dpToPx(52)
             )
             setOnClickListener {
-                // Grant 5-minute extension to monitor
-                AwareScrollMonitor.grantExtension(5)
+                AwareScrollMonitor.grantExtension(selectedExtensionMin)
                 finish()
             }
         }
         inner.addView(confirmBtn)
+    }
+
+    private fun addSurveyQuestion(
+        parent: LinearLayout,
+        number: String,
+        title: String,
+        subtitle: String,
+        options: List<String>
+    ) {
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#151824"))
+                setStroke(dpToPx(1), Color.parseColor("#262B3D"))
+                cornerRadius = dpToPx(16).toFloat()
+            }
+            setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = dpToPx(14)
+            }
+        }
+
+        // Question Title Row
+        val header = TextView(this).apply {
+            text = "$number. $title"
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+            typeface = Typeface.DEFAULT_BOLD
+        }
+        card.addView(header)
+
+        val sub = TextView(this).apply {
+            text = subtitle
+            setTextColor(Color.parseColor("#7E869E"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+            setPadding(0, dpToPx(2), 0, dpToPx(10))
+        }
+        card.addView(sub)
+
+        var selectedIdx = 0
+        val optionViews = mutableListOf<TextView>()
+
+        for (i in options.indices) {
+            val opt = options[i]
+            val tv = TextView(this).apply {
+                text = opt
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+                setPadding(dpToPx(14), dpToPx(10), dpToPx(14), dpToPx(10))
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    bottomMargin = dpToPx(6)
+                }
+            }
+
+            fun update() {
+                for (j in optionViews.indices) {
+                    val isSel = (j == selectedIdx)
+                    optionViews[j].apply {
+                        setTextColor(if (isSel) Color.WHITE else Color.parseColor("#8E94B3"))
+                        background = GradientDrawable().apply {
+                            setColor(if (isSel) Color.parseColor("#2A1B2E") else Color.parseColor("#111319"))
+                            setStroke(dpToPx(if (isSel) 1 else 1), if (isSel) Color.parseColor("#E1306C") else Color.parseColor("#202538"))
+                            cornerRadius = dpToPx(10).toFloat()
+                        }
+                    }
+                }
+            }
+
+            tv.setOnClickListener {
+                selectedIdx = i
+                update()
+            }
+
+            optionViews.add(tv)
+            card.addView(tv)
+        }
+
+        // Initialize styling
+        for (j in optionViews.indices) {
+            val isSel = (j == 0)
+            optionViews[j].apply {
+                setTextColor(if (isSel) Color.WHITE else Color.parseColor("#8E94B3"))
+                background = GradientDrawable().apply {
+                    setColor(if (isSel) Color.parseColor("#2A1B2E") else Color.parseColor("#111319"))
+                    setStroke(dpToPx(1), if (isSel) Color.parseColor("#E1306C") else Color.parseColor("#202538"))
+                    cornerRadius = dpToPx(10).toFloat()
+                }
+            }
+        }
+
+        parent.addView(card)
+    }
+
+    private fun addExtensionDurationSection(parent: LinearLayout) {
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#151824"))
+                setStroke(dpToPx(1), Color.parseColor("#262B3D"))
+                cornerRadius = dpToPx(16).toFloat()
+            }
+            setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = dpToPx(14)
+            }
+        }
+
+        val header = TextView(this).apply {
+            text = "8. Extension Duration"
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+            typeface = Typeface.DEFAULT_BOLD
+        }
+        card.addView(header)
+
+        val sub = TextView(this).apply {
+            text = "How much time do you consciously commit to extend?"
+            setTextColor(Color.parseColor("#7E869E"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+            setPadding(0, dpToPx(2), 0, dpToPx(10))
+        }
+        card.addView(sub)
+
+        val durations = listOf(2, 5, 10, 15)
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        val durViews = mutableListOf<TextView>()
+
+        for (d in durations) {
+            val tv = TextView(this).apply {
+                text = "+${d}m"
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+                typeface = Typeface.DEFAULT_BOLD
+                gravity = Gravity.CENTER
+                setPadding(dpToPx(8), dpToPx(12), dpToPx(8), dpToPx(12))
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginEnd = dpToPx(6)
+                }
+            }
+
+            fun updateDurations() {
+                for (k in durations.indices) {
+                    val isSel = (durations[k] == selectedExtensionMin)
+                    durViews[k].apply {
+                        setTextColor(if (isSel) Color.parseColor("#00E676") else Color.WHITE)
+                        background = GradientDrawable().apply {
+                            setColor(if (isSel) Color.parseColor("#2600E676") else Color.parseColor("#111319"))
+                            setStroke(dpToPx(1), if (isSel) Color.parseColor("#00E676") else Color.parseColor("#202538"))
+                            cornerRadius = dpToPx(10).toFloat()
+                        }
+                    }
+                }
+                if (::confirmBtn.isInitialized) {
+                    confirmBtn.text = "Confirm & Extend Time (+${selectedExtensionMin}m)"
+                }
+            }
+
+            tv.setOnClickListener {
+                selectedExtensionMin = d
+                updateDurations()
+            }
+
+            durViews.add(tv)
+            row.addView(tv)
+        }
+
+        // Initialize durations styling
+        for (k in durations.indices) {
+            val isSel = (durations[k] == selectedExtensionMin)
+            durViews[k].apply {
+                setTextColor(if (isSel) Color.parseColor("#00E676") else Color.WHITE)
+                background = GradientDrawable().apply {
+                    setColor(if (isSel) Color.parseColor("#2600E676") else Color.parseColor("#111319"))
+                    setStroke(dpToPx(1), if (isSel) Color.parseColor("#00E676") else Color.parseColor("#202538"))
+                    cornerRadius = dpToPx(10).toFloat()
+                }
+            }
+        }
+
+        card.addView(row)
+        parent.addView(card)
     }
 
     private fun closeAppAndExit() {
