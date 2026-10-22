@@ -1,57 +1,68 @@
 package com.awarescroll.awarescroll_app
 
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
+import androidx.core.app.NotificationCompat
 
 object AwareScrollMonitor {
-    var isRunning = false
-    var targetAppName = "Instagram"
-    var targetPackageName = "com.instagram.android"
-    var limitMinutes = 5
-    var elapsedSeconds = 0
-    var extensionSeconds = 0
-    var isTargetInForeground = false
-    var isBlockerShowing = false
+    @Volatile var isRunning = false
+    @Volatile var targetAppName = "Instagram"
+    @Volatile var targetPackageName = "com.instagram.android"
+    @Volatile var limitMinutes = 5
+    @Volatile var targetTotalSeconds = 300
+    @Volatile var elapsedSeconds = 0
+    @Volatile var extensionSeconds = 0
+    @Volatile var isTargetInForeground = false
+    @Volatile var isBlockerShowing = false
 
     private val handler = Handler(Looper.getMainLooper())
     private var tickerRunnable: Runnable? = null
     var appContext: Context? = null
 
-    fun start(context: Context, appName: String, packageName: String, minutes: Int) {
+    fun start(context: Context, appName: String, packageName: String, minutes: Int, seconds: Int = minutes * 60) {
         appContext = context.applicationContext
         targetAppName = appName
         targetPackageName = packageName
         limitMinutes = minutes
+        targetTotalSeconds = seconds
         elapsedSeconds = 0
         extensionSeconds = 0
         isRunning = true
         isBlockerShowing = false
+        isTargetInForeground = false
 
+        Log.d("AwareScroll", "Monitor started: $appName, package: $packageName, limit: $minutes m ($seconds s)")
         startTicker()
     }
 
     fun stop() {
+        Log.d("AwareScroll", "Monitor stopped")
         isRunning = false
         isTargetInForeground = false
         isBlockerShowing = false
         stopTicker()
     }
 
-    fun onPackageForegrounded(packageName: String) {
+    fun updateForegroundStatus(inFg: Boolean) {
         if (!isRunning) return
-
-        if (packageName == targetPackageName) {
-            isTargetInForeground = true
-        } else if (packageName != "com.awarescroll.awarescroll_app") {
-            isTargetInForeground = false
-        }
+        isTargetInForeground = inFg
     }
 
-    fun onPackageBackgrounded(packageName: String) {
+    fun onAccessibilityWindowStateChanged(packageName: String) {
         if (!isRunning) return
-        if (packageName == targetPackageName) {
+
+        if (packageName == targetPackageName || 
+            (targetPackageName.contains("youtube") && packageName.contains("youtube")) ||
+            (targetPackageName.contains("instagram") && packageName.contains("instagram")) ||
+            (targetPackageName.contains("facebook") && (packageName.contains("facebook") || packageName.contains("katana"))) ||
+            (targetPackageName.contains("snapchat") && packageName.contains("snapchat"))) {
+            isTargetInForeground = true
+        } else if (packageName != "com.awarescroll.awarescroll_app" && packageName != "com.android.systemui") {
             isTargetInForeground = false
         }
     }
@@ -59,6 +70,7 @@ object AwareScrollMonitor {
     fun grantExtension(minutes: Int) {
         extensionSeconds += (minutes * 60)
         isBlockerShowing = false
+        Log.d("AwareScroll", "Extension granted: $minutes min. Total allowed: ${(limitMinutes * 60) + extensionSeconds}s")
     }
 
     private fun startTicker() {
@@ -68,7 +80,9 @@ object AwareScrollMonitor {
                 if (isRunning) {
                     if (isTargetInForeground && !isBlockerShowing) {
                         elapsedSeconds++
-                        val totalAllowed = (limitMinutes * 60) + extensionSeconds
+                        Log.d("AwareScroll", "Target in FG ($targetAppName): $elapsedSeconds s / ${(limitMinutes * 60) + extensionSeconds} s")
+
+                        val totalAllowed = targetTotalSeconds + extensionSeconds
                         if (elapsedSeconds >= totalAllowed) {
                             triggerBlocker()
                         }
@@ -86,9 +100,21 @@ object AwareScrollMonitor {
     }
 
     fun triggerBlocker() {
+        if (isBlockerShowing) return
         isBlockerShowing = true
+        Log.d("AwareScroll", "TRIGGERING BLOCKER for $targetAppName after $elapsedSeconds s!")
+
         val ctx = appContext ?: return
-        val intent = Intent(ctx, AwareScrollBlockerActivity::class.java).apply {
+
+        // 1. Kick target app to home screen if Accessibility Service is active
+        try {
+            AwareScrollAccessibilityService.instance?.closeAppToHome()
+        } catch (e: Exception) {
+            Log.e("AwareScroll", "Failed to close via accessibility", e)
+        }
+
+        // 2. Prepare Blocker Intent
+        val blockerIntent = Intent(ctx, AwareScrollBlockerActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or
                     Intent.FLAG_ACTIVITY_CLEAR_TOP or
                     Intent.FLAG_ACTIVITY_SINGLE_TOP or
@@ -98,6 +124,37 @@ object AwareScrollMonitor {
             putExtra("LIMIT_MINUTES", limitMinutes)
             putExtra("ELAPSED_MINUTES", elapsedSeconds / 60)
         }
-        ctx.startActivity(intent)
+
+        // 3. Launch via High-Priority FullScreenIntent Notification (works across Android 10-16)
+        try {
+            val fullScreenPendingIntent = PendingIntent.getActivity(
+                ctx,
+                2001,
+                blockerIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val notificationManager = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+            val alertNotification = NotificationCompat.Builder(ctx, AwareScrollUsageService.ALERT_CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+                .setContentTitle("Your time is up on $targetAppName!")
+                .setContentText("Tap to review boundary or close app.")
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setFullScreenIntent(fullScreenPendingIntent, true)
+                .setAutoCancel(true)
+                .build()
+
+            notificationManager?.notify(AwareScrollUsageService.ALERT_NOTIFICATION_ID, alertNotification)
+        } catch (e: Exception) {
+            Log.e("AwareScroll", "Failed to send fullScreenIntent notification", e)
+        }
+
+        // 4. Also launch Activity directly
+        try {
+            ctx.startActivity(blockerIntent)
+        } catch (e: Exception) {
+            Log.e("AwareScroll", "Failed direct startActivity", e)
+        }
     }
 }

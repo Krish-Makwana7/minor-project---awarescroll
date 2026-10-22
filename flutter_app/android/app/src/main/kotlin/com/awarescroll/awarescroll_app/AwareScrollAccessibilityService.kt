@@ -16,7 +16,7 @@ class AwareScrollAccessibilityService : AccessibilityService() {
 
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             val pkg = event.packageName?.toString() ?: return
-            AwareScrollMonitor.onPackageForegrounded(pkg)
+            AwareScrollMonitor.onAccessibilityWindowStateChanged(pkg)
         }
     }
 

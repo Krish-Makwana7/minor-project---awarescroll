@@ -31,23 +31,35 @@ class MainActivity : FlutterActivity() {
                 }
 
                 "openUsageSettings" -> {
-                    startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                    try {
+                        startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                    } catch (e: Exception) {
+                        startActivity(Intent(Settings.ACTION_SETTINGS))
+                    }
                     result.success(true)
                 }
 
                 "openOverlaySettings" -> {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        val intent = Intent(
-                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                            Uri.parse("package:$packageName")
-                        )
-                        startActivity(intent)
+                        try {
+                            val intent = Intent(
+                                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                Uri.parse("package:$packageName")
+                            )
+                            startActivity(intent)
+                        } catch (e: Exception) {
+                            startActivity(Intent(Settings.ACTION_SETTINGS))
+                        }
                     }
                     result.success(true)
                 }
 
                 "openAccessibilitySettings" -> {
-                    startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    try {
+                        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    } catch (e: Exception) {
+                        startActivity(Intent(Settings.ACTION_SETTINGS))
+                    }
                     result.success(true)
                 }
 
@@ -55,11 +67,13 @@ class MainActivity : FlutterActivity() {
                     val appName = call.argument<String>("appName") ?: "Instagram"
                     val pkgName = call.argument<String>("packageName") ?: "com.instagram.android"
                     val minutes = call.argument<Int>("minutes") ?: 5
+                    val seconds = call.argument<Int>("seconds") ?: (minutes * 60)
 
                     val serviceIntent = Intent(this, AwareScrollUsageService::class.java).apply {
                         putExtra("APP_NAME", appName)
                         putExtra("PACKAGE_NAME", pkgName)
                         putExtra("LIMIT_MINUTES", minutes)
+                        putExtra("LIMIT_SECONDS", seconds)
                     }
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -85,7 +99,8 @@ class MainActivity : FlutterActivity() {
                             "appName" to AwareScrollMonitor.targetAppName,
                             "packageName" to AwareScrollMonitor.targetPackageName,
                             "limitMinutes" to AwareScrollMonitor.limitMinutes,
-                            "elapsedSeconds" to AwareScrollMonitor.elapsedSeconds
+                            "elapsedSeconds" to AwareScrollMonitor.elapsedSeconds,
+                            "isTargetInForeground" to AwareScrollMonitor.isTargetInForeground
                         )
                     )
                 }
@@ -128,6 +143,15 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun hasAccessibilityPermission(): Boolean {
-        return AwareScrollAccessibilityService.instance != null
+        if (AwareScrollAccessibilityService.instance != null) return true
+        return try {
+            val enabledServices = Settings.Secure.getString(
+                contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            ) ?: return false
+            enabledServices.contains(packageName)
+        } catch (e: Exception) {
+            false
+        }
     }
 }

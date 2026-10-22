@@ -40,12 +40,14 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
   static const MethodChannel _channel = MethodChannel('com.awarescroll/restriction');
 
   // Scene 1 State: Selected app & time limit
-  String _selectedAppName = 'Instagram';
-  String _selectedPackage = 'com.instagram.android';
+  String _selectedAppName = 'YouTube';
+  String _selectedPackage = 'com.google.android.youtube';
   int _limitMinutes = 5;
+  int _limitSeconds = 300;
 
   bool _isRestricting = false;
   int _elapsedSeconds = 0;
+  bool _isTargetInForeground = false;
   Timer? _statusTimer;
 
   // Permissions state
@@ -55,16 +57,16 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
 
   final List<Map<String, dynamic>> _targetApps = [
     {
-      'name': 'Instagram',
-      'package': 'com.instagram.android',
-      'icon': Icons.camera_alt,
-      'color': Colors.purple,
-    },
-    {
       'name': 'YouTube',
       'package': 'com.google.android.youtube',
       'icon': Icons.play_circle_fill,
       'color': Colors.red,
+    },
+    {
+      'name': 'Instagram',
+      'package': 'com.instagram.android',
+      'icon': Icons.camera_alt,
+      'color': Colors.purple,
     },
     {
       'name': 'Snapchat',
@@ -86,8 +88,8 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
     _checkPermissions();
     _refreshStatus();
 
-    // Poll status every 2 seconds when app is foregrounded
-    _statusTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+    // Poll status every 1 second when active
+    _statusTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
         _checkPermissions();
         _refreshStatus();
@@ -111,9 +113,7 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
           _hasAccessibility = res['accessibility'] == true;
         });
       }
-    } catch (_) {
-      // Running on non-Android platform or method channel unavailable
-    }
+    } catch (_) {}
   }
 
   Future<void> _refreshStatus() async {
@@ -123,6 +123,7 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
         setState(() {
           _isRestricting = res['isRunning'] == true;
           _elapsedSeconds = (res['elapsedSeconds'] as int?) ?? 0;
+          _isTargetInForeground = res['isTargetInForeground'] == true;
         });
       }
     } catch (_) {}
@@ -136,6 +137,7 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
       setState(() {
         _isRestricting = false;
         _elapsedSeconds = 0;
+        _isTargetInForeground = false;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -143,12 +145,19 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
         );
       }
     } else {
+      // Permission sanity check
+      if (!_hasAccessibility && !_hasUsage) {
+        _showPermissionRequiredDialog();
+        return;
+      }
+
       // Start restriction
       try {
         await _channel.invokeMethod('startRestriction', {
           'appName': _selectedAppName,
           'packageName': _selectedPackage,
           'minutes': _limitMinutes,
+          'seconds': _limitSeconds,
         });
       } catch (_) {}
       setState(() {
@@ -159,11 +168,51 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: const Color(0xFF00B894),
-            content: Text('AwareScroll Active! Guarding $_selectedAppName for $_limitMinutes minutes.'),
+            content: Text('AwareScroll Active! Guarding $_selectedAppName for ${_limitSeconds >= 60 ? "$_limitMinutes min" : "$_limitSeconds sec"}.'),
           ),
         );
       }
     }
+  }
+
+  void _showPermissionRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning, color: Color(0xFFE5484D)),
+            SizedBox(width: 8),
+            Text('Permissions Required', style: TextStyle(fontSize: 16)),
+          ],
+        ),
+        content: Text(
+          'Android will not allow AwareScroll to see when $_selectedAppName is running unless you enable:\n\n'
+          '1. Accessibility Service (Recommended for instant blocking)\n'
+          '2. Usage Access\n'
+          '3. Display Over Other Apps\n\n'
+          'Please enable them to begin tracking.',
+          style: const TextStyle(fontSize: 13, height: 1.3),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _openSettings('openAccessibilitySettings');
+            },
+            child: const Text('Open Accessibility'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF3A5BFF)),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _openSettings('openUsageSettings');
+            },
+            child: const Text('Open Usage Access', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _openSettings(String method) {
@@ -173,12 +222,10 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
   }
 
   void _testRestrictionScreen() {
-    // 1. Try launching native Android overlay blocker
     try {
       _channel.invokeMethod('testBlocker');
     } catch (_) {}
 
-    // 2. Also show in Flutter directly for immediate interactive review
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -216,9 +263,7 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
             Container(
               width: 32,
               height: 32,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-              ),
+              decoration: const BoxDecoration(shape: BoxShape.circle),
               child: ClipOval(
                 child: Image.asset('assets/images/logo.png', fit: BoxFit.cover),
               ),
@@ -232,7 +277,7 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF14152B)),
                 ),
                 Text(
-                  'App Time Boundary & Habit Control',
+                  'Social Media App Restriction & Habit Control',
                   style: TextStyle(fontSize: 10, color: Color(0xFF6B6F8C)),
                 ),
               ],
@@ -243,7 +288,66 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
       body: ListView(
         padding: const EdgeInsets.all(18),
         children: [
-          // Active Monitoring Status Card
+          // Warning Banner if Permissions are completely missing
+          if (!_hasAccessibility && !_hasUsage) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFECEB),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE5484D).withOpacity(0.4)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: Color(0xFFE5484D), size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Detection Permissions Required',
+                        style: TextStyle(color: Color(0xFFE5484D), fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'To detect when you are using $_selectedAppName, Android requires you to turn on Accessibility or Usage Access.',
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF14152B)),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFE5484D),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          onPressed: () => _openSettings('openAccessibilitySettings'),
+                          child: const Text('Enable Accessibility', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF3A5BFF),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          onPressed: () => _openSettings('openUsageSettings'),
+                          child: const Text('Enable Usage Access', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // Active Monitoring Live Card
           if (_isRestricting) ...[
             Container(
               padding: const EdgeInsets.all(16),
@@ -269,20 +373,24 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
                           Container(
                             width: 10,
                             height: 10,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF00B894),
+                            decoration: BoxDecoration(
+                              color: _isTargetInForeground ? const Color(0xFF00B894) : Colors.amber,
                               shape: BoxShape.circle,
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Text(
-                            'RESTRICTION ACTIVE',
-                            style: TextStyle(color: Color(0xFF00B894), fontWeight: FontWeight.bold, fontSize: 11),
+                          Text(
+                            _isTargetInForeground ? 'ACTIVE: $_selectedAppName IN FOREGROUND' : 'GUARDING: WAITING FOR $_selectedAppName',
+                            style: TextStyle(
+                              color: _isTargetInForeground ? const Color(0xFF00B894) : Colors.amber,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                            ),
                           ),
                         ],
                       ),
                       Text(
-                        'Limit: ${_limitMinutes}m',
+                        'Limit: ${_limitSeconds >= 60 ? "$_limitMinutes m" : "$_limitSeconds s"}',
                         style: const TextStyle(color: Color(0xFFFF9F43), fontWeight: FontWeight.bold, fontSize: 12),
                       ),
                     ],
@@ -293,20 +401,33 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
                     style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Open Instagram normally. Once you reach your time limit, AwareScroll will automatically block access.',
-                    style: TextStyle(color: Color(0xFFA0A5BD), fontSize: 12),
+                  Text(
+                    _isTargetInForeground
+                        ? 'Now detecting $_selectedAppName! Time is actively accumulating.'
+                        : 'Open $_selectedAppName normally on your phone. AwareScroll will track and restrict access when the limit is reached.',
+                    style: const TextStyle(color: Color(0xFFA0A5BD), fontSize: 12),
                   ),
                   const SizedBox(height: 12),
                   LinearProgressIndicator(
-                    value: (_elapsedSeconds / (_limitMinutes * 60)).clamp(0.0, 1.0),
+                    value: (_elapsedSeconds / _limitSeconds).clamp(0.0, 1.0),
                     backgroundColor: Colors.white12,
-                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF3A5BFF)),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      _isTargetInForeground ? const Color(0xFF00B894) : const Color(0xFF3A5BFF),
+                    ),
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    'Foreground usage: ${_elapsedSeconds ~/ 60}m ${_elapsedSeconds % 60}s',
-                    style: const TextStyle(color: Colors.white70, fontSize: 11),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Elapsed: ${_elapsedSeconds ~/ 60}m ${_elapsedSeconds % 60}s',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                      Text(
+                        'Limit: ${_limitSeconds ~/ 60}m ${_limitSeconds % 60}s',
+                        style: const TextStyle(color: Colors.white70, fontSize: 11),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -363,11 +484,19 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
 
           Wrap(
             spacing: 8,
-            children: [1, 5, 10, 15, 30].map((min) {
-              final isSel = min == _limitMinutes;
+            runSpacing: 8,
+            children: [
+              {'label': '30s (Fast Test)', 'min': 1, 'sec': 30},
+              {'label': '1 Min (Test)', 'min': 1, 'sec': 60},
+              {'label': '5 Min (Default)', 'min': 5, 'sec': 300},
+              {'label': '10 Mins', 'min': 10, 'sec': 600},
+              {'label': '15 Mins', 'min': 15, 'sec': 900},
+            ].map((item) {
+              final sec = item['sec'] as int;
+              final isSel = sec == _limitSeconds;
               return ChoiceChip(
                 label: Text(
-                  min == 1 ? '1 Min (Test)' : min == 5 ? '5 Min (Default)' : '$min Mins',
+                  item['label'] as String,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
@@ -381,7 +510,12 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(color: isSel ? const Color(0xFF3A5BFF) : const Color(0xFFE2E4F0)),
                 ),
-                onSelected: (_) => setState(() => _limitMinutes = min),
+                onSelected: (_) {
+                  setState(() {
+                    _limitMinutes = item['min'] as int;
+                    _limitSeconds = item['sec'] as int;
+                  });
+                },
               );
             }).toList(),
           ),
@@ -424,28 +558,28 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Android requires Accessibility & Usage access so AwareScroll can track Instagram and show the restriction screen over it.',
+                  'Android requires Accessibility & Usage access so AwareScroll can track YouTube/Instagram and show the restriction screen over it.',
                   style: TextStyle(fontSize: 11, color: Color(0xFF6B6F8C)),
                 ),
                 const SizedBox(height: 12),
 
                 // 1. Accessibility Service
                 _buildPermissionRow(
-                  title: 'Accessibility Service (App Blocker)',
+                  title: 'Accessibility Service (Required for Blocker)',
                   isGranted: _hasAccessibility,
                   onEnable: () => _openSettings('openAccessibilitySettings'),
                 ),
 
                 // 2. Display Over Other Apps
                 _buildPermissionRow(
-                  title: 'Display Over Other Apps (Overlay)',
+                  title: 'Display Over Other Apps (Overlay Window)',
                   isGranted: _hasOverlay,
                   onEnable: () => _openSettings('openOverlaySettings'),
                 ),
 
                 // 3. Usage Access
                 _buildPermissionRow(
-                  title: 'Usage Access (Time Tracker)',
+                  title: 'Usage Access (Foreground Time Tracker)',
                   isGranted: _hasUsage,
                   onEnable: () => _openSettings('openUsageSettings'),
                 ),
@@ -467,8 +601,10 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
               ),
               onPressed: _toggleRestriction,
               child: Text(
-                _isRestricting ? 'STOP RESTRICTION' : 'ACTIVATE RESTRICTION ($_limitMinutes MIN)',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                _isRestricting
+                    ? 'STOP RESTRICTION'
+                    : 'ACTIVATE RESTRICTION FOR $_selectedAppName (${_limitSeconds >= 60 ? "$_limitMinutes MIN" : "$_limitSeconds SEC"})',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
               ),
             ),
           ),
@@ -581,7 +717,7 @@ class _RestrictionModalState extends State<RestrictionModal> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       decoration: const BoxDecoration(
-        color: Color(0xFF14152B), // Dark cosmic background
+        color: Color(0xFF14152B),
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: AnimatedSwitcher(
