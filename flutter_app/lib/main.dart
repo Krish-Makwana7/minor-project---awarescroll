@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const AwareScrollApp());
 }
 
@@ -18,30 +19,35 @@ class AwareScrollApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF8F9FE),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF3A5BFF),
-          primary: const Color(0xFF3A5BFF),
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF0B0D13),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFFE1306C),
+          secondary: Color(0xFF833AB4),
+          surface: Color(0xFF151824),
+          background: Color(0xFF0B0D13),
         ),
+        fontFamily: 'Roboto',
       ),
-      home: const RestrictionHomeScreen(),
+      home: const AwareScrollHomeScreen(),
     );
   }
 }
 
-class RestrictionHomeScreen extends StatefulWidget {
-  const RestrictionHomeScreen({super.key});
+class AwareScrollHomeScreen extends StatefulWidget {
+  const AwareScrollHomeScreen({super.key});
 
   @override
-  State<RestrictionHomeScreen> createState() => _RestrictionHomeScreenState();
+  State<AwareScrollHomeScreen> createState() => _AwareScrollHomeScreenState();
 }
 
-class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
+class _AwareScrollHomeScreenState extends State<AwareScrollHomeScreen> with SingleTickerProviderStateMixin {
   static const MethodChannel _channel = MethodChannel('com.awarescroll/restriction');
 
-  // Scene 1 State: Selected app & time limit
-  String _selectedAppName = 'YouTube';
-  String _selectedPackage = 'com.google.android.youtube';
+  // Instagram target configuration
+  static const String targetAppName = 'Instagram';
+  static const String targetPackage = 'com.instagram.android';
+
   int _limitMinutes = 5;
   int _limitSeconds = 300;
 
@@ -55,58 +61,28 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
   bool _hasOverlay = false;
   bool _hasAccessibility = false;
 
-  final List<Map<String, dynamic>> _targetApps = [
-    {
-      'name': 'YouTube',
-      'package': 'com.google.android.youtube',
-      'icon': Icons.play_circle_fill,
-      'color': Colors.red,
-    },
-    {
-      'name': 'Instagram',
-      'package': 'com.instagram.android',
-      'icon': Icons.camera_alt,
-      'color': Colors.purple,
-    },
-    {
-      'name': 'Snapchat',
-      'package': 'com.snapchat.android',
-      'icon': Icons.chat_bubble,
-      'color': Colors.amber,
-    },
-    {
-      'name': 'Facebook',
-      'package': 'com.facebook.katana',
-      'icon': Icons.facebook,
-      'color': Colors.blue,
-    },
-    {
-      'name': 'Reddit',
-      'package': 'com.reddit.frontpage',
-      'icon': Icons.forum,
-      'color': Colors.deepOrange,
-    },
-    {
-      'name': 'X / Twitter',
-      'package': 'com.twitter.android',
-      'icon': Icons.tag,
-      'color': Colors.black87,
-    },
-    {
-      'name': 'WhatsApp',
-      'package': 'com.whatsapp',
-      'icon': Icons.chat,
-      'color': Colors.teal,
-    },
+  late AnimationController _pulseController;
+
+  final List<Map<String, dynamic>> _limitOptions = [
+    {'label': '30s (Test)', 'min': 1, 'sec': 30},
+    {'label': '1 Min', 'min': 1, 'sec': 60},
+    {'label': '5 Min', 'min': 5, 'sec': 300},
+    {'label': '10 Min', 'min': 10, 'sec': 600},
+    {'label': '15 Min', 'min': 15, 'sec': 900},
+    {'label': '30 Min', 'min': 30, 'sec': 1800},
   ];
 
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+
     _checkPermissions();
     _refreshStatus();
 
-    // Poll status every 1 second when active
     _statusTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
         _checkPermissions();
@@ -118,6 +94,7 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
   @override
   void dispose() {
     _statusTimer?.cancel();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -159,21 +136,22 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('AwareScroll restriction stopped.')),
+          const SnackBar(
+            backgroundColor: Color(0xFF1F2333),
+            content: Text('AwareScroll Guard deactivated.'),
+          ),
         );
       }
     } else {
-      // Permission sanity check
       if (!_hasAccessibility && !_hasUsage) {
         _showPermissionRequiredDialog();
         return;
       }
 
-      // Start restriction
       try {
         await _channel.invokeMethod('startRestriction', {
-          'appName': _selectedAppName,
-          'packageName': _selectedPackage,
+          'appName': targetAppName,
+          'packageName': targetPackage,
           'minutes': _limitMinutes,
           'seconds': _limitSeconds,
         });
@@ -185,8 +163,11 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: const Color(0xFF00B894),
-            content: Text('AwareScroll Active! Guarding $_selectedAppName for ${_limitSeconds >= 60 ? "$_limitMinutes min" : "$_limitSeconds sec"}.'),
+            backgroundColor: const Color(0xFF00E676),
+            content: Text(
+              'AwareScroll is actively guarding Instagram (${_limitSeconds >= 60 ? "$_limitMinutes min" : "$_limitSeconds sec"}).',
+              style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+            ),
           ),
         );
       }
@@ -197,20 +178,21 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF151824),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Row(
           children: [
-            Icon(Icons.warning, color: Color(0xFFE5484D)),
-            SizedBox(width: 8),
-            Text('Permissions Required', style: TextStyle(fontSize: 16)),
+            Icon(Icons.shield_outlined, color: Color(0xFFE1306C)),
+            SizedBox(width: 10),
+            Text('Permissions Needed', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ],
         ),
-        content: Text(
-          'Android will not allow AwareScroll to see when $_selectedAppName is running unless you enable:\n\n'
-          '1. Accessibility Service (Recommended for instant blocking)\n'
+        content: const Text(
+          'To detect when Instagram opens and present the restriction screen upon limit expiry, please enable:\n\n'
+          '1. Accessibility Service (Real-time blocker)\n'
           '2. Usage Access\n'
-          '3. Display Over Other Apps\n\n'
-          'Please enable them to begin tracking.',
-          style: const TextStyle(fontSize: 13, height: 1.3),
+          '3. Display Over Other Apps',
+          style: TextStyle(fontSize: 13, height: 1.4, color: Color(0xFFB0B7C3)),
         ),
         actions: [
           TextButton(
@@ -218,15 +200,18 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
               Navigator.pop(ctx);
               _openSettings('openAccessibilitySettings');
             },
-            child: const Text('Open Accessibility'),
+            child: const Text('Accessibility Settings', style: TextStyle(color: Color(0xFF833AB4))),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF3A5BFF)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE1306C),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
             onPressed: () {
               Navigator.pop(ctx);
               _openSettings('openUsageSettings');
             },
-            child: const Text('Open Usage Access', style: TextStyle(color: Colors.white)),
+            child: const Text('Usage Access', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -239,101 +224,6 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
     } catch (_) {}
   }
 
-  Future<void> _showAppPickerDialog() async {
-    List<Map<String, String>> installed = [];
-    try {
-      final res = await _channel.invokeMethod<List>('getInstalledApps');
-      if (res != null) {
-        installed = res.map((item) => Map<String, String>.from(item as Map)).toList();
-      }
-    } catch (_) {}
-
-    if (!mounted) return;
-
-    if (installed.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not fetch installed apps list.')),
-      );
-      return;
-    }
-
-    String search = '';
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final filtered = installed.where((a) {
-              final name = a['name']?.toLowerCase() ?? '';
-              final pkg = a['package']?.toLowerCase() ?? '';
-              return name.contains(search.toLowerCase()) || pkg.contains(search.toLowerCase());
-            }).toList();
-
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.75,
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Select Any Installed App', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  const Text('Pick any application on your device to restrict its usage.', style: TextStyle(fontSize: 12, color: Color(0xFF6B6F8C))),
-                  const SizedBox(height: 12),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Search apps...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    ),
-                    onChanged: (val) {
-                      setModalState(() => search = val);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: filtered.length,
-                      itemBuilder: (context, index) {
-                        final app = filtered[index];
-                        final name = app['name'] ?? '';
-                        final pkg = app['package'] ?? '';
-                        final isSel = pkg == _selectedPackage;
-
-                        return ListTile(
-                          leading: const CircleAvatar(
-                            backgroundColor: Color(0xFFF0F2FA),
-                            child: Icon(Icons.android, color: Color(0xFF3A5BFF), size: 20),
-                          ),
-                          title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                          subtitle: Text(pkg, style: const TextStyle(fontSize: 11, color: Color(0xFF6B6F8C))),
-                          trailing: isSel
-                              ? const Icon(Icons.check_circle, color: Color(0xFF3A5BFF))
-                              : null,
-                          onTap: () {
-                            setState(() {
-                              _selectedAppName = name;
-                              _selectedPackage = pkg;
-                            });
-                            Navigator.pop(ctx);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
   void _testRestrictionScreen() {
     try {
       _channel.invokeMethod('testBlocker');
@@ -344,7 +234,7 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => RestrictionModal(
-        appName: _selectedAppName,
+        appName: targetAppName,
         limitMinutes: _limitMinutes,
         onCloseApp: () {
           Navigator.pop(ctx);
@@ -354,8 +244,11 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
           Navigator.pop(ctx);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              backgroundColor: const Color(0xFF00B894),
-              content: Text('$extensionMin-minute extension granted. Use it mindfully!'),
+              backgroundColor: const Color(0xFF00E676),
+              content: Text(
+                '$extensionMin-minute extension granted. Scroll mindfully!',
+                style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+              ),
             ),
           );
         },
@@ -363,472 +256,650 @@ class _RestrictionHomeScreenState extends State<RestrictionHomeScreen> {
     );
   }
 
+  String _formatTime(int sec) {
+    final m = sec ~/ 60;
+    final s = sec % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final permissionsAllGranted = _hasUsage && _hasOverlay && _hasAccessibility;
+    final double progress = (_elapsedSeconds / _limitSeconds).clamp(0.0, 1.0);
+    final bool allPermissionsGranted = _hasUsage && _hasOverlay && _hasAccessibility;
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: const BoxDecoration(shape: BoxShape.circle),
-              child: ClipOval(
-                child: Image.asset('assets/images/logo.png', fit: BoxFit.cover),
-              ),
-            ),
-            const SizedBox(width: 10),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'AwareScroll',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF14152B)),
-                ),
-                Text(
-                  'Social Media App Restriction & Habit Control',
-                  style: TextStyle(fontSize: 10, color: Color(0xFF6B6F8C)),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(18),
-        children: [
-          // Warning Banner if Permissions are completely missing
-          if (!_hasAccessibility && !_hasUsage) ...[
-            Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFECEB),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE5484D).withOpacity(0.4)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.warning_amber_rounded, color: Color(0xFFE5484D), size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'Detection Permissions Required',
-                        style: TextStyle(color: Color(0xFFE5484D), fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'To detect when you are using $_selectedAppName, Android requires you to turn on Accessibility or Usage Access.',
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF14152B)),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE5484D),
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                          ),
-                          onPressed: () => _openSettings('openAccessibilitySettings'),
-                          child: const Text('Enable Accessibility', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF3A5BFF),
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                          ),
-                          onPressed: () => _openSettings('openUsageSettings'),
-                          child: const Text('Enable Usage Access', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          // Active Monitoring Live Card
-          if (_isRestricting) ...[
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF14152B),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF3A5BFF).withOpacity(0.2),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: _isTargetInForeground ? const Color(0xFF00B894) : Colors.amber,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _isTargetInForeground ? 'ACTIVE: $_selectedAppName IN FOREGROUND' : 'GUARDING: WAITING FOR $_selectedAppName',
-                            style: TextStyle(
-                              color: _isTargetInForeground ? const Color(0xFF00B894) : Colors.amber,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        'Limit: ${_limitSeconds >= 60 ? "$_limitMinutes m" : "$_limitSeconds s"}',
-                        style: const TextStyle(color: Color(0xFFFF9F43), fontWeight: FontWeight.bold, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Guarding $_selectedAppName',
-                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _isTargetInForeground
-                        ? 'Now detecting $_selectedAppName! Time is actively accumulating.'
-                        : 'Open $_selectedAppName normally on your phone. AwareScroll will track and restrict access when the limit is reached.',
-                    style: const TextStyle(color: Color(0xFFA0A5BD), fontSize: 12),
-                  ),
-                  const SizedBox(height: 12),
-                  LinearProgressIndicator(
-                    value: (_elapsedSeconds / _limitSeconds).clamp(0.0, 1.0),
-                    backgroundColor: Colors.white12,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      _isTargetInForeground ? const Color(0xFF00B894) : const Color(0xFF3A5BFF),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Elapsed: ${_elapsedSeconds ~/ 60}m ${_elapsedSeconds % 60}s',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                      ),
-                      Text(
-                        'Limit: ${_limitSeconds ~/ 60}m ${_limitSeconds % 60}s',
-                        style: const TextStyle(color: Colors.white70, fontSize: 11),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
-          ],
-
-          // Step 1: Select Application
-          const Text('1. Select Application to Restrict', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-          const SizedBox(height: 4),
-          const Text('Choose the app where scrolling habits need to be controlled.', style: TextStyle(fontSize: 12, color: Color(0xFF6B6F8C))),
-          const SizedBox(height: 10),
-
-          ..._targetApps.map((app) {
-            final isSelected = app['name'] == _selectedAppName;
-            return Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              elevation: isSelected ? 1.5 : 0.2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: BorderSide(
-                  color: isSelected ? const Color(0xFF3A5BFF) : const Color(0xFFE2E4F0),
-                  width: isSelected ? 1.8 : 1,
-                ),
-              ),
-              color: Colors.white,
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: (app['color'] as Color).withOpacity(0.12),
-                  child: Icon(app['icon'] as IconData, color: app['color'] as Color, size: 22),
-                ),
-                title: Text(app['name'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                subtitle: Text(app['package'] as String, style: const TextStyle(fontSize: 11, color: Color(0xFF6B6F8C))),
-                trailing: isSelected
-                    ? const Icon(Icons.check_circle, color: Color(0xFF3A5BFF))
-                    : const Icon(Icons.radio_button_unchecked, color: Colors.grey),
-                onTap: () {
-                  setState(() {
-                    _selectedAppName = app['name'] as String;
-                    _selectedPackage = app['package'] as String;
-                  });
-                },
-              ),
-            );
-          }),
-
-          // If user picked a custom app not in default presets:
-          if (!_targetApps.any((a) => a['package'] == _selectedPackage)) ...[
-            Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: const BorderSide(color: Color(0xFF3A5BFF), width: 2),
-              ),
-              color: Colors.white,
-              child: ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFE8EBFF),
-                  child: Icon(Icons.android, color: Color(0xFF3A5BFF)),
-                ),
-                title: Text(_selectedAppName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                subtitle: Text(_selectedPackage, style: const TextStyle(fontSize: 11, color: Color(0xFF6B6F8C))),
-                trailing: const Icon(Icons.check_circle, color: Color(0xFF3A5BFF)),
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 6),
-
-          // Choose Any Other App on Phone Button
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                side: const BorderSide(color: Color(0xFF3A5BFF)),
-              ),
-              icon: const Icon(Icons.apps, color: Color(0xFF3A5BFF), size: 18),
-              label: const Text(
-                '+ Choose Any Other App on My Phone',
-                style: TextStyle(color: Color(0xFF3A5BFF), fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-              onPressed: _showAppPickerDialog,
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Step 2: Set Time Limit
-          const Text('2. Set Usage Time Limit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-          const SizedBox(height: 4),
-          const Text('The restriction screen appears the moment you reach this limit.', style: TextStyle(fontSize: 12, color: Color(0xFF6B6F8C))),
-          const SizedBox(height: 10),
-
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              {'label': '30s (Fast Test)', 'min': 1, 'sec': 30},
-              {'label': '1 Min (Test)', 'min': 1, 'sec': 60},
-              {'label': '5 Min (Default)', 'min': 5, 'sec': 300},
-              {'label': '10 Mins', 'min': 10, 'sec': 600},
-              {'label': '15 Mins', 'min': 15, 'sec': 900},
-            ].map((item) {
-              final sec = item['sec'] as int;
-              final isSel = sec == _limitSeconds;
-              return ChoiceChip(
-                label: Text(
-                  item['label'] as String,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    color: isSel ? Colors.white : const Color(0xFF14152B),
-                  ),
-                ),
-                selected: isSel,
-                selectedColor: const Color(0xFF3A5BFF),
-                backgroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: isSel ? const Color(0xFF3A5BFF) : const Color(0xFFE2E4F0)),
-                ),
-                onSelected: (_) {
-                  setState(() {
-                    _limitMinutes = item['min'] as int;
-                    _limitSeconds = item['sec'] as int;
-                  });
-                },
-              );
-            }).toList(),
-          ),
-
-          const SizedBox(height: 20),
-
-          // Step 3: Required Android Permissions
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E4F0)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            // Top App Bar
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Android System Permissions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: permissionsAllGranted
-                            ? const Color(0xFF00B894).withOpacity(0.12)
-                            : const Color(0xFFFF9F43).withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        permissionsAllGranted ? 'READY' : 'SETUP NEEDED',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: permissionsAllGranted ? const Color(0xFF00B894) : const Color(0xFFFF9F43),
+                    Row(
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white12, width: 1.5),
+                          ),
+                          child: ClipOval(
+                            child: Image.asset('assets/images/logo.png', fit: BoxFit.cover),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'AwareScroll',
+                              style: TextStyle(
+                                fontSize: 19,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.2,
+                                color: Colors.white,
+                              ),
+                            ),
+                            Text(
+                              'Mindful Instagram Habit Control',
+                              style: TextStyle(fontSize: 11, color: Color(0xFF7E869E)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    // Permissions Pill Indicator
+                    GestureDetector(
+                      onTap: () {
+                        if (!allPermissionsGranted) _showPermissionRequiredDialog();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: allPermissionsGranted
+                              ? const Color(0xFF00E676).withOpacity(0.12)
+                              : const Color(0xFFFFB300).withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: allPermissionsGranted
+                                ? const Color(0xFF00E676).withOpacity(0.4)
+                                : const Color(0xFFFFB300).withOpacity(0.4),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              allPermissionsGranted ? Icons.check_circle : Icons.warning_amber_rounded,
+                              size: 14,
+                              color: allPermissionsGranted ? const Color(0xFF00E676) : const Color(0xFFFFB300),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              allPermissionsGranted ? 'Shield Active' : 'Setup Needed',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: allPermissionsGranted ? const Color(0xFF00E676) : const Color(0xFFFFB300),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Android requires Accessibility & Usage access so AwareScroll can track YouTube/Instagram and show the restriction screen over it.',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF6B6F8C)),
-                ),
-                const SizedBox(height: 12),
-
-                // 1. Accessibility Service
-                _buildPermissionRow(
-                  title: 'Accessibility Service (Required for Blocker)',
-                  isGranted: _hasAccessibility,
-                  onEnable: () => _openSettings('openAccessibilitySettings'),
-                ),
-
-                // 2. Display Over Other Apps
-                _buildPermissionRow(
-                  title: 'Display Over Other Apps (Overlay Window)',
-                  isGranted: _hasOverlay,
-                  onEnable: () => _openSettings('openOverlaySettings'),
-                ),
-
-                // 3. Usage Access
-                _buildPermissionRow(
-                  title: 'Usage Access (Foreground Time Tracker)',
-                  isGranted: _hasUsage,
-                  onEnable: () => _openSettings('openUsageSettings'),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Primary Action: ACTIVATE / STOP
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _isRestricting ? const Color(0xFFE5484D) : const Color(0xFF3A5BFF),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                elevation: 1,
-              ),
-              onPressed: _toggleRestriction,
-              child: Text(
-                _isRestricting
-                    ? 'STOP RESTRICTION'
-                    : 'ACTIVATE RESTRICTION FOR $_selectedAppName (${_limitSeconds >= 60 ? "$_limitMinutes MIN" : "$_limitSeconds SEC"})',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
               ),
             ),
-          ),
 
-          const SizedBox(height: 10),
+            // Instagram Hero Guard Card
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF1E2235),
+                        Color(0xFF131622),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: _isRestricting ? const Color(0xFFE1306C).withOpacity(0.5) : const Color(0xFF262A3D),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _isRestricting
+                            ? const Color(0xFFE1306C).withOpacity(0.15)
+                            : Colors.black.withOpacity(0.4),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    children: [
+                      // Header Row: Instagram Branding + Live Status
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              // Instagram Gradient Icon
+                              Container(
+                                width: 52,
+                                height: 52,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF833AB4),
+                                      Color(0xFFFD1D1D),
+                                      Color(0xFFFCB045),
+                                    ],
+                                    begin: Alignment.bottomLeft,
+                                    end: Alignment.topRight,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFFD1D1D).withOpacity(0.3),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 28),
+                              ),
+                              const SizedBox(width: 14),
+                              const Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Instagram',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  Text(
+                                    targetPackage,
+                                    style: TextStyle(fontSize: 11, color: Color(0xFF7E869E)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
 
-          // Test Blocker Directly
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                side: const BorderSide(color: Color(0xFFE2E4F0)),
+                          // Live Badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: _isRestricting
+                                  ? (_isTargetInForeground
+                                      ? const Color(0xFF00E676).withOpacity(0.16)
+                                      : const Color(0xFFFFB300).withOpacity(0.16))
+                                  : Colors.white.withOpacity(0.06),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: _isRestricting
+                                    ? (_isTargetInForeground
+                                        ? const Color(0xFF00E676).withOpacity(0.5)
+                                        : const Color(0xFFFFB300).withOpacity(0.5))
+                                    : Colors.white12,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                if (_isRestricting)
+                                  AnimatedBuilder(
+                                    animation: _pulseController,
+                                    builder: (context, child) {
+                                      return Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: (_isTargetInForeground
+                                                  ? const Color(0xFF00E676)
+                                                  : const Color(0xFFFFB300))
+                                              .withOpacity(0.4 + (_pulseController.value * 0.6)),
+                                        ),
+                                      );
+                                    },
+                                  )
+                                else
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white38,
+                                    ),
+                                  ),
+                                const SizedBox(width: 7),
+                                Text(
+                                  _isRestricting
+                                      ? (_isTargetInForeground ? 'SCROLLING' : 'GUARDING')
+                                      : 'STANDBY',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                    color: _isRestricting
+                                        ? (_isTargetInForeground
+                                            ? const Color(0xFF00E676)
+                                            : const Color(0xFFFFB300))
+                                        : Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 28),
+
+                      // Time Display & Radial Ring
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F111A),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFF1E2333)),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('ELAPSED TIME', style: TextStyle(fontSize: 10, letterSpacing: 0.8, color: Color(0xFF7E869E))),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _formatTime(_elapsedSeconds),
+                                      style: TextStyle(
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.bold,
+                                        color: _isRestricting && _isTargetInForeground ? const Color(0xFF00E676) : Colors.white,
+                                        fontFamily: 'monospace',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Container(
+                                  height: 36,
+                                  width: 1,
+                                  color: Colors.white12,
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    const Text('TIME LIMIT', style: TextStyle(fontSize: 10, letterSpacing: 0.8, color: Color(0xFF7E869E))),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _formatTime(_limitSeconds),
+                                      style: const TextStyle(
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFFFFB300),
+                                        fontFamily: 'monospace',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 18),
+
+                            // Progress Bar
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Stack(
+                                children: [
+                                  Container(height: 8, color: const Color(0xFF1B1F2D)),
+                                  FractionallySizedBox(
+                                    widthFactor: progress,
+                                    child: Container(
+                                      height: 8,
+                                      decoration: const BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Color(0xFF833AB4),
+                                            Color(0xFFFD1D1D),
+                                            Color(0xFFFCB045),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 10),
+
+                            Text(
+                              _isRestricting
+                                  ? (_isTargetInForeground
+                                      ? '⚡ Instagram is open! Timer is actively accumulating.'
+                                      : '⏳ Open Instagram anytime. The blocker will trigger at the limit.')
+                                  : 'Tap "Guard Instagram" below to lock your scrolling boundary.',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(fontSize: 11, color: Color(0xFF949DB5)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              icon: const Icon(Icons.preview, size: 18, color: Color(0xFF3A5BFF)),
-              label: const Text(
-                'Test Restriction Screen Now',
-                style: TextStyle(color: Color(0xFF3A5BFF), fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-              onPressed: _testRestrictionScreen,
             ),
-          ),
-          const SizedBox(height: 20),
-        ],
+
+            // Time Limit Preset Selector
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.timer_outlined, size: 16, color: Color(0xFFE1306C)),
+                        SizedBox(width: 8),
+                        Text(
+                          'Select Usage Limit',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Access will be blocked the instant this threshold is reached.',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF7E869E)),
+                    ),
+                    const SizedBox(height: 14),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: _limitOptions.map((opt) {
+                        final sec = opt['sec'] as int;
+                        final isSel = sec == _limitSeconds;
+                        return InkWell(
+                          onTap: () {
+                            setState(() {
+                              _limitMinutes = opt['min'] as int;
+                              _limitSeconds = opt['sec'] as int;
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: isSel ? const Color(0xFFE1306C) : const Color(0xFF151824),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isSel ? const Color(0xFFE1306C) : const Color(0xFF262B3D),
+                                width: 1.2,
+                              ),
+                              boxShadow: isSel
+                                  ? [
+                                      BoxShadow(
+                                        color: const Color(0xFFE1306C).withOpacity(0.3),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Text(
+                              opt['label'] as String,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
+                                color: isSel ? Colors.white : const Color(0xFFB0B7C3),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // System Permissions (Clean Accordion/List)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                child: Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF131622),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFF202538)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.lock_clock_outlined, size: 16, color: Color(0xFF00E676)),
+                              SizedBox(width: 8),
+                              Text(
+                                'Android Guard Permissions',
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
+                            ],
+                          ),
+                          Text('3 Required', style: TextStyle(fontSize: 11, color: Color(0xFF7E869E))),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      _buildPermissionItem(
+                        title: 'Accessibility Service',
+                        subtitle: 'Instant blocker screen trigger',
+                        isGranted: _hasAccessibility,
+                        onEnable: () => _openSettings('openAccessibilitySettings'),
+                      ),
+                      const Divider(color: Color(0xFF1E2335), height: 16),
+                      _buildPermissionItem(
+                        title: 'Usage Access',
+                        subtitle: 'Accurate foreground app tracking',
+                        isGranted: _hasUsage,
+                        onEnable: () => _openSettings('openUsageSettings'),
+                      ),
+                      const Divider(color: Color(0xFF1E2335), height: 16),
+                      _buildPermissionItem(
+                        title: 'Display Over Other Apps',
+                        subtitle: 'Draw restriction screen over Instagram',
+                        isGranted: _hasOverlay,
+                        onEnable: () => _openSettings('openOverlaySettings'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Hero Action Buttons
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+                child: Column(
+                  children: [
+                    // Primary CTA: Start / Stop Guard
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                          elevation: 0,
+                        ),
+                        onPressed: _toggleRestriction,
+                        child: Ink(
+                          decoration: BoxDecoration(
+                            gradient: _isRestricting
+                                ? const LinearGradient(colors: [Color(0xFFE5484D), Color(0xFFD32F2F)])
+                                : const LinearGradient(
+                                    colors: [
+                                      Color(0xFF833AB4),
+                                      Color(0xFFFD1D1D),
+                                      Color(0xFFFCB045),
+                                    ],
+                                  ),
+                            borderRadius: BorderRadius.circular(18),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _isRestricting
+                                    ? const Color(0xFFE5484D).withOpacity(0.4)
+                                    : const Color(0xFFE1306C).withOpacity(0.4),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Container(
+                            alignment: Alignment.center,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  _isRestricting ? Icons.stop_circle_outlined : Icons.shield_rounded,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  _isRestricting
+                                      ? 'STOP GUARDING INSTAGRAM'
+                                      : 'GUARD INSTAGRAM (${_limitSeconds >= 60 ? "$_limitMinutes MIN" : "$_limitSeconds SEC"})',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Preview Restriction Screen
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          side: const BorderSide(color: Color(0xFF262B3D)),
+                          backgroundColor: const Color(0xFF131622),
+                        ),
+                        icon: const Icon(Icons.remove_red_eye_outlined, size: 18, color: Color(0xFFE1306C)),
+                        label: const Text(
+                          'Preview Restriction Blocker',
+                          style: TextStyle(
+                            color: Color(0xFFE1306C),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                        onPressed: _testRestrictionScreen,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildPermissionRow({
+  Widget _buildPermissionItem({
     required String title,
+    required String subtitle,
     required bool isGranted,
     required VoidCallback onEnable,
   }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Icon(
-                isGranted ? Icons.check_circle : Icons.error_outline,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isGranted ? const Color(0xFF00E676).withOpacity(0.12) : const Color(0xFFFFB300).withOpacity(0.12),
+              ),
+              child: Icon(
+                isGranted ? Icons.check : Icons.priority_high,
                 size: 16,
-                color: isGranted ? const Color(0xFF00B894) : const Color(0xFFFF9F43),
+                color: isGranted ? const Color(0xFF00E676) : const Color(0xFFFFB300),
               ),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isGranted ? FontWeight.w500 : FontWeight.bold,
-                  color: const Color(0xFF14152B),
-                ),
-              ),
-            ],
-          ),
-          if (!isGranted)
-            TextButton(
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              onPressed: onEnable,
-              child: const Text('Enable', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
             ),
-        ],
-      ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                Text(
+                  subtitle,
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF7E869E)),
+                ),
+              ],
+            ),
+          ],
+        ),
+        if (!isGranted)
+          TextButton(
+            style: TextButton.styleFrom(
+              backgroundColor: const Color(0xFF1E2335),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: onEnable,
+            child: const Text(
+              'Enable',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFE1306C)),
+            ),
+          )
+        else
+          const Text('Granted', style: TextStyle(fontSize: 11, color: Color(0xFF00E676), fontWeight: FontWeight.w500)),
+      ],
     );
   }
 }
@@ -855,7 +926,7 @@ class RestrictionModal extends StatefulWidget {
 }
 
 class _RestrictionModalState extends State<RestrictionModal> {
-  int _step = 0; // 0: Scene 3 (Close vs Continue), 1: Scene 4 (Follow-up Question)
+  int _step = 0; // 0: Scene 3 (Close vs Continue), 1: Scene 4 (Conscious Question)
   String _selectedReason = 'Interesting content';
 
   final List<String> _reasons = [
@@ -870,10 +941,11 @@ class _RestrictionModalState extends State<RestrictionModal> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+      padding: const EdgeInsets.fromLTRB(24, 28, 24, 34),
       decoration: const BoxDecoration(
-        color: Color(0xFF14152B),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        color: Color(0xFF131622),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        border: Border(top: BorderSide(color: Color(0xFF262B3D), width: 1.5)),
       ),
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 250),
@@ -888,74 +960,91 @@ class _RestrictionModalState extends State<RestrictionModal> {
       key: const ValueKey(0),
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Badge
+        // Top handle indicator
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+          width: 38,
+          height: 4,
+          margin: const EdgeInsets.only(bottom: 24),
+          decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+        ),
+
+        // Glowing Expiry Badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           decoration: BoxDecoration(
-            color: const Color(0xFFFF9F43).withOpacity(0.18),
-            borderRadius: BorderRadius.circular(14),
+            color: const Color(0xFFFFB300).withOpacity(0.15),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.4)),
           ),
           child: Text(
             '${widget.limitMinutes.toString().padLeft(2, '0')}:00 LIMIT REACHED',
-            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF9F43), fontSize: 11),
+            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFFB300), fontSize: 11, letterSpacing: 0.8),
           ),
         ),
-        const SizedBox(height: 18),
 
-        // Main Question
+        const SizedBox(height: 20),
+
+        // Mandatory Headline
         const Text(
           'Your time is up! What would you like to do?',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            height: 1.25,
-          ),
           textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white, height: 1.3),
         ),
+
         const SizedBox(height: 10),
 
         Text(
-          'You configured a ${widget.limitMinutes}-minute limit for ${widget.appName}.\nTake a mindful pause before deciding.',
-          style: const TextStyle(fontSize: 13, color: Color(0xFFA0A5BD), height: 1.3),
+          'You configured a ${widget.limitMinutes}-minute limit for ${widget.appName}.\nTake a conscious breath and decide your next action.',
           textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 13, color: Color(0xFF8E97B0), height: 1.4),
         ),
-        const SizedBox(height: 28),
 
-        // Option 1: Close App
+        const SizedBox(height: 32),
+
+        // Option 1: Close App (Primary Action)
         SizedBox(
           width: double.infinity,
           height: 52,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3A5BFF),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              backgroundColor: const Color(0xFFE1306C),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 4,
+              shadowColor: const Color(0xFFE1306C).withOpacity(0.4),
             ),
             onPressed: widget.onCloseApp,
-            child: Text(
-              'Close ${widget.appName}',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.exit_to_app_rounded, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Close App',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ],
             ),
           ),
         ),
+
         const SizedBox(height: 12),
 
-        // Option 2: Continue
+        // Option 2: Continue (Triggers Follow-Up Question)
         SizedBox(
           width: double.infinity,
-          height: 48,
+          height: 50,
           child: OutlinedButton(
             style: OutlinedButton.styleFrom(
-              backgroundColor: const Color(0xFF1C1E3A),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              side: const BorderSide(color: Color(0xFF2E335B)),
+              backgroundColor: const Color(0xFF1E2235),
+              side: const BorderSide(color: Color(0xFF2E3550)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             onPressed: () {
               setState(() => _step = 1);
             },
             child: const Text(
               'Continue',
-              style: TextStyle(color: Color(0xFFCBD0E2), fontSize: 14, fontWeight: FontWeight.w600),
+              style: TextStyle(color: Color(0xFFCFD5E8), fontWeight: FontWeight.w600, fontSize: 15),
             ),
           ),
         ),
@@ -963,98 +1052,138 @@ class _RestrictionModalState extends State<RestrictionModal> {
     );
   }
 
-  // Scene 4: Follow-up question asking user to consciously reconsider
+  // Scene 4: Follow-up Question
   Widget _buildScene4FollowUp() {
     return Column(
       key: const ValueKey(1),
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Top handle indicator
         Center(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            width: 38,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 20),
+            decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+          ),
+        ),
+
+        // Conscious Reflection Tag
+        Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
             decoration: BoxDecoration(
-              color: const Color(0xFF00B894).withOpacity(0.18),
-              borderRadius: BorderRadius.circular(12),
+              color: const Color(0xFF00E676).withOpacity(0.14),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFF00E676).withOpacity(0.35)),
             ),
             child: const Text(
               'CONSCIOUS RECONSIDERATION',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF00B894), fontSize: 10),
+              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF00E676), fontSize: 10, letterSpacing: 0.8),
             ),
           ),
         ),
-        const SizedBox(height: 14),
 
-        const Center(
-          child: Text(
-            'What most influenced your decision to continue scrolling?',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white, height: 1.25),
-            textAlign: TextAlign.center,
-          ),
-        ),
-        const SizedBox(height: 6),
-
-        const Center(
-          child: Text(
-            'Please select an answer to confirm your continuation.',
-            style: TextStyle(fontSize: 12, color: Color(0xFFA0A5BD)),
-          ),
-        ),
         const SizedBox(height: 16),
 
+        // Follow-Up Question
+        const Text(
+          'What most influenced your decision to continue scrolling?',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: Colors.white, height: 1.3),
+        ),
+
+        const SizedBox(height: 6),
+
+        const Text(
+          'Acknowledge your trigger before continuing.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 12, color: Color(0xFF7E869E)),
+        ),
+
+        const SizedBox(height: 20),
+
+        // Options List
         ..._reasons.map((reason) {
           final isSelected = reason == _selectedReason;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedReason = reason),
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF29357A) : const Color(0xFF1C1E3A),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isSelected ? const Color(0xFF3A5BFF) : const Color(0xFF252847),
-                  width: isSelected ? 1.5 : 1,
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: InkWell(
+              onTap: () {
+                setState(() => _selectedReason = reason);
+              },
+              borderRadius: BorderRadius.circular(14),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFFE1306C).withOpacity(0.18) : const Color(0xFF1B1F30),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isSelected ? const Color(0xFFE1306C) : const Color(0xFF262C42),
+                    width: isSelected ? 1.5 : 1,
+                  ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                    color: isSelected ? const Color(0xFF3A5BFF) : Colors.grey,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    reason,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isSelected ? Colors.white : const Color(0xFF8E94B3),
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                child: Row(
+                  children: [
+                    Icon(
+                      isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                      color: isSelected ? const Color(0xFFE1306C) : const Color(0xFF6B728D),
+                      size: 20,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        reason,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected ? Colors.white : const Color(0xFFC5CBE0),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
         }),
 
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
 
+        // Confirm & Continue Button
         SizedBox(
-          width: double.infinity,
-          height: 50,
+          height: 52,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00B894),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              backgroundColor: const Color(0xFF00E676),
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 4,
+              shadowColor: const Color(0xFF00E676).withOpacity(0.3),
             ),
             onPressed: () {
               widget.onContinueGranted(5);
             },
             child: const Text(
               'Confirm & Continue (5 min extension)',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        // Back to Close App
+        Center(
+          child: TextButton(
+            onPressed: () {
+              setState(() => _step = 0);
+            },
+            child: const Text(
+              'Back',
+              style: TextStyle(color: Color(0xFF7E869E), fontSize: 13),
             ),
           ),
         ),

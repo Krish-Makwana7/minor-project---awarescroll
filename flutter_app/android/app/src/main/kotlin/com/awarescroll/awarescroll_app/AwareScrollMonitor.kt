@@ -11,8 +11,8 @@ import androidx.core.app.NotificationCompat
 
 object AwareScrollMonitor {
     @Volatile var isRunning = false
-    @Volatile var targetAppName = "YouTube"
-    @Volatile var targetPackageName = "com.google.android.youtube"
+    @Volatile var targetAppName = "Instagram"
+    @Volatile var targetPackageName = "com.instagram.android"
     @Volatile var limitMinutes = 5
     @Volatile var targetTotalSeconds = 300
     @Volatile var elapsedSeconds = 0

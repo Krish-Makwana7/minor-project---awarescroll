@@ -27,7 +27,7 @@ class AwareScrollBlockerActivity : Activity() {
         container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            setBackgroundColor(Color.parseColor("#14152B")) // Dark cosmic background
+            setBackgroundColor(Color.parseColor("#0B0D13")) // Deep obsidian background
             setPadding(dpToPx(24), dpToPx(32), dpToPx(24), dpToPx(32))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -105,8 +105,8 @@ class AwareScrollBlockerActivity : Activity() {
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
             typeface = Typeface.DEFAULT_BOLD
             background = GradientDrawable().apply {
-                setColor(Color.parseColor("#3A5BFF")) // Primary brand blue
-                cornerRadius = dpToPx(14).toFloat()
+                setColor(Color.parseColor("#E1306C")) // Instagram berry pink
+                cornerRadius = dpToPx(16).toFloat()
             }
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -129,9 +129,9 @@ class AwareScrollBlockerActivity : Activity() {
             setTextColor(Color.parseColor("#CBD0E2"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
             background = GradientDrawable().apply {
-                setColor(Color.parseColor("#1C1E3A"))
-                setStroke(dpToPx(1), Color.parseColor("#2E335B"))
-                cornerRadius = dpToPx(14).toFloat()
+                setColor(Color.parseColor("#1B1F30"))
+                setStroke(dpToPx(1), Color.parseColor("#2E3550"))
+                cornerRadius = dpToPx(16).toFloat()
             }
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -239,9 +239,9 @@ class AwareScrollBlockerActivity : Activity() {
                     optionViews[j].apply {
                         setTextColor(if (isSel) Color.WHITE else Color.parseColor("#8E94B3"))
                         background = GradientDrawable().apply {
-                            setColor(if (isSel) Color.parseColor("#29357A") else Color.parseColor("#1C1E3A"))
-                            setStroke(dpToPx(1), if (isSel) Color.parseColor("#3A5BFF") else Color.parseColor("#252847"))
-                            cornerRadius = dpToPx(12).toFloat()
+                            setColor(if (isSel) Color.parseColor("#2A1B2E") else Color.parseColor("#151824"))
+                            setStroke(dpToPx(if (isSel) 2 else 1), if (isSel) Color.parseColor("#E1306C") else Color.parseColor("#232738"))
+                            cornerRadius = dpToPx(14).toFloat()
                         }
                     }
                 }
@@ -262,9 +262,9 @@ class AwareScrollBlockerActivity : Activity() {
             optionViews[j].apply {
                 setTextColor(if (isSel) Color.WHITE else Color.parseColor("#8E94B3"))
                 background = GradientDrawable().apply {
-                    setColor(if (isSel) Color.parseColor("#29357A") else Color.parseColor("#1C1E3A"))
-                    setStroke(dpToPx(1), if (isSel) Color.parseColor("#3A5BFF") else Color.parseColor("#252847"))
-                    cornerRadius = dpToPx(12).toFloat()
+                    setColor(if (isSel) Color.parseColor("#2A1B2E") else Color.parseColor("#151824"))
+                    setStroke(dpToPx(if (isSel) 2 else 1), if (isSel) Color.parseColor("#E1306C") else Color.parseColor("#232738"))
+                    cornerRadius = dpToPx(14).toFloat()
                 }
             }
         }
@@ -274,12 +274,12 @@ class AwareScrollBlockerActivity : Activity() {
         // Confirm & Continue Button
         val confirmBtn = Button(this).apply {
             text = "Confirm & Continue (5m Extension)"
-            setTextColor(Color.WHITE)
+            setTextColor(Color.parseColor("#0B0D13"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
             typeface = Typeface.DEFAULT_BOLD
             background = GradientDrawable().apply {
-                setColor(Color.parseColor("#00B894")) // Green extension action
-                cornerRadius = dpToPx(14).toFloat()
+                setColor(Color.parseColor("#00E676")) // Vibrant emerald green
+                cornerRadius = dpToPx(16).toFloat()
             }
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
