@@ -23,11 +23,11 @@ class AwareScrollBlockerActivity : Activity() {
         appName = intent.getStringExtra("APP_NAME") ?: "Instagram"
         limitMinutes = intent.getIntExtra("LIMIT_MINUTES", 5)
 
-        // Root View
+        // Root View with Mindful Light Canvas
         container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            setBackgroundColor(Color.parseColor("#0B0D13")) // Deep obsidian background
+            setBackgroundColor(Color.parseColor("#FCF8FF")) // Mindful Light Canvas
             setPadding(dpToPx(24), dpToPx(32), dpToPx(24), dpToPx(32))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -37,12 +37,12 @@ class AwareScrollBlockerActivity : Activity() {
 
         setContentView(container)
 
-        // Render Scene 3: Limit Expiry Prompt
+        // Render Scene: Limit Expiry Prompt
         showExpiryPrompt()
     }
 
     // ==========================================
-    // SCENE 3: RESTRICTION SCREEN
+    // RESTRICTION SCREEN (MINDFUL FOCUS)
     // ==========================================
     private fun showExpiryPrompt() {
         container.removeAllViews()
@@ -50,14 +50,15 @@ class AwareScrollBlockerActivity : Activity() {
         // 1. Badge: "05:00 LIMIT REACHED"
         val badge = TextView(this).apply {
             text = String.format("%02d:00 LIMIT REACHED", limitMinutes)
-            setTextColor(Color.parseColor("#FF9F43")) // AccentReflect orange
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setTextColor(Color.parseColor("#7A4300")) // Mindful amber text
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
             setPadding(dpToPx(16), dpToPx(6), dpToPx(16), dpToPx(6))
             background = GradientDrawable().apply {
-                setColor(Color.parseColor("#26FF9F43"))
-                cornerRadius = dpToPx(16).toFloat()
+                setColor(Color.parseColor("#FFF4E8")) // Amber container
+                setStroke(dpToPx(1), Color.parseColor("#FFDCC2"))
+                cornerRadius = dpToPx(20).toFloat()
             }
         }
         container.addView(badge)
@@ -69,9 +70,9 @@ class AwareScrollBlockerActivity : Activity() {
 
         // 2. Title: "Your time is up! What would you like to do?"
         val title = TextView(this).apply {
-            text = "Your time is up! What would you like to do?"
-            setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 24f)
+            text = "Your time is up!\nWhat would you like to do?"
+            setTextColor(Color.parseColor("#141528"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
             setLineSpacing(0f, 1.2f)
@@ -83,34 +84,34 @@ class AwareScrollBlockerActivity : Activity() {
             layoutParams = LinearLayout.LayoutParams(1, dpToPx(12))
         })
 
-        // Subtitle: Explains the configured boundary
+        // Subtitle: Explains configured boundary
         val subtitle = TextView(this).apply {
-            text = "You reached your configured $limitMinutes-minute limit for $appName.\nTake a mindful pause."
-            setTextColor(Color.parseColor("#A0A5BD"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+            text = "You set a $limitMinutes-minute boundary for $appName.\nTake an intentional pause before continuing or wrapping up."
+            setTextColor(Color.parseColor("#6B6F8C"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
             gravity = Gravity.CENTER
-            setLineSpacing(0f, 1.2f)
+            setLineSpacing(0f, 1.3f)
         }
         container.addView(subtitle)
 
         // Spacer
         container.addView(View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(1, dpToPx(40))
+            layoutParams = LinearLayout.LayoutParams(1, dpToPx(36))
         })
 
-        // 3. Option 1: CLOSE APP Button
+        // 3. Option 1: CLOSE INSTAGRAM Button (Primary Blue)
         val closeBtn = Button(this).apply {
-            text = "Close App"
+            text = "Close Instagram"
             setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
             typeface = Typeface.DEFAULT_BOLD
             background = GradientDrawable().apply {
-                setColor(Color.parseColor("#E1306C")) // Instagram berry pink
-                cornerRadius = dpToPx(16).toFloat()
+                setColor(Color.parseColor("#3A5BFF")) // Primary Action Blue
+                cornerRadius = dpToPx(14).toFloat()
             }
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dpToPx(54)
+                dpToPx(52)
             )
             setOnClickListener {
                 closeAppAndExit()
@@ -120,18 +121,19 @@ class AwareScrollBlockerActivity : Activity() {
 
         // Spacer
         container.addView(View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(1, dpToPx(14))
+            layoutParams = LinearLayout.LayoutParams(1, dpToPx(12))
         })
 
-        // 4. Option 2: CONTINUE Button
+        // 4. Option 2: CONTINUE (Requires Reflection) Button
         val continueBtn = Button(this).apply {
-            text = "Continue"
-            setTextColor(Color.parseColor("#CBD0E2"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+            text = "Continue (Requires Reflection)"
+            setTextColor(Color.parseColor("#141528"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+            typeface = Typeface.DEFAULT_BOLD
             background = GradientDrawable().apply {
-                setColor(Color.parseColor("#1B1F30"))
-                setStroke(dpToPx(1), Color.parseColor("#2E3550"))
-                cornerRadius = dpToPx(16).toFloat()
+                setColor(Color.WHITE)
+                setStroke(dpToPx(1), Color.parseColor("#E2E4F0"))
+                cornerRadius = dpToPx(14).toFloat()
             }
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -145,7 +147,7 @@ class AwareScrollBlockerActivity : Activity() {
     }
 
     // ==========================================
-    // SCENE 4: EXTENSION SURVEY FORM
+    // EXTENSION SURVEY FORM (7 QUESTIONS + DURATION)
     // ==========================================
     private var selectedExtensionMin = 5
     private lateinit var confirmBtn: Button
@@ -171,14 +173,14 @@ class AwareScrollBlockerActivity : Activity() {
 
         // Header Tag
         val tag = TextView(this).apply {
-            text = "● EXTENSION SURVEY"
-            setTextColor(Color.parseColor("#00E676")) // Green
+            text = "● RECONSIDERATION"
+            setTextColor(Color.parseColor("#00B894")) // Emerald
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
             setPadding(dpToPx(12), dpToPx(4), dpToPx(12), dpToPx(4))
             background = GradientDrawable().apply {
-                setColor(Color.parseColor("#2600E676"))
+                setColor(Color.parseColor("#E0F7F8"))
                 cornerRadius = dpToPx(12).toFloat()
             }
         }
@@ -188,8 +190,8 @@ class AwareScrollBlockerActivity : Activity() {
 
         // Title & Description
         val heading = TextView(this).apply {
-            text = "Mindful Extension Survey"
-            setTextColor(Color.WHITE)
+            text = "Conscious Reflection"
+            setTextColor(Color.parseColor("#141528"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f)
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
@@ -199,8 +201,8 @@ class AwareScrollBlockerActivity : Activity() {
         inner.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(1, dpToPx(4)) })
 
         val hint = TextView(this).apply {
-            text = "Please complete these reflections to consciously unlock an extension."
-            setTextColor(Color.parseColor("#8E97B0"))
+            text = "Answer the following reflections to unlock a temporary extension."
+            setTextColor(Color.parseColor("#6B6F8C"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             gravity = Gravity.CENTER
         }
@@ -325,12 +327,12 @@ class AwareScrollBlockerActivity : Activity() {
 
         // Confirm & Continue Button
         confirmBtn = Button(this).apply {
-            text = "Confirm & Extend Time (+${selectedExtensionMin}m)"
-            setTextColor(Color.parseColor("#0B0D13"))
+            text = "Confirm & Unlock (+${selectedExtensionMin} Min Extension)"
+            setTextColor(Color.WHITE)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
             typeface = Typeface.DEFAULT_BOLD
             background = GradientDrawable().apply {
-                setColor(Color.parseColor("#00E676")) // Vibrant emerald green
+                setColor(Color.parseColor("#00B894")) // Emerald accent
                 cornerRadius = dpToPx(16).toFloat()
             }
             layoutParams = LinearLayout.LayoutParams(
@@ -355,11 +357,11 @@ class AwareScrollBlockerActivity : Activity() {
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = GradientDrawable().apply {
-                setColor(Color.parseColor("#151824"))
-                setStroke(dpToPx(1), Color.parseColor("#262B3D"))
+                setColor(Color.WHITE)
+                setStroke(dpToPx(1), Color.parseColor("#E2E4F0"))
                 cornerRadius = dpToPx(16).toFloat()
             }
-            setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14))
+            setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -371,7 +373,7 @@ class AwareScrollBlockerActivity : Activity() {
         // Question Title Row
         val header = TextView(this).apply {
             text = "$number. $title"
-            setTextColor(Color.WHITE)
+            setTextColor(Color.parseColor("#141528"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
             typeface = Typeface.DEFAULT_BOLD
         }
@@ -379,8 +381,8 @@ class AwareScrollBlockerActivity : Activity() {
 
         val sub = TextView(this).apply {
             text = subtitle
-            setTextColor(Color.parseColor("#7E869E"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+            setTextColor(Color.parseColor("#6B6F8C"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setPadding(0, dpToPx(2), 0, dpToPx(10))
         }
         card.addView(sub)
@@ -406,11 +408,12 @@ class AwareScrollBlockerActivity : Activity() {
                 for (j in optionViews.indices) {
                     val isSel = (j == selectedIdx)
                     optionViews[j].apply {
-                        setTextColor(if (isSel) Color.WHITE else Color.parseColor("#8E94B3"))
+                        setTextColor(if (isSel) Color.parseColor("#3A5BFF") else Color.parseColor("#141528"))
+                        typeface = if (isSel) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
                         background = GradientDrawable().apply {
-                            setColor(if (isSel) Color.parseColor("#2A1B2E") else Color.parseColor("#111319"))
-                            setStroke(dpToPx(if (isSel) 1 else 1), if (isSel) Color.parseColor("#E1306C") else Color.parseColor("#202538"))
-                            cornerRadius = dpToPx(10).toFloat()
+                            setColor(if (isSel) Color.parseColor("#EEECFF") else Color.parseColor("#FCF8FF"))
+                            setStroke(dpToPx(if (isSel) 2 else 1), if (isSel) Color.parseColor("#3A5BFF") else Color.parseColor("#E2E4F0"))
+                            cornerRadius = dpToPx(12).toFloat()
                         }
                     }
                 }
@@ -429,11 +432,12 @@ class AwareScrollBlockerActivity : Activity() {
         for (j in optionViews.indices) {
             val isSel = (j == 0)
             optionViews[j].apply {
-                setTextColor(if (isSel) Color.WHITE else Color.parseColor("#8E94B3"))
+                setTextColor(if (isSel) Color.parseColor("#3A5BFF") else Color.parseColor("#141528"))
+                typeface = if (isSel) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
                 background = GradientDrawable().apply {
-                    setColor(if (isSel) Color.parseColor("#2A1B2E") else Color.parseColor("#111319"))
-                    setStroke(dpToPx(1), if (isSel) Color.parseColor("#E1306C") else Color.parseColor("#202538"))
-                    cornerRadius = dpToPx(10).toFloat()
+                    setColor(if (isSel) Color.parseColor("#EEECFF") else Color.parseColor("#FCF8FF"))
+                    setStroke(dpToPx(if (isSel) 2 else 1), if (isSel) Color.parseColor("#3A5BFF") else Color.parseColor("#E2E4F0"))
+                    cornerRadius = dpToPx(12).toFloat()
                 }
             }
         }
@@ -445,11 +449,11 @@ class AwareScrollBlockerActivity : Activity() {
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = GradientDrawable().apply {
-                setColor(Color.parseColor("#151824"))
-                setStroke(dpToPx(1), Color.parseColor("#262B3D"))
+                setColor(Color.WHITE)
+                setStroke(dpToPx(1), Color.parseColor("#E2E4F0"))
                 cornerRadius = dpToPx(16).toFloat()
             }
-            setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14))
+            setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -459,17 +463,17 @@ class AwareScrollBlockerActivity : Activity() {
         }
 
         val header = TextView(this).apply {
-            text = "8. Extension Duration"
-            setTextColor(Color.WHITE)
+            text = "8. Extension Commitment"
+            setTextColor(Color.parseColor("#141528"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
             typeface = Typeface.DEFAULT_BOLD
         }
         card.addView(header)
 
         val sub = TextView(this).apply {
-            text = "How much time do you consciously commit to extend?"
-            setTextColor(Color.parseColor("#7E869E"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+            text = "Choose your conscious extension duration:"
+            setTextColor(Color.parseColor("#6B6F8C"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setPadding(0, dpToPx(2), 0, dpToPx(10))
         }
         card.addView(sub)
@@ -488,10 +492,10 @@ class AwareScrollBlockerActivity : Activity() {
         for (d in durations) {
             val tv = TextView(this).apply {
                 text = "+${d}m"
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
                 typeface = Typeface.DEFAULT_BOLD
                 gravity = Gravity.CENTER
-                setPadding(dpToPx(8), dpToPx(12), dpToPx(8), dpToPx(12))
+                setPadding(dpToPx(6), dpToPx(10), dpToPx(6), dpToPx(10))
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
                     marginEnd = dpToPx(6)
                 }
@@ -501,16 +505,16 @@ class AwareScrollBlockerActivity : Activity() {
                 for (k in durations.indices) {
                     val isSel = (durations[k] == selectedExtensionMin)
                     durViews[k].apply {
-                        setTextColor(if (isSel) Color.parseColor("#00E676") else Color.WHITE)
+                        setTextColor(if (isSel) Color.parseColor("#00B894") else Color.parseColor("#6B6F8C"))
                         background = GradientDrawable().apply {
-                            setColor(if (isSel) Color.parseColor("#2600E676") else Color.parseColor("#111319"))
-                            setStroke(dpToPx(1), if (isSel) Color.parseColor("#00E676") else Color.parseColor("#202538"))
-                            cornerRadius = dpToPx(10).toFloat()
+                            setColor(if (isSel) Color.parseColor("#E0F7F8") else Color.parseColor("#FCF8FF"))
+                            setStroke(dpToPx(if (isSel) 2 else 1), if (isSel) Color.parseColor("#00B894") else Color.parseColor("#E2E4F0"))
+                            cornerRadius = dpToPx(12).toFloat()
                         }
                     }
                 }
                 if (::confirmBtn.isInitialized) {
-                    confirmBtn.text = "Confirm & Extend Time (+${selectedExtensionMin}m)"
+                    confirmBtn.text = "Confirm & Unlock (+${selectedExtensionMin} Min Extension)"
                 }
             }
 
@@ -527,11 +531,11 @@ class AwareScrollBlockerActivity : Activity() {
         for (k in durations.indices) {
             val isSel = (durations[k] == selectedExtensionMin)
             durViews[k].apply {
-                setTextColor(if (isSel) Color.parseColor("#00E676") else Color.WHITE)
+                setTextColor(if (isSel) Color.parseColor("#00B894") else Color.parseColor("#6B6F8C"))
                 background = GradientDrawable().apply {
-                    setColor(if (isSel) Color.parseColor("#2600E676") else Color.parseColor("#111319"))
-                    setStroke(dpToPx(1), if (isSel) Color.parseColor("#00E676") else Color.parseColor("#202538"))
-                    cornerRadius = dpToPx(10).toFloat()
+                    setColor(if (isSel) Color.parseColor("#E0F7F8") else Color.parseColor("#FCF8FF"))
+                    setStroke(dpToPx(if (isSel) 2 else 1), if (isSel) Color.parseColor("#00B894") else Color.parseColor("#E2E4F0"))
+                    cornerRadius = dpToPx(12).toFloat()
                 }
             }
         }

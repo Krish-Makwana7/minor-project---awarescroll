@@ -9,6 +9,47 @@ void main() {
   runApp(const AwareScrollApp());
 }
 
+// ==========================================
+// THEME & DESIGN SYSTEM: MINDFUL DIGITAL FOCUS
+// ==========================================
+class AwareScrollTheme {
+  static const Color background = Color(0xFFFCF8FF);
+  static const Color surface = Color(0xFFFCF8FF);
+  static const Color surfaceCard = Color(0xFFFFFFFF);
+  static const Color surfaceContainerLow = Color(0xFFF5F2FF);
+  static const Color surfaceContainer = Color(0xFFF0EDFF);
+  static const Color surfaceContainerHigh = Color(0xFFE8E5FC);
+
+  static const Color outline = Color(0xFFE2E4F0);
+  static const Color outlineVariant = Color(0xFFC4C5D9);
+
+  static const Color onSurface = Color(0xFF141528);
+  static const Color onSurfaceVariant = Color(0xFF6B6F8C);
+
+  static const Color primary = Color(0xFF3A5BFF); // Electric Blue
+  static const Color primaryHover = Color(0xFF2C4EF2);
+  static const Color primaryFixed = Color(0xFFDEE0FF);
+
+  static const Color secondaryEmerald = Color(0xFF00B894); // Calm Emerald
+  static const Color secondaryContainer = Color(0xFFE0F7F8);
+  static const Color onSecondaryContainer = Color(0xFF006972);
+
+  static const Color tertiaryAmber = Color(0xFFFF9F43); // Mindful Amber
+  static const Color tertiaryContainer = Color(0xFFFFEFE0);
+  static const Color onTertiaryText = Color(0xFF7A4300);
+
+  static const LinearGradient instagramGradient = LinearGradient(
+    colors: [
+      Color(0xFF833AB4),
+      Color(0xFFE1306C),
+      Color(0xFFFD1D1D),
+      Color(0xFFFCB045),
+    ],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+}
+
 class AwareScrollApp extends StatelessWidget {
   const AwareScrollApp({super.key});
 
@@ -19,16 +60,18 @@ class AwareScrollApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0B0D13),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFE1306C),
-          secondary: Color(0xFF00E676),
-          tertiary: Color(0xFF833AB4),
-          surface: Color(0xFF151824),
-          background: Color(0xFF0B0D13),
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: AwareScrollTheme.background,
+        colorScheme: const ColorScheme.light(
+          primary: AwareScrollTheme.primary,
+          secondary: AwareScrollTheme.secondaryEmerald,
+          tertiary: AwareScrollTheme.tertiaryAmber,
+          surface: AwareScrollTheme.surfaceCard,
+          background: AwareScrollTheme.background,
+          onSurface: AwareScrollTheme.onSurface,
+          onBackground: AwareScrollTheme.onSurface,
         ),
-        fontFamily: 'Roboto',
+        fontFamily: 'Inter',
       ),
       home: const AwareScrollMainShell(),
     );
@@ -48,42 +91,107 @@ class AwareScrollMainShell extends StatefulWidget {
 class _AwareScrollMainShellState extends State<AwareScrollMainShell> {
   int _currentTabIndex = 0;
 
+  void _onSwitchTab(int index) {
+    setState(() => _currentTabIndex = index);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AwareScrollTheme.background,
       body: IndexedStack(
         index: _currentTabIndex,
-        children: const [
-          MainControlDashboardTab(),
-          InteractiveBlockerTab(),
-          UserAccountInsightsTab(),
+        children: [
+          MainControlDashboardTab(
+            onNavigateToBlocker: () => _onSwitchTab(1),
+          ),
+          InteractiveBlockerTab(
+            onReturnToControl: () => _onSwitchTab(0),
+          ),
+          const UserAccountInsightsTab(),
         ],
       ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
-          color: Color(0xFF111319),
-          border: Border(top: BorderSide(color: Color(0xFF262B3D), width: 1)),
+          color: Colors.white,
+          border: Border(
+            top: BorderSide(color: AwareScrollTheme.outline, width: 1),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x0A141528),
+              blurRadius: 10,
+              offset: Offset(0, -2),
+            ),
+          ],
         ),
-        child: NavigationBar(
-          selectedIndex: _currentTabIndex,
-          onDestinationSelected: (index) => setState(() => _currentTabIndex = index),
-          backgroundColor: const Color(0xFF111319),
-          indicatorColor: const Color(0xFFE1306C).withOpacity(0.18),
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.shield_outlined, color: Color(0xFF8E97B0)),
-              selectedIcon: Icon(Icons.shield_rounded, color: Color(0xFFE1306C)),
-              label: 'Control',
+        child: SafeArea(
+          child: SizedBox(
+            height: 64,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(
+                  index: 0,
+                  icon: Icons.shield_outlined,
+                  activeIcon: Icons.shield,
+                  label: 'CONTROL',
+                ),
+                _buildNavItem(
+                  index: 1,
+                  icon: Icons.lock_clock_outlined,
+                  activeIcon: Icons.lock_clock,
+                  label: 'BLOCKER',
+                ),
+                _buildNavItem(
+                  index: 2,
+                  icon: Icons.insights_outlined,
+                  activeIcon: Icons.insights,
+                  label: 'INSIGHTS',
+                ),
+              ],
             ),
-            NavigationDestination(
-              icon: Icon(Icons.lock_clock_outlined, color: Color(0xFF8E97B0)),
-              selectedIcon: Icon(Icons.lock_clock, color: Color(0xFF00E676)),
-              label: 'Blocker',
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required int index,
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+  }) {
+    final isSelected = _currentTabIndex == index;
+    final color = isSelected
+        ? AwareScrollTheme.primary
+        : AwareScrollTheme.onSurfaceVariant;
+
+    return InkWell(
+      onTap: () => setState(() => _currentTabIndex = index),
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isSelected ? activeIcon : icon,
+              size: 22,
+              color: color,
             ),
-            NavigationDestination(
-              icon: Icon(Icons.insights_outlined, color: Color(0xFF8E97B0)),
-              selectedIcon: Icon(Icons.insights_rounded, color: Color(0xFF3A5BFF)),
-              label: 'Insights',
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                letterSpacing: 0.8,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: color,
+                fontFamily: 'monospace',
+              ),
             ),
           ],
         ),
@@ -96,14 +204,22 @@ class _AwareScrollMainShellState extends State<AwareScrollMainShell> {
 // TAB 1: MAIN CONTROL DASHBOARD (SCREEN 1)
 // ==========================================
 class MainControlDashboardTab extends StatefulWidget {
-  const MainControlDashboardTab({super.key});
+  final VoidCallback onNavigateToBlocker;
+
+  const MainControlDashboardTab({
+    super.key,
+    required this.onNavigateToBlocker,
+  });
 
   @override
-  State<MainControlDashboardTab> createState() => _MainControlDashboardTabState();
+  State<MainControlDashboardTab> createState() =>
+      _MainControlDashboardTabState();
 }
 
-class _MainControlDashboardTabState extends State<MainControlDashboardTab> with SingleTickerProviderStateMixin {
-  static const MethodChannel _channel = MethodChannel('com.awarescroll/restriction');
+class _MainControlDashboardTabState extends State<MainControlDashboardTab>
+    with SingleTickerProviderStateMixin {
+  static const MethodChannel _channel =
+      MethodChannel('com.awarescroll/restriction');
 
   static const String targetAppName = 'Instagram';
   static const String targetPackage = 'com.instagram.android';
@@ -128,7 +244,6 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab> with 
     {'label': '5 Min (Default)', 'min': 5, 'sec': 300},
     {'label': '10 Min', 'min': 10, 'sec': 600},
     {'label': '15 Min', 'min': 15, 'sec': 900},
-    {'label': '30 Min', 'min': 30, 'sec': 1800},
   ];
 
   @override
@@ -193,7 +308,6 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab> with 
         _elapsedSeconds = 0;
         _isTargetInForeground = false;
       });
-      // Show Post-Session Debrief
       if (mounted) {
         _showPostSessionDebrief();
       }
@@ -202,8 +316,8 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab> with 
         _showPermissionRequiredDialog();
         return;
       }
-      
-      // Start guard directly with configured time limit - no start questions!
+
+      // Directly start guard without asking starting questionnaire!
       try {
         await _channel.invokeMethod('startRestriction', {
           'appName': targetAppName,
@@ -219,10 +333,24 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab> with 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: const Color(0xFF00E676),
-            content: Text(
-              'AwareScroll Guard Active! Guarding Instagram for ${_limitSeconds >= 60 ? "$_limitMinutes min" : "$_limitSeconds sec"}.',
-              style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+            backgroundColor: AwareScrollTheme.primary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            content: Row(
+              children: [
+                const Icon(Icons.verified, color: AwareScrollTheme.secondaryEmerald, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Shield Guard Engaged for Instagram (${_limitSeconds >= 60 ? "$_limitMinutes min" : "$_limitSeconds sec"})',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
             ),
           ),
         );
@@ -249,524 +377,966 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab> with 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF151824),
+        backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Row(
           children: [
-            Icon(Icons.shield_outlined, color: Color(0xFFE1306C)),
-            SizedBox(width: 10),
-            Text('Permissions Needed', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Icon(Icons.shield_outlined, color: AwareScrollTheme.primary),
+            SizedBox(width: 8),
+            Text(
+              'Permissions Needed',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AwareScrollTheme.onSurface,
+              ),
+            ),
           ],
         ),
         content: const Text(
-          'To detect Instagram and intercept access when your limit is reached, please enable:\n\n'
-          '1. Accessibility Service (Real-time blocker)\n'
-          '2. Usage Access\n'
-          '3. Display Over Other Apps',
-          style: TextStyle(fontSize: 13, height: 1.4, color: Color(0xFFB0B7C3)),
+          'AwareScroll requires Accessibility Service or Usage Access to track Instagram usage and block compulsive scrolling.',
+          style: TextStyle(
+            fontSize: 13,
+            color: AwareScrollTheme.onSurfaceVariant,
+            height: 1.4,
+          ),
         ),
         actions: [
           TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: AwareScrollTheme.onSurfaceVariant)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AwareScrollTheme.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
             onPressed: () {
               Navigator.pop(ctx);
               _openSettings('openAccessibilitySettings');
             },
-            child: const Text('Accessibility Settings', style: TextStyle(color: Color(0xFF833AB4))),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE1306C),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              _openSettings('openUsageSettings');
-            },
-            child: const Text('Usage Access', style: TextStyle(color: Colors.white)),
+            child: const Text('Grant Access'),
           ),
         ],
       ),
     );
   }
 
-  void _openSettings(String method) {
+  Future<void> _openSettings(String method) async {
     try {
-      _channel.invokeMethod(method);
+      await _channel.invokeMethod(method);
     } catch (_) {}
   }
 
-  String _formatTime(int sec) {
-    final m = sec ~/ 60;
-    final s = sec % 60;
+  String _formatTime(int totalSec) {
+    final m = totalSec ~/ 60;
+    final s = totalSec % 60;
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final double progress = (_elapsedSeconds / _limitSeconds).clamp(0.0, 1.0);
-    final bool allPermissionsGranted = _hasUsage && _hasOverlay && _hasAccessibility;
+    final progress = (_limitSeconds > 0)
+        ? (_elapsedSeconds / _limitSeconds).clamp(0.0, 1.0)
+        : 0.0;
+    final progressPct = (progress * 100).toInt();
 
-    return SafeArea(
-      child: CustomScrollView(
-        slivers: [
-          // Header Bar
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white12, width: 1.5),
-                        ),
-                        child: ClipOval(
-                          child: Image.asset('assets/images/logo.png', fit: BoxFit.cover),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'AwareScroll',
-                            style: TextStyle(
-                              fontSize: 19,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.2,
-                              color: Colors.white,
-                            ),
-                          ),
-                          Text(
-                            'Mindful Instagram Habit Control',
-                            style: TextStyle(fontSize: 11, color: Color(0xFF7E869E)),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: allPermissionsGranted
-                          ? const Color(0xFF00E676).withOpacity(0.12)
-                          : const Color(0xFFFFB300).withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: allPermissionsGranted
-                            ? const Color(0xFF00E676).withOpacity(0.4)
-                            : const Color(0xFFFFB300).withOpacity(0.4),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          allPermissionsGranted ? Icons.check_circle : Icons.warning_amber_rounded,
-                          size: 14,
-                          color: allPermissionsGranted ? const Color(0xFF00E676) : const Color(0xFFFFB300),
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          allPermissionsGranted ? 'Shield Active' : 'Setup Needed',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: allPermissionsGranted ? const Color(0xFF00E676) : const Color(0xFFFFB300),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+    final grantedCount = (_hasAccessibility ? 1 : 0) +
+        (_hasUsage ? 1 : 0) +
+        (_hasOverlay ? 1 : 0);
 
-          // Hero Instagram Guard Card
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(28),
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF1E2235), Color(0xFF131622)],
-                  ),
-                  border: Border.all(
-                    color: _isRestricting ? const Color(0xFFE1306C).withOpacity(0.5) : const Color(0xFF262A3D),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: _isRestricting ? const Color(0xFFE1306C).withOpacity(0.15) : Colors.black.withOpacity(0.4),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(22),
-                child: Column(
+    return Scaffold(
+      backgroundColor: AwareScrollTheme.background,
+      body: SafeArea(
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            // Top App Bar
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF833AB4), Color(0xFFFD1D1D), Color(0xFFFCB045)],
-                                  begin: Alignment.bottomLeft,
-                                  end: Alignment.topRight,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFFFD1D1D).withOpacity(0.3),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 26),
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [AwareScrollTheme.primary, Color(0xFF6C8CFF)],
                             ),
-                            const SizedBox(width: 12),
-                            const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Instagram', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                                Text(targetPackage, style: TextStyle(fontSize: 11, color: Color(0xFF7E869E))),
-                              ],
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x203A5BFF),
+                                blurRadius: 6,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.shield_outlined,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'AWARESCROLL',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                                color: AwareScrollTheme.onSurfaceVariant,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                            Text(
+                              'Dashboard',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: AwareScrollTheme.onSurface,
+                              ),
                             ),
                           ],
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: _isRestricting
-                                ? (_isTargetInForeground
-                                    ? const Color(0xFF00E676).withOpacity(0.16)
-                                    : const Color(0xFFFFB300).withOpacity(0.16))
-                                : Colors.white.withOpacity(0.06),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: _isRestricting
-                                  ? (_isTargetInForeground
-                                      ? const Color(0xFF00E676).withOpacity(0.5)
-                                      : const Color(0xFFFFB300).withOpacity(0.5))
-                                  : Colors.white12,
+                      ],
+                    ),
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AwareScrollTheme.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AwareScrollTheme.outline),
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.person_outline,
+                          color: AwareScrollTheme.onSurfaceVariant,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Sub-Header Context Bar
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AwareScrollTheme.outline),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x08141528),
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 38,
+                            height: 38,
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                  AwareScrollTheme.primary,
+                                  AwareScrollTheme.secondaryEmerald,
+                                  AwareScrollTheme.tertiaryAmber,
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.hourglass_top_rounded,
+                                color: AwareScrollTheme.primary,
+                                size: 20,
+                              ),
                             ),
                           ),
-                          child: Row(
+                          const SizedBox(width: 10),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (_isRestricting)
-                                AnimatedBuilder(
-                                  animation: _pulseController,
-                                  builder: (context, child) {
-                                    return Container(
-                                      width: 8,
-                                      height: 8,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: (_isTargetInForeground
-                                                ? const Color(0xFF00E676)
-                                                : const Color(0xFFFFB300))
-                                            .withOpacity(0.4 + (_pulseController.value * 0.6)),
+                              Row(
+                                children: [
+                                  const Text(
+                                    'AwareScroll',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: AwareScrollTheme.onSurface,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: AwareScrollTheme.primaryFixed,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      'v2.4',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                        color: AwareScrollTheme.primary,
+                                        fontFamily: 'monospace',
                                       ),
-                                    );
-                                  },
-                                )
-                              else
-                                Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white38),
-                                ),
-                              const SizedBox(width: 7),
-                              Text(
-                                _isRestricting ? (_isTargetInForeground ? 'SCROLLING' : 'GUARDING') : 'STANDBY',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Text(
+                                'Mindful Instagram Habit Control',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
-                                  color: _isRestricting
-                                      ? (_isTargetInForeground ? const Color(0xFF00E676) : const Color(0xFFFFB300))
-                                      : Colors.white70,
+                                  color: AwareScrollTheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Clocks container
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0F111A),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFF1E2333)),
+                        ],
                       ),
-                      child: Column(
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: AwareScrollTheme.secondaryContainer,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AwareScrollTheme.secondaryEmerald.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: AwareScrollTheme.secondaryEmerald,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            const Text(
+                              'SHIELD ACTIVE',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.8,
+                                color: AwareScrollTheme.onSecondaryContainer,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Hero Card: Real-Time Dopamine Telemetry
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AwareScrollTheme.outline),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x0C141528),
+                        blurRadius: 14,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // App Row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Column(
+                              Container(
+                                width: 44,
+                                height: 44,
+                                padding: const EdgeInsets.all(2.5),
+                                decoration: BoxDecoration(
+                                  gradient: AwareScrollTheme.instagramGradient,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.camera_alt_outlined,
+                                      color: Color(0xFFE1306C),
+                                      size: 24,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('ELAPSED TIME', style: TextStyle(fontSize: 10, letterSpacing: 0.8, color: Color(0xFF7E869E))),
-                                  const SizedBox(height: 4),
                                   Text(
-                                    _formatTime(_elapsedSeconds),
+                                    'Instagram',
                                     style: TextStyle(
-                                      fontSize: 26,
+                                      fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: _isRestricting && _isTargetInForeground ? const Color(0xFF00E676) : Colors.white,
+                                      color: AwareScrollTheme.onSurface,
+                                    ),
+                                  ),
+                                  Text(
+                                    'com.instagram.android',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: AwareScrollTheme.onSurfaceVariant,
                                       fontFamily: 'monospace',
                                     ),
                                   ),
                                 ],
                               ),
-                              Container(height: 36, width: 1, color: Colors.white12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  const Text('TIME LIMIT', style: TextStyle(fontSize: 10, letterSpacing: 0.8, color: Color(0xFF7E869E))),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _formatTime(_limitSeconds),
-                                    style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFFFFB300), fontFamily: 'monospace'),
-                                  ),
-                                ],
-                              ),
                             ],
                           ),
-
-                          const SizedBox(height: 16),
-
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Stack(
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _isRestricting && _isTargetInForeground
+                                  ? const Color(0xFFE8F8F0)
+                                  : AwareScrollTheme.surfaceContainerLow,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: _isRestricting && _isTargetInForeground
+                                    ? AwareScrollTheme.secondaryEmerald.withOpacity(0.4)
+                                    : AwareScrollTheme.outline,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Container(height: 8, color: const Color(0xFF1B1F2D)),
-                                FractionallySizedBox(
-                                  widthFactor: progress,
-                                  child: Container(
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [Color(0xFF833AB4), Color(0xFFFD1D1D), Color(0xFFFCB045)],
-                                      ),
-                                    ),
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: _isRestricting && _isTargetInForeground
+                                        ? AwareScrollTheme.secondaryEmerald
+                                        : AwareScrollTheme.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  _isRestricting
+                                      ? (_isTargetInForeground ? 'SCROLLING' : 'GUARDING')
+                                      : 'IDLE',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.8,
+                                    color: _isRestricting && _isTargetInForeground
+                                        ? const Color(0xFF007E59)
+                                        : AwareScrollTheme.onSurfaceVariant,
+                                    fontFamily: 'monospace',
                                   ),
                                 ),
                               ],
                             ),
                           ),
+                        ],
+                      ),
 
-                          const SizedBox(height: 10),
+                      const SizedBox(height: 18),
 
+                      // Dual Telemetry Monospace Readout
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AwareScrollTheme.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AwareScrollTheme.outline),
+                        ),
+                        child: Row(
+                          children: [
+                            // Elapsed
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Row(
+                                    children: [
+                                      Icon(Icons.timelapse, size: 14, color: AwareScrollTheme.primary),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        'ELAPSED TIME',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.6,
+                                          color: AwareScrollTheme.onSurfaceVariant,
+                                          fontFamily: 'monospace',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                                    textBaseline: TextBaseline.alphabetic,
+                                    children: [
+                                      Text(
+                                        _formatTime(_elapsedSeconds),
+                                        style: const TextStyle(
+                                          fontSize: 26,
+                                          fontWeight: FontWeight.bold,
+                                          color: AwareScrollTheme.primary,
+                                          fontFamily: 'monospace',
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      const Text(
+                                        'live',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: AwareScrollTheme.onSurfaceVariant,
+                                          fontFamily: 'monospace',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(width: 1, height: 42, color: AwareScrollTheme.outline),
+                            const SizedBox(width: 14),
+                            // Limit
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Row(
+                                    children: [
+                                      Icon(Icons.lock_clock, size: 14, color: AwareScrollTheme.tertiaryAmber),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        'TIME LIMIT',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.6,
+                                          color: AwareScrollTheme.onSurfaceVariant,
+                                          fontFamily: 'monospace',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                                    textBaseline: TextBaseline.alphabetic,
+                                    children: [
+                                      Text(
+                                        _formatTime(_limitSeconds),
+                                        style: const TextStyle(
+                                          fontSize: 26,
+                                          fontWeight: FontWeight.bold,
+                                          color: AwareScrollTheme.onSurface,
+                                          fontFamily: 'monospace',
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      const Text(
+                                        'cap',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: AwareScrollTheme.onSurfaceVariant,
+                                          fontFamily: 'monospace',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      // Progress Bar
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: Stack(
+                          children: [
+                            Container(
+                              height: 8,
+                              color: AwareScrollTheme.surfaceContainer,
+                            ),
+                            FractionallySizedBox(
+                              widthFactor: progress,
+                              child: Container(
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: progress >= 0.9
+                                      ? AwareScrollTheme.tertiaryAmber
+                                      : AwareScrollTheme.primary,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.bolt, size: 14, color: AwareScrollTheme.tertiaryAmber),
+                              SizedBox(width: 4),
+                              Text(
+                                'Instagram is guarded. Time is accumulating.',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AwareScrollTheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
                           Text(
-                            _isRestricting
-                                ? (_isTargetInForeground
-                                    ? '⚡ Instagram is open! Timer is accumulating.'
-                                    : '⏳ Waiting for Instagram. The blocker triggers at the limit.')
-                                : 'Tap "Guard Instagram" below to anchor your intention and begin.',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 11, color: Color(0xFF949DB5)),
+                            '$progressPct%',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: AwareScrollTheme.primary,
+                              fontFamily: 'monospace',
+                            ),
                           ),
                         ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Select Usage Limit Header & Chips
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.timer_outlined, size: 17, color: AwareScrollTheme.primary),
+                        SizedBox(width: 6),
+                        Text(
+                          'Select Usage Limit',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: AwareScrollTheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      'DAILY GRACE CAP',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.8,
+                        color: AwareScrollTheme.onSurfaceVariant.withOpacity(0.8),
+                        fontFamily: 'monospace',
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-          ),
 
-          // Limit Selector
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Usage Limit', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _limitOptions.map((opt) {
-                      final sec = opt['sec'] as int;
-                      final isSel = sec == _limitSeconds;
-                      return InkWell(
-                        onTap: () {
-                          setState(() {
-                            _limitMinutes = opt['min'] as int;
-                            _limitSeconds = opt['sec'] as int;
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(14),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: isSel ? const Color(0xFFE1306C) : const Color(0xFF151824),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: isSel ? const Color(0xFFE1306C) : const Color(0xFF262B3D)),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 48,
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: _limitOptions.length,
+                  separatorBuilder: (context, index) => const SizedBox(width: 8),
+                  itemBuilder: (ctx, i) {
+                    final opt = _limitOptions[i];
+                    final sec = opt['sec'] as int;
+                    final isSel = sec == _limitSeconds;
+
+                    return InkWell(
+                      onTap: () {
+                        setState(() {
+                          _limitMinutes = opt['min'] as int;
+                          _limitSeconds = opt['sec'] as int;
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSel ? AwareScrollTheme.primary : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSel ? AwareScrollTheme.primary : AwareScrollTheme.outline,
                           ),
+                          boxShadow: isSel
+                              ? const [
+                                  BoxShadow(
+                                    color: Color(0x303A5BFF),
+                                    blurRadius: 6,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ]
+                              : const [
+                                  BoxShadow(
+                                    color: Color(0x06141528),
+                                    blurRadius: 4,
+                                    offset: Offset(0, 1),
+                                  ),
+                                ],
+                        ),
+                        child: Center(
                           child: Text(
                             opt['label'] as String,
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
-                              color: isSel ? Colors.white : const Color(0xFFB0B7C3),
+                              color: isSel ? Colors.white : AwareScrollTheme.onSurface,
                             ),
                           ),
                         ),
-                      );
-                    }).toList(),
-                  ),
-                ],
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
-          ),
 
-          // Permissions
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF131622),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFF202538)),
-                ),
-                child: Column(
+            // Android Guard Permissions
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildPermissionItem('Accessibility Service', 'Instant blocker screen trigger', _hasAccessibility, () => _openSettings('openAccessibilitySettings')),
-                    const Divider(color: Color(0xFF1E2335), height: 16),
-                    _buildPermissionItem('Usage Access', 'Foreground app tracking', _hasUsage, () => _openSettings('openUsageSettings')),
-                    const Divider(color: Color(0xFF1E2335), height: 16),
-                    _buildPermissionItem('Display Over Other Apps', 'Draw restriction overlay', _hasOverlay, () => _openSettings('openOverlaySettings')),
+                    const Row(
+                      children: [
+                        Icon(Icons.verified_user_outlined, size: 17, color: AwareScrollTheme.secondaryEmerald),
+                        SizedBox(width: 6),
+                        Text(
+                          'Android Guard Permissions',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: AwareScrollTheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      '$grantedCount/3 OPERATIONAL',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.8,
+                        color: AwareScrollTheme.secondaryEmerald,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
-          ),
 
-          // Primary Actions
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-              child: Column(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    height: 54,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        elevation: 0,
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: AwareScrollTheme.outline),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x08141528),
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
                       ),
-                      onPressed: _handleGuardButtonClick,
-                      child: Ink(
-                        decoration: BoxDecoration(
-                          gradient: _isRestricting
-                              ? const LinearGradient(colors: [Color(0xFFE5484D), Color(0xFFD32F2F)])
-                              : const LinearGradient(colors: [Color(0xFF833AB4), Color(0xFFFD1D1D), Color(0xFFFCB045)]),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Container(
-                          alignment: Alignment.center,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(_isRestricting ? Icons.stop_circle_outlined : Icons.shield_rounded, color: Colors.white, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                _isRestricting ? 'STOP GUARDING INSTAGRAM' : 'GUARD INSTAGRAM (${_limitSeconds >= 60 ? "$_limitMinutes MIN" : "$_limitSeconds SEC"})',
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5),
-                              ),
-                            ],
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      _buildPermissionItem(
+                        icon: Icons.accessibility_new_rounded,
+                        title: 'Accessibility Service',
+                        subtitle: 'Active & Monitoring Feed Actions',
+                        isGranted: _hasAccessibility,
+                        onEnable: () => _openSettings('openAccessibilitySettings'),
+                      ),
+                      const Divider(color: AwareScrollTheme.outline, height: 16),
+                      _buildPermissionItem(
+                        icon: Icons.query_stats_rounded,
+                        title: 'Usage Access',
+                        subtitle: 'Granted Foreground Window Telemetry',
+                        isGranted: _hasUsage,
+                        onEnable: () => _openSettings('openUsageSettings'),
+                      ),
+                      const Divider(color: AwareScrollTheme.outline, height: 16),
+                      _buildPermissionItem(
+                        icon: Icons.layers_rounded,
+                        title: 'Display Over Other Apps',
+                        subtitle: 'Overlay & Mindful Blocker Ready',
+                        isGranted: _hasOverlay,
+                        onEnable: () => _openSettings('openOverlaySettings'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Action Buttons
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 32),
+                child: Column(
+                  children: [
+                    // Primary Guard Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _isRestricting
+                              ? const Color(0xFFE53935)
+                              : AwareScrollTheme.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 2,
+                          shadowColor: const Color(0x403A5BFF),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
                           ),
+                        ),
+                        onPressed: _handleGuardButtonClick,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _isRestricting ? Icons.stop_circle_outlined : Icons.shield,
+                              size: 19,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _isRestricting
+                                  ? 'STOP GUARDING INSTAGRAM'
+                                  : 'GUARD INSTAGRAM (${_limitSeconds >= 60 ? "$_limitMinutes MIN" : "$_limitSeconds SEC"})',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  ),
-                ],
+
+                    const SizedBox(height: 10),
+
+                    // Preview Restriction Blocker Ghost Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 46,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: AwareScrollTheme.onSurface,
+                          side: const BorderSide(color: AwareScrollTheme.outline),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        onPressed: widget.onNavigateToBlocker,
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.visibility_outlined, size: 17, color: AwareScrollTheme.onSurfaceVariant),
+                            SizedBox(width: 8),
+                            Text(
+                              'Preview Restriction Blocker',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Icon(Icons.chevron_right, size: 16, color: AwareScrollTheme.onSurfaceVariant),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildPermissionItem(String title, String subtitle, bool isGranted, VoidCallback onEnable) {
+  Widget _buildPermissionItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool isGranted,
+    required VoidCallback onEnable,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(
           children: [
-            Icon(isGranted ? Icons.check_circle : Icons.warning_amber_rounded, size: 16, color: isGranted ? const Color(0xFF00E676) : const Color(0xFFFFB300)),
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: AwareScrollTheme.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 18, color: AwareScrollTheme.onSurface),
+            ),
             const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
-                Text(subtitle, style: const TextStyle(fontSize: 10, color: Color(0xFF7E869E))),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AwareScrollTheme.onSurface,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AwareScrollTheme.onSurfaceVariant,
+                  ),
+                ),
               ],
             ),
           ],
         ),
-        if (!isGranted)
+        if (isGranted)
+          Container(
+            width: 24,
+            height: 24,
+            decoration: const BoxDecoration(
+              color: AwareScrollTheme.secondaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check, size: 15, color: AwareScrollTheme.secondaryEmerald),
+          )
+        else
           TextButton(
             style: TextButton.styleFrom(
-              backgroundColor: const Color(0xFF1E2335),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              backgroundColor: AwareScrollTheme.surfaceContainerHigh,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: onEnable,
-            child: const Text('Enable', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFE1306C))),
-          )
-        else
-          const Text('Active', style: TextStyle(fontSize: 11, color: Color(0xFF00E676), fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Enable',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: AwareScrollTheme.primary,
+              ),
+            ),
+          ),
       ],
     );
   }
 }
 
 // ==========================================
-// TAB 2: INTERACTIVE BLOCKER PROTOTYPE (SCREEN 6)
+// TAB 2: INTERACTIVE BLOCKER & SURVEY TAB
 // ==========================================
 class InteractiveBlockerTab extends StatefulWidget {
-  const InteractiveBlockerTab({super.key});
+  final VoidCallback onReturnToControl;
+
+  const InteractiveBlockerTab({
+    super.key,
+    required this.onReturnToControl,
+  });
 
   @override
   State<InteractiveBlockerTab> createState() => _InteractiveBlockerTabState();
 }
 
-class _InteractiveBlockerTabState extends State<InteractiveBlockerTab> {
-  int _activeState = 1; // 1: Gate, 2: Reflect, 3: Unlock
+class _InteractiveBlockerTabState extends State<InteractiveBlockerTab>
+    with SingleTickerProviderStateMixin {
+  static const MethodChannel _channel =
+      MethodChannel('com.awarescroll/restriction');
 
-  // State 2 selections for extension survey
+  int _activeState = 1; // 1: Gate, 2: Reflect (Survey), 3: Unlock
+
+  // Survey Choices (User's Exact 7 Questions)
   String _selectedPurpose = 'Reply to a message';
   String _selectedTrigger = 'Interesting content';
   String _selectedCategory = 'Reels / Entertainment';
@@ -776,13 +1346,24 @@ class _InteractiveBlockerTabState extends State<InteractiveBlockerTab> {
   String _selectedHelpStop = 'Time warning';
   int _selectedExtensionMin = 5;
 
-  // State 3 countdown ticker
   Timer? _countdownTimer;
   int _countdownRemainingSec = 300;
+
+  late AnimationController _breatheController;
+
+  @override
+  void initState() {
+    super.initState();
+    _breatheController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat(reverse: true);
+  }
 
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    _breatheController.dispose();
     super.dispose();
   }
 
@@ -803,69 +1384,103 @@ class _InteractiveBlockerTabState extends State<InteractiveBlockerTab> {
     });
   }
 
+  Future<void> _handleUnlockCommitment() async {
+    try {
+      await _channel.invokeMethod('grantExtension', {
+        'minutes': _selectedExtensionMin,
+      });
+    } catch (_) {}
+    _switchState(3);
+  }
+
+  Future<void> _handleCloseApp() async {
+    try {
+      await _channel.invokeMethod('closeTargetApp');
+    } catch (_) {}
+    widget.onReturnToControl();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Column(
-        children: [
-          // Prototype State Switcher Bar
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            color: const Color(0xFF111319),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.lock, size: 14, color: Color(0xFFE1306C)),
-                    SizedBox(width: 6),
-                    Text('BLOCKER PROTOTYPE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: Color(0xFF8E97B0))),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(color: const Color(0xFF1E2333), borderRadius: BorderRadius.circular(20)),
-                  child: Row(
+    return Scaffold(
+      backgroundColor: AwareScrollTheme.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Top Prototype Nav / State Switcher
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(bottom: BorderSide(color: AwareScrollTheme.outline)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Row(
                     children: [
-                      _buildStateChip('1: Gate', 1),
-                      _buildStateChip('2: Reflect', 2),
-                      _buildStateChip('3: Unlock', 3),
+                      Icon(Icons.lock_clock, size: 16, color: AwareScrollTheme.tertiaryAmber),
+                      SizedBox(width: 6),
+                      Text(
+                        'AWARESCROLL DEMO',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.8,
+                          color: AwareScrollTheme.onSurfaceVariant,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
                     ],
                   ),
-                ),
-              ],
+                  Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: AwareScrollTheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AwareScrollTheme.outline),
+                    ),
+                    child: Row(
+                      children: [
+                        _buildStateChip('1: Gate', 1),
+                        _buildStateChip('2: Reflect', 2),
+                        _buildStateChip('3: Unlock', 3),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          // Body Content depending on active state
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: _buildActiveStateView(),
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: _buildActiveStateView(),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildStateChip(String label, int stateIndex) {
-    final isSelected = _activeState == stateIndex;
+  Widget _buildStateChip(String label, int index) {
+    final isSel = _activeState == index;
     return GestureDetector(
-      onTap: () => _switchState(stateIndex),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      onTap: () => _switchState(index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFE1306C) : Colors.transparent,
+          color: isSel ? AwareScrollTheme.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 11,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            color: isSelected ? Colors.white : const Color(0xFF8E97B0),
+            fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
+            color: isSel ? Colors.white : AwareScrollTheme.onSurfaceVariant,
           ),
         ),
       ),
@@ -877,108 +1492,217 @@ class _InteractiveBlockerTabState extends State<InteractiveBlockerTab> {
       case 1:
         return _buildState1Gate();
       case 2:
-        return _buildState2Reflect();
+        return _buildState2Survey();
       case 3:
       default:
         return _buildState3Unlock();
     }
   }
 
-  // STATE 1: GATE
+  // ==========================================
+  // STATE 1: LIMIT REACHED GATE
+  // ==========================================
   Widget _buildState1Gate() {
     return Column(
       children: [
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
+        // Badge
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFB300).withOpacity(0.15),
+            color: AwareScrollTheme.tertiaryContainer,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.4)),
+            border: Border.all(color: AwareScrollTheme.tertiaryAmber.withOpacity(0.4)),
           ),
-          child: const Text('05:00 LIMIT REACHED', style: TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.8)),
-        ),
-        const SizedBox(height: 32),
-        // Breathing Ring
-        Container(
-          width: 170,
-          height: 170,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFFE1306C).withOpacity(0.3), width: 2),
-            gradient: RadialGradient(
-              colors: [const Color(0xFF833AB4).withOpacity(0.2), const Color(0xFF151824)],
-            ),
-          ),
-          child: const Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.spa, color: Color(0xFFE1306C), size: 40),
-              SizedBox(height: 8),
-              Text('Mindful Gate', style: TextStyle(color: Color(0xFF8E97B0), fontSize: 11, fontWeight: FontWeight.bold)),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(color: const Color(0xFF151824), borderRadius: BorderRadius.circular(16)),
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.air, size: 14, color: Color(0xFF00E676)),
-              SizedBox(width: 6),
-              Text('Take a breath • 4s Inhale, 4s Exhale', style: TextStyle(color: Color(0xFF8E97B0), fontSize: 11)),
+              Icon(Icons.lock_clock, size: 14, color: AwareScrollTheme.onTertiaryText),
+              SizedBox(width: 5),
+              Text(
+                '05:00 LIMIT REACHED',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.8,
+                  color: AwareScrollTheme.onTertiaryText,
+                  fontFamily: 'monospace',
+                ),
+              ),
             ],
           ),
         ),
+
+        const SizedBox(height: 28),
+
+        // Breathing Circle Visualizer
+        AnimatedBuilder(
+          animation: _breatheController,
+          builder: (ctx, child) {
+            final scale = 0.94 + (_breatheController.value * 0.12);
+            return Transform.scale(
+              scale: scale,
+              child: Container(
+                width: 150,
+                height: 150,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0x333A5BFF),
+                      Color(0x33FF9F43),
+                      Color(0x3300B894),
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AwareScrollTheme.primary.withOpacity(0.18),
+                      blurRadius: 28,
+                      spreadRadius: 4,
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AwareScrollTheme.outline),
+                    ),
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.self_improvement, color: AwareScrollTheme.primary, size: 38),
+                        SizedBox(height: 4),
+                        Text(
+                          'BREATHE',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                            color: AwareScrollTheme.onSurfaceVariant,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+
+        const SizedBox(height: 20),
+
+        // Satellite Focus Badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: AwareScrollTheme.tertiaryContainer,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AwareScrollTheme.tertiaryAmber.withOpacity(0.3)),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.air, size: 14, color: AwareScrollTheme.onTertiaryText),
+              SizedBox(width: 5),
+              Text(
+                '4s Inhale • 4s Exhale',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AwareScrollTheme.onTertiaryText,
+                ),
+              ),
+            ],
+          ),
+        ),
+
         const SizedBox(height: 24),
+
         const Text(
-          'Your time is up.\nWhat would you like to do?',
+          'Your time is up!\nWhat would you like to do?',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white, height: 1.3),
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: AwareScrollTheme.onSurface,
+            height: 1.3,
+          ),
         ),
+
         const SizedBox(height: 10),
+
         const Text(
-          "You've reached your configured 5-minute Instagram limit. Choose whether to step away or consciously evaluate your decision to continue.",
+          'You set a 5-minute boundary for Instagram. Take an intentional pause before continuing or wrapping up.',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 13, color: Color(0xFF7E869E), height: 1.4),
+          style: TextStyle(
+            fontSize: 13,
+            color: AwareScrollTheme.onSurfaceVariant,
+            height: 1.4,
+          ),
         ),
-        const SizedBox(height: 40),
+
+        const SizedBox(height: 36),
+
+        // Action Buttons
         SizedBox(
           width: double.infinity,
           height: 52,
-          child: ElevatedButton.icon(
+          child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE1306C),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              backgroundColor: AwareScrollTheme.primary,
+              foregroundColor: Colors.white,
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
-            icon: const Icon(Icons.logout, color: Colors.white, size: 20),
-            label: const Text('Close Instagram', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Instagram locked & closed. Boundary preserved!')),
-              );
-            },
+            onPressed: _handleCloseApp,
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.door_front_door_outlined, size: 19),
+                SizedBox(width: 8),
+                Text(
+                  'Close Instagram',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
           ),
         ),
+
         const SizedBox(height: 12),
+
         SizedBox(
           width: double.infinity,
           height: 50,
           child: OutlinedButton(
             style: OutlinedButton.styleFrom(
-              backgroundColor: const Color(0xFF151824),
-              side: const BorderSide(color: Color(0xFF262B3D)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              backgroundColor: Colors.white,
+              foregroundColor: AwareScrollTheme.onSurface,
+              side: const BorderSide(color: AwareScrollTheme.outline),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
             onPressed: () => _switchState(2),
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Continue (Requires Reflection)', style: TextStyle(color: Color(0xFFCFD5E8), fontWeight: FontWeight.w600, fontSize: 14)),
+                Icon(Icons.psychology_outlined, size: 18, color: AwareScrollTheme.primary),
                 SizedBox(width: 8),
-                Icon(Icons.arrow_forward, size: 16, color: Color(0xFFE1306C)),
+                Text(
+                  'Continue (Requires Reflection)',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                SizedBox(width: 4),
+                Icon(Icons.arrow_forward_rounded, size: 16, color: AwareScrollTheme.primary),
               ],
             ),
           ),
@@ -987,370 +1711,621 @@ class _InteractiveBlockerTabState extends State<InteractiveBlockerTab> {
     );
   }
 
-  // STATE 2: REFLECT (SURVEY FORM)
-  Widget _buildState2Reflect() {
+  // ==========================================
+  // STATE 2: CONSCIOUS REFLECTION SURVEY
+  // ==========================================
+  Widget _buildState2Survey() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Flow header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            GestureDetector(
+            InkWell(
               onTap: () => _switchState(1),
-              child: const Row(
-                children: [
-                  Icon(Icons.arrow_back, size: 16, color: Color(0xFF8E97B0)),
-                  SizedBox(width: 4),
-                  Text('Close App', style: TextStyle(fontSize: 12, color: Color(0xFF8E97B0))),
-                ],
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AwareScrollTheme.outline),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.arrow_back, size: 14, color: AwareScrollTheme.onSurfaceVariant),
+                    SizedBox(width: 4),
+                    Text(
+                      'Close App',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AwareScrollTheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const Text('● EXTENSION SURVEY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF00E676), letterSpacing: 0.8)),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F8F0),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Text(
+                '● RECONSIDERATION',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.8,
+                  color: Color(0xFF00A86B),
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ),
           ],
         ),
+
         const SizedBox(height: 12),
+
+        // Progress line
         ClipRRect(
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(4),
           child: Container(
             height: 4,
             width: double.infinity,
-            color: const Color(0xFF1E2333),
+            color: AwareScrollTheme.outline,
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
               widthFactor: 0.75,
-              child: Container(color: const Color(0xFFE1306C)),
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: AwareScrollTheme.instagramGradient,
+                ),
+              ),
             ),
           ),
         ),
+
         const SizedBox(height: 16),
-        const Text('Mindful Extension Survey', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-        const SizedBox(height: 4),
-        const Text('Please complete these reflections to consciously unlock an extension.', style: TextStyle(fontSize: 12, color: Color(0xFF7E869E))),
-        const SizedBox(height: 20),
+
+        const Text(
+          'Conscious Reflection',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: AwareScrollTheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 2),
+        const Text(
+          'Answer the following reflections to unlock a temporary extension.',
+          style: TextStyle(
+            fontSize: 12,
+            color: AwareScrollTheme.onSurfaceVariant,
+          ),
+        ),
+
+        const SizedBox(height: 16),
 
         // Q1: Purpose
-        _buildQuestionCard(
+        _buildSurveyCard(
           number: '1',
           title: 'Purpose of Usage',
           subtitle: 'Why do you want use it, clearly mention your purpose?',
-          child: Column(
-            children: [
-              'Reply to a message',
-              "Checking someone's reply",
-              'Check updates',
-              'Nothing to do, so watch reels',
-              'Finished all tasks, want to watch reels',
-              'Study or research',
-              'Opened automatically / out of habit',
-            ].map((opt) => _buildRadioOption(opt, _selectedPurpose, (v) => setState(() => _selectedPurpose = v))).toList(),
-          ),
+          options: const [
+            'Reply to a message',
+            'Checking someone\'s reply',
+            'Check updates',
+            'Nothing to do, so watch reels',
+            'Finished all tasks, want to watch reels',
+            'Study or research',
+            'Opened automatically / out of habit',
+          ],
+          selected: _selectedPurpose,
+          onSelect: (val) => setState(() => _selectedPurpose = val),
         ),
 
-        const SizedBox(height: 16),
-
-        // Q2: Decision to Continue
-        _buildQuestionCard(
+        // Q2: Trigger Factor
+        _buildSurveyCard(
           number: '2',
-          title: 'Decision Factor',
+          title: 'Psychological Trigger',
           subtitle: 'What most influenced your decision to continue?',
-          child: Column(
-            children: [
-              'Interesting content',
-              'Boredom',
-              'Stress / mood',
-              'Notifications / messages',
-              'Habitual scrolling',
-              'Unfinished original purpose',
-            ].map((opt) => _buildRadioOption(opt, _selectedTrigger, (v) => setState(() => _selectedTrigger = v))).toList(),
-          ),
+          options: const [
+            'Interesting content',
+            'Boredom',
+            'Stress / mood',
+            'Notifications / messages',
+            'Habitual scrolling',
+            'Unfinished original purpose',
+          ],
+          selected: _selectedTrigger,
+          onSelect: (val) => setState(() => _selectedTrigger = val),
         ),
-
-        const SizedBox(height: 16),
 
         // Q3: Content Category
-        _buildQuestionCard(
+        _buildSurveyCard(
           number: '3',
           title: 'Content Category',
           subtitle: 'Which content category kept you engaged?',
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              'Comedy / Memes',
-              'Education / Technology',
-              'News / Politics',
-              'Stories / Personal content',
-              'Fitness / Lifestyle',
-              'Music / Entertainment',
-              'Other / Mixed',
-            ].map((cat) {
-              final isSel = cat == _selectedCategory;
-              return GestureDetector(
-                onTap: () => setState(() => _selectedCategory = cat),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isSel ? const Color(0xFFE1306C) : const Color(0xFF151824),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: isSel ? const Color(0xFFE1306C) : const Color(0xFF262B3D)),
-                  ),
-                  child: Text(cat, style: TextStyle(fontSize: 11, color: isSel ? Colors.white : const Color(0xFFB0B7C3), fontWeight: isSel ? FontWeight.bold : FontWeight.normal)),
-                ),
-              );
-            }).toList(),
-          ),
+          options: const [
+            'Comedy / Memes',
+            'Education / Technology',
+            'News / Politics',
+            'Stories / Personal content',
+            'Fitness / Lifestyle',
+            'Music / Entertainment',
+            'Other / Mixed',
+          ],
+          selected: _selectedCategory,
+          onSelect: (val) => setState(() => _selectedCategory = val),
         ),
 
-        const SizedBox(height: 16),
-
         // Q4: Effect on planned work
-        _buildQuestionCard(
+        _buildSurveyCard(
           number: '4',
           title: 'Effect on Planned Work',
           subtitle: 'How did this session affect your planned work?',
-          child: Column(
-            children: [
-              'No task planned',
-              'Delayed a task',
-              'Interrupted a task',
-              'No negative impact / planned break',
-            ].map((opt) => _buildRadioOption(opt, _selectedWorkImpact, (v) => setState(() => _selectedWorkImpact = v))).toList(),
-          ),
+          options: const [
+            'No task planned',
+            'Delayed a task',
+            'Interrupted a task',
+            'No negative impact / planned break',
+          ],
+          selected: _selectedWorkImpact,
+          onSelect: (val) => setState(() => _selectedWorkImpact = val),
         ),
 
-        const SizedBox(height: 16),
-
-        // Q5: Feeling after scrolling
-        _buildQuestionCard(
+        // Q5: Emotional state
+        _buildSurveyCard(
           number: '5',
           title: 'Emotional State',
           subtitle: 'How do you feel after scrolling?',
-          child: Column(
-            children: [
-              'Satisfied',
-              'Relaxed',
-              'Neutral',
-              'Bored',
-              'Stressed / regretful',
-            ].map((opt) => _buildRadioOption(opt, _selectedFeeling, (v) => setState(() => _selectedFeeling = v))).toList(),
-          ),
+          options: const [
+            'Satisfied',
+            'Relaxed',
+            'Neutral',
+            'Bored',
+            'Stressed / regretful',
+          ],
+          selected: _selectedFeeling,
+          onSelect: (val) => setState(() => _selectedFeeling = val),
         ),
-
-        const SizedBox(height: 16),
 
         // Q6: Supposed to be doing
-        _buildQuestionCard(
+        _buildSurveyCard(
           number: '6',
-          title: 'Intended Activity',
+          title: 'Displaced Intention',
           subtitle: 'What were you supposed to be doing?',
-          child: Column(
-            children: [
-              'Studying',
-              'Working',
-              'Sleeping',
-              'Socializing',
-              'Relaxing',
-              'Nothing planned',
-            ].map((opt) => _buildRadioOption(opt, _selectedSupposedActivity, (v) => setState(() => _selectedSupposedActivity = v))).toList(),
-          ),
+          options: const [
+            'Studying',
+            'Working',
+            'Sleeping',
+            'Socializing',
+            'Relaxing',
+            'Nothing planned',
+          ],
+          selected: _selectedSupposedActivity,
+          onSelect: (val) => setState(() => _selectedSupposedActivity = val),
         ),
 
-        const SizedBox(height: 16),
-
-        // Q7: What would have helped stop
-        _buildQuestionCard(
+        // Q7: What would help stop
+        _buildSurveyCard(
           number: '7',
           title: 'Intervention Help',
           subtitle: 'What would have helped you stop?',
-          child: Column(
-            children: [
-              'Time warning',
-              'Original-purpose reminder',
-              'Mood check',
-              'Break suggestion',
-              'App closure',
-            ].map((opt) => _buildRadioOption(opt, _selectedHelpStop, (v) => setState(() => _selectedHelpStop = v))).toList(),
-          ),
+          options: const [
+            'Time warning',
+            'Original-purpose reminder',
+            'Mood check',
+            'Break suggestion',
+            'App closure',
+          ],
+          selected: _selectedHelpStop,
+          onSelect: (val) => setState(() => _selectedHelpStop = val),
         ),
 
-        const SizedBox(height: 16),
-
-        // Q8: Extension Duration
-        _buildQuestionCard(
-          number: '8',
-          title: 'Extension Duration',
-          subtitle: 'How much time do you consciously commit to extend?',
-          child: Row(
+        // Q8: Extension Commitment
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AwareScrollTheme.outline),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x06141528),
+                blurRadius: 6,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildExtCard(2, 'Quick check'),
-              const SizedBox(width: 8),
-              _buildExtCard(5, 'Default', isRecommended: true),
-              const SizedBox(width: 8),
-              _buildExtCard(10, '+10m'),
-              const SizedBox(width: 8),
-              _buildExtCard(15, '+15m'),
+              const Row(
+                children: [
+                  CircleAvatar(
+                    radius: 10,
+                    backgroundColor: Color(0xFFE8F8F0),
+                    child: Text(
+                      '8',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF00A86B),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Extension Commitment',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AwareScrollTheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Choose your conscious extension duration:',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AwareScrollTheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _buildDurationChip(2, '+2m', 'Quick check'),
+                  const SizedBox(width: 8),
+                  _buildDurationChip(5, '+5m', 'Rec', isRecommended: true),
+                  const SizedBox(width: 8),
+                  _buildDurationChip(10, '+10m', 'Deep dive'),
+                  const SizedBox(width: 8),
+                  _buildDurationChip(15, '+15m', 'Cap'),
+                ],
+              ),
             ],
           ),
         ),
 
-        const SizedBox(height: 24),
-
+        // Confirm & Unlock CTA
         SizedBox(
           width: double.infinity,
           height: 52,
-          child: ElevatedButton.icon(
+          child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00E676),
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              backgroundColor: AwareScrollTheme.secondaryEmerald,
+              foregroundColor: Colors.white,
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
-            icon: const Icon(Icons.lock_open, size: 20),
-            label: Text('Confirm & Extend Time (+${_selectedExtensionMin}m)', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            onPressed: () => _switchState(3),
+            onPressed: _handleUnlockCommitment,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Confirm & Unlock (+$_selectedExtensionMin Min Extension)',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.lock_open, size: 18),
+              ],
+            ),
           ),
         ),
+
+        const SizedBox(height: 8),
+
+        const Center(
+          child: Text(
+            'Instagram will re-lock immediately when this extension expires.',
+            style: TextStyle(
+              fontSize: 10,
+              color: AwareScrollTheme.onSurfaceVariant,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 16),
       ],
     );
   }
 
-  Widget _buildRadioOption(String opt, String selectedVal, Function(String) onSelect) {
-    final isSel = opt == selectedVal;
-    return GestureDetector(
-      onTap: () => onSelect(opt),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSel ? const Color(0xFFE1306C).withOpacity(0.18) : const Color(0xFF151824),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isSel ? const Color(0xFFE1306C) : const Color(0xFF262B3D)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(opt, style: TextStyle(fontSize: 13, color: isSel ? Colors.white : const Color(0xFFB0B7C3), fontWeight: isSel ? FontWeight.bold : FontWeight.normal)),
-            ),
-            Icon(isSel ? Icons.radio_button_checked : Icons.radio_button_off, size: 16, color: isSel ? const Color(0xFFE1306C) : Colors.white24),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExtCard(int min, String caption, {bool isRecommended = false}) {
-    final isSel = _selectedExtensionMin == min;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedExtensionMin = min),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSel ? const Color(0xFF00E676).withOpacity(0.18) : const Color(0xFF151824),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: isSel ? const Color(0xFF00E676) : const Color(0xFF262B3D)),
-          ),
-          child: Column(
-            children: [
-              if (isRecommended)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  margin: const EdgeInsets.only(bottom: 4),
-                  decoration: BoxDecoration(color: const Color(0xFF00E676), borderRadius: BorderRadius.circular(6)),
-                  child: const Text('REC', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.black)),
-                ),
-              Text('+$min m', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isSel ? const Color(0xFF00E676) : Colors.white)),
-              const SizedBox(height: 2),
-              Text(caption, style: const TextStyle(fontSize: 9, color: Color(0xFF7E869E))),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuestionCard({required String number, required String title, required String subtitle, required Widget child}) {
+  Widget _buildSurveyCard({
+    required String number,
+    required String title,
+    required String subtitle,
+    required List<String> options,
+    required String selected,
+    required ValueChanged<String> onSelect,
+  }) {
     return Container(
+      margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: const Color(0xFF111319), borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xFF202538))),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AwareScrollTheme.outline),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x06141528),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              CircleAvatar(radius: 10, backgroundColor: const Color(0xFFE1306C).withOpacity(0.2), child: Text(number, style: const TextStyle(fontSize: 10, color: Color(0xFFE1306C), fontWeight: FontWeight.bold))),
+              CircleAvatar(
+                radius: 10,
+                backgroundColor: AwareScrollTheme.surfaceContainerHigh,
+                child: Text(
+                  number,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: AwareScrollTheme.primary,
+                  ),
+                ),
+              ),
               const SizedBox(width: 8),
-              Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AwareScrollTheme.onSurface,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 4),
-          Text(subtitle, style: const TextStyle(fontSize: 11, color: Color(0xFF7E869E))),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AwareScrollTheme.onSurfaceVariant,
+            ),
+          ),
           const SizedBox(height: 12),
-          child,
+          Column(
+            children: options.map((opt) {
+              final isSel = opt == selected;
+              return GestureDetector(
+                onTap: () => onSelect(opt),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isSel ? AwareScrollTheme.surfaceContainerLow : const Color(0xFFFCF8FF),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSel ? AwareScrollTheme.primary : AwareScrollTheme.outline,
+                      width: isSel ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          opt,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                            color: isSel ? AwareScrollTheme.primary : AwareScrollTheme.onSurface,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isSel ? AwareScrollTheme.primary : Colors.white,
+                          border: Border.all(
+                            color: isSel ? AwareScrollTheme.primary : AwareScrollTheme.outlineVariant,
+                          ),
+                        ),
+                        child: isSel
+                            ? const Center(
+                                child: Icon(Icons.check, size: 11, color: Colors.white),
+                              )
+                            : null,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
         ],
       ),
     );
   }
 
-  // STATE 3: UNLOCK
-  Widget _buildState3Unlock() {
-    final m = _countdownRemainingSec ~/ 60;
-    final s = _countdownRemainingSec % 60;
-    final timerText = '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-
-    return Column(
-      children: [
-        const SizedBox(height: 20),
-        Container(
-          width: 120,
-          height: 120,
+  Widget _buildDurationChip(int min, String label, String sub, {bool isRecommended = false}) {
+    final isSel = _selectedExtensionMin == min;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedExtensionMin = min),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0xFF00E676).withOpacity(0.12),
-            border: Border.all(color: const Color(0xFF00E676).withOpacity(0.4), width: 2),
+            color: isSel ? const Color(0xFFE8F8F0) : const Color(0xFFFCF8FF),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSel ? AwareScrollTheme.secondaryEmerald : AwareScrollTheme.outline,
+              width: isSel ? 1.8 : 1,
+            ),
           ),
-          child: const Icon(Icons.lock_open, color: Color(0xFF00E676), size: 50),
-        ),
-        const SizedBox(height: 20),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-          decoration: BoxDecoration(color: const Color(0xFF151824), borderRadius: BorderRadius.circular(20)),
-          child: const Text('SESSION UNLOCKED', style: TextStyle(color: Color(0xFF00E676), fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 0.8)),
-        ),
-        const SizedBox(height: 16),
-        const Text('Extension Granted', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
-        const SizedBox(height: 6),
-        const Text('Scroll with mindful awareness. Your countdown has initiated.', style: TextStyle(fontSize: 12, color: Color(0xFF7E869E))),
-        const SizedBox(height: 24),
-
-        // Live Countdown Card
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(color: const Color(0xFF151824), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFF262B3D))),
           child: Column(
             children: [
-              Text(timerText, style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold, fontFamily: 'monospace', color: Color(0xFF00E676))),
-              const SizedBox(height: 4),
-              const Text('REMAINING IN EXTENSION', style: TextStyle(fontSize: 10, letterSpacing: 0.8, color: Color(0xFF7E869E))),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: isSel ? AwareScrollTheme.secondaryEmerald : AwareScrollTheme.onSurface,
+                  fontFamily: 'monospace',
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                sub,
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                  color: isSel ? AwareScrollTheme.secondaryEmerald : AwareScrollTheme.onSurfaceVariant,
+                ),
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
 
-        const SizedBox(height: 20),
+  // ==========================================
+  // STATE 3: UNLOCK CONFIRMATION & COUNTDOWN
+  // ==========================================
+  Widget _buildState3Unlock() {
+    final m = _countdownRemainingSec ~/ 60;
+    final s = _countdownRemainingSec % 60;
+    final countdownStr = '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+    final total = _selectedExtensionMin * 60;
+    final pct = total > 0 ? (_countdownRemainingSec / total).clamp(0.0, 1.0) : 0.0;
 
-        // Commitment Recap Card
+    return Column(
+      children: [
+        const SizedBox(height: 16),
         Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: const Color(0xFF111319), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFF202538))),
+          width: 90,
+          height: 90,
+          decoration: BoxDecoration(
+            color: const Color(0xFFE8F8F0),
+            shape: BoxShape.circle,
+            border: Border.all(color: AwareScrollTheme.secondaryEmerald.withOpacity(0.3)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x2000B894),
+                blurRadius: 16,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: const Center(
+            child: Icon(Icons.lock_open, color: AwareScrollTheme.secondaryEmerald, size: 42),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE8F8F0),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Text(
+            '● SESSION UNLOCKED',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.8,
+              color: Color(0xFF00A86B),
+              fontFamily: 'monospace',
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        const Text(
+          'Extension Granted',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: AwareScrollTheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Scroll with mindful awareness. Your countdown has initiated.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 12,
+            color: AwareScrollTheme.onSurfaceVariant,
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Live Countdown Ticker Box
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AwareScrollTheme.outline),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0C141528),
+                blurRadius: 10,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
           child: Column(
             children: [
-              _buildRecapRow('Stated Purpose', _selectedPurpose),
-              const Divider(color: Color(0xFF1E2335), height: 16),
-              _buildRecapRow('Continue Trigger', _selectedTrigger),
-              const Divider(color: Color(0xFF1E2335), height: 16),
-              _buildRecapRow('Supposed to be doing', _selectedSupposedActivity),
-              const Divider(color: Color(0xFF1E2335), height: 16),
-              _buildRecapRow('Extension Allowance', '+$_selectedExtensionMin Minutes'),
+              const Text(
+                'REMAINING ALLOWANCE',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.8,
+                  color: AwareScrollTheme.onSurfaceVariant,
+                  fontFamily: 'monospace',
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                countdownStr,
+                style: const TextStyle(
+                  fontSize: 44,
+                  fontWeight: FontWeight.bold,
+                  color: AwareScrollTheme.secondaryEmerald,
+                  fontFamily: 'monospace',
+                ),
+              ),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: pct,
+                  minHeight: 8,
+                  backgroundColor: AwareScrollTheme.surfaceContainer,
+                  valueColor: const AlwaysStoppedAnimation<Color>(AwareScrollTheme.secondaryEmerald),
+                ),
+              ),
             ],
           ),
         ),
@@ -1359,32 +2334,22 @@ class _InteractiveBlockerTabState extends State<InteractiveBlockerTab> {
 
         SizedBox(
           width: double.infinity,
-          height: 52,
-          child: ElevatedButton.icon(
+          height: 50,
+          child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00E676),
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              backgroundColor: AwareScrollTheme.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
-            icon: const Icon(Icons.arrow_outward, size: 20),
-            label: const Text('Enter Instagram', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Resuming Instagram session. Use it with intention!')),
-              );
-            },
+            onPressed: widget.onReturnToControl,
+            child: const Text(
+              'Return to Control Dashboard',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+            ),
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildRecapRow(String title, String val) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(title, style: const TextStyle(fontSize: 12, color: Color(0xFF7E869E))),
-        Text(val, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
       ],
     );
   }
@@ -1393,169 +2358,439 @@ class _InteractiveBlockerTabState extends State<InteractiveBlockerTab> {
 // ==========================================
 // TAB 3: USER ACCOUNT & INSIGHTS (SCREEN 3)
 // ==========================================
-class UserAccountInsightsTab extends StatelessWidget {
+class UserAccountInsightsTab extends StatefulWidget {
   const UserAccountInsightsTab({super.key});
 
   @override
+  State<UserAccountInsightsTab> createState() => _UserAccountInsightsTabState();
+}
+
+class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
+  String _selectedRange = 'today';
+
+  @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          // Profile Header
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: const Color(0xFF151824),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: const Color(0xFF262B3D)),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const CircleAvatar(
-                          radius: 24,
-                          backgroundColor: Color(0xFFE1306C),
-                          child: Icon(Icons.person, color: Colors.white, size: 28),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Text('Alex Morgan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                                  decoration: BoxDecoration(color: const Color(0xFFE1306C).withOpacity(0.2), borderRadius: BorderRadius.circular(6)),
-                                  child: const Text('PRO', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFE1306C))),
+    return Scaffold(
+      backgroundColor: AwareScrollTheme.background,
+      body: SafeArea(
+        child: ListView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          children: [
+            // Profile & Focus Hero Banner
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AwareScrollTheme.outline),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x0A141528),
+                    blurRadius: 10,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Stack(
+                            children: [
+                              Container(
+                                width: 46,
+                                height: 46,
+                                decoration: BoxDecoration(
+                                  color: AwareScrollTheme.surfaceContainerHigh,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: AwareScrollTheme.outline),
                                 ),
-                              ],
+                                child: const Center(
+                                  child: Icon(Icons.person, color: AwareScrollTheme.primary, size: 26),
+                                ),
+                              ),
+                              Positioned(
+                                right: 0,
+                                bottom: 0,
+                                child: Container(
+                                  width: 14,
+                                  height: 14,
+                                  decoration: const BoxDecoration(
+                                    color: AwareScrollTheme.secondaryEmerald,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.check, size: 10, color: Colors.white),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Text(
+                                    'Alex Morgan',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: AwareScrollTheme.onSurface,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: AwareScrollTheme.primaryFixed,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      'PRO',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                        color: AwareScrollTheme.primary,
+                                        fontFamily: 'monospace',
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Text(
+                                '@alex.mindful',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AwareScrollTheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: AwareScrollTheme.tertiaryContainer,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AwareScrollTheme.tertiaryAmber.withOpacity(0.3)),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.local_fire_department, size: 15, color: AwareScrollTheme.tertiaryAmber),
+                            SizedBox(width: 4),
+                            Text(
+                              '14d Streak',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: AwareScrollTheme.onTertiaryText,
+                              ),
                             ),
-                            const Text('@alex.mindful', style: TextStyle(fontSize: 11, color: Color(0xFF7E869E))),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AwareScrollTheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Column(
+                          children: [
+                            Text(
+                              'SHIELD HEALTH',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.6,
+                                color: AwareScrollTheme.onSurfaceVariant,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                            SizedBox(height: 3),
+                            Text(
+                              '94%',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AwareScrollTheme.secondaryEmerald,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Column(
+                          children: [
+                            Text(
+                              'AWARENESS',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.6,
+                                color: AwareScrollTheme.onSurfaceVariant,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                            SizedBox(height: 3),
+                            Text(
+                              'Lvl 8',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AwareScrollTheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Column(
+                          children: [
+                            Text(
+                              'NET CALM',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.6,
+                                color: AwareScrollTheme.onSurfaceVariant,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                            SizedBox(height: 3),
+                            Text(
+                              '+3.4h',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AwareScrollTheme.secondaryEmerald,
+                              ),
+                            ),
                           ],
                         ),
                       ],
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(color: const Color(0xFFFFB300).withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.local_fire_department, size: 14, color: Color(0xFFFFB300)),
-                          SizedBox(width: 4),
-                          Text('14d Streak', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFFFB300))),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(color: const Color(0xFF0F111A), borderRadius: BorderRadius.circular(14)),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Time Filter Switcher
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: AwareScrollTheme.surfaceContainer,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Row(
+                children: [
+                  _buildTimeFilterItem('Today', 'today'),
+                  _buildTimeFilterItem('This Week', 'week'),
+                  _buildTimeFilterItem('This Month', 'month'),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Primary Metric Module: Instagram Focus
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AwareScrollTheme.outline),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x08141528),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
+                      const Row(
                         children: [
-                          Text('SHIELD HEALTH', style: TextStyle(fontSize: 9, color: Color(0xFF7E869E))),
-                          SizedBox(height: 2),
-                          Text('94%', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                          Icon(Icons.stream, size: 18, color: AwareScrollTheme.primary),
+                          SizedBox(width: 8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Instagram Focus',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: AwareScrollTheme.onSurface,
+                                ),
+                              ),
+                              Text(
+                                'Target cap: 45 min/day',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AwareScrollTheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
-                      Column(
-                        children: [
-                          Text('AWARENESS', style: TextStyle(fontSize: 9, color: Color(0xFF7E869E))),
-                          SizedBox(height: 2),
-                          Text('Lvl 8', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFE1306C))),
-                        ],
-                      ),
-                      Column(
-                        children: [
-                          Text('NET CALM', style: TextStyle(fontSize: 9, color: Color(0xFF7E869E))),
-                          SizedBox(height: 2),
-                          Text('+3.4h', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF3A5BFF))),
-                        ],
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AwareScrollTheme.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'Today, Oct 24',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: AwareScrollTheme.onSurfaceVariant,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
+
+                  const SizedBox(height: 16),
+
+                  Row(
+                    children: [
+                      _buildKpiCard('SCREEN TIME', '42m', '-38% vs lw', AwareScrollTheme.secondaryEmerald),
+                      const SizedBox(width: 8),
+                      _buildKpiCard('INTERVENTIONS', '6', '4 held / 2 ext', AwareScrollTheme.primary),
+                      const SizedBox(width: 8),
+                      _buildKpiCard('CALM SAVED', '18m', 'Preserved', AwareScrollTheme.secondaryEmerald),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // 7-day chart
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Daily Rhythm vs 45m Cap',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AwareScrollTheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        'Avg: 37m/day',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AwareScrollTheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      _buildBar('M', 35, 45),
+                      _buildBar('T', 40, 45),
+                      _buildBar('W', 52, 45, isExceeded: true),
+                      _buildBar('T', 42, 45, isToday: true),
+                      _buildBar('F', 28, 45),
+                      _buildBar('S', 30, 45),
+                      _buildBar('S', 24, 45),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Compulsive Trigger Breakdown
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AwareScrollTheme.outline),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x08141528),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Compulsive Trigger Breakdown',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AwareScrollTheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _buildTriggerBar('Boredom / Under-stimulation', 0.44, '44%', AwareScrollTheme.primary),
+                  _buildTriggerBar('Habitual / Reflexive', 0.28, '28%', AwareScrollTheme.tertiaryAmber),
+                  _buildTriggerBar('Notifications & DMs', 0.16, '16%', const Color(0xFF6C8CFF)),
+                  _buildTriggerBar('Dopamine / Content Hook', 0.12, '12%', AwareScrollTheme.secondaryEmerald),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeFilterItem(String label, String value) {
+    final isSel = _selectedRange == value;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedRange = value),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSel ? AwareScrollTheme.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
+                color: isSel ? Colors.white : AwareScrollTheme.onSurfaceVariant,
+              ),
             ),
           ),
-
-          const SizedBox(height: 20),
-
-          // KPI Cards
-          Row(
-            children: [
-              _buildKpiCard('SCREEN TIME', '42m', '-38% vs lw', const Color(0xFF00E676)),
-              const SizedBox(width: 8),
-              _buildKpiCard('FRICTIONS', '6', '4 held / 2 ext', const Color(0xFFE1306C)),
-              const SizedBox(width: 8),
-              _buildKpiCard('CALM SAVED', '18m', 'Preserved', const Color(0xFF3A5BFF)),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-
-          // 7-Day Bar Chart
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(color: const Color(0xFF151824), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFF262B3D))),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Daily Rhythm vs 45m Cap', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
-                    Text('Avg: 37m/day', style: TextStyle(fontSize: 11, color: Color(0xFFE1306C))),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    _buildBar('M', 35, 45),
-                    _buildBar('T', 40, 45),
-                    _buildBar('W', 52, 45, isExceeded: true),
-                    _buildBar('T', 42, 45, isToday: true),
-                    _buildBar('F', 28, 45),
-                    _buildBar('S', 30, 45),
-                    _buildBar('S', 24, 45),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // Compulsive Trigger Breakdown
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(color: const Color(0xFF151824), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFF262B3D))),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Compulsive Trigger Breakdown', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
-                const SizedBox(height: 14),
-                _buildTriggerBar('Boredom / Under-stimulation', 0.44, '44%', const Color(0xFFE1306C)),
-                _buildTriggerBar('Habitual / Reflexive', 0.28, '28%', const Color(0xFFFFB300)),
-                _buildTriggerBar('Notifications & DMs', 0.16, '16%', const Color(0xFF3A5BFF)),
-                _buildTriggerBar('Dopamine / Content Hook', 0.12, '12%', const Color(0xFF00E676)),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1563,16 +2798,42 @@ class UserAccountInsightsTab extends StatelessWidget {
   static Widget _buildKpiCard(String label, String value, String sub, Color col) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(color: const Color(0xFF151824), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFF262B3D))),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AwareScrollTheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(14),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(fontSize: 9, color: Color(0xFF7E869E))),
-            const SizedBox(height: 6),
-            Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 8,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.6,
+                color: AwareScrollTheme.onSurfaceVariant,
+                fontFamily: 'monospace',
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AwareScrollTheme.onSurface,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(sub, style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: col)),
+            Text(
+              sub,
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+                color: col,
+              ),
+            ),
           ],
         ),
       ),
@@ -1581,45 +2842,77 @@ class UserAccountInsightsTab extends StatelessWidget {
 
   static Widget _buildBar(String day, int val, int cap, {bool isToday = false, bool isExceeded = false}) {
     final heightRatio = (val / 60.0).clamp(0.1, 1.0);
-    final col = isExceeded ? const Color(0xFFFF4D6D) : (isToday ? const Color(0xFFE1306C) : const Color(0xFF3A5BFF).withOpacity(0.6));
+    final col = isExceeded
+        ? const Color(0xFFE53935)
+        : (isToday ? AwareScrollTheme.primary : AwareScrollTheme.primary.withOpacity(0.35));
+
     return Column(
       children: [
-        Text('${val}m', style: TextStyle(fontSize: 9, color: isToday ? Colors.white : const Color(0xFF7E869E))),
-        const SizedBox(height: 6),
+        Text(
+          '${val}m',
+          style: TextStyle(
+            fontSize: 9,
+            fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+            color: isToday ? AwareScrollTheme.primary : AwareScrollTheme.onSurfaceVariant,
+            fontFamily: 'monospace',
+          ),
+        ),
+        const SizedBox(height: 4),
         Container(
-          width: 18,
-          height: 100 * heightRatio,
+          width: 16,
+          height: 80 * heightRatio,
           decoration: BoxDecoration(
             color: col,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
           ),
         ),
         const SizedBox(height: 6),
-        Text(day, style: TextStyle(fontSize: 10, fontWeight: isToday ? FontWeight.bold : FontWeight.normal, color: isToday ? const Color(0xFFE1306C) : const Color(0xFF7E869E))),
+        Text(
+          day,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+            color: isToday ? AwareScrollTheme.primary : AwareScrollTheme.onSurfaceVariant,
+          ),
+        ),
       ],
     );
   }
 
   static Widget _buildTriggerBar(String label, double ratio, String percent, Color col) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFFC5CBE0))),
-              Text(percent, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: col)),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AwareScrollTheme.onSurface,
+                ),
+              ),
+              Text(
+                percent,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: col,
+                  fontFamily: 'monospace',
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 5),
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: ratio,
               minHeight: 6,
-              backgroundColor: const Color(0xFF0F111A),
+              backgroundColor: AwareScrollTheme.surfaceContainerLow,
               valueColor: AlwaysStoppedAnimation<Color>(col),
             ),
           ),
@@ -1630,7 +2923,7 @@ class UserAccountInsightsTab extends StatelessWidget {
 }
 
 // ==========================================
-// SCREEN 5: POST-SESSION DEBRIEF MODAL
+// POST-SESSION DEBRIEF MODAL (SCREEN 5)
 // ==========================================
 class PostSessionDebriefModal extends StatefulWidget {
   final int elapsedSeconds;
@@ -1667,57 +2960,121 @@ class _PostSessionDebriefModalState extends State<PostSessionDebriefModal> {
     final timeStr = '${m.toString().padLeft(2, '0')}m ${s.toString().padLeft(2, '0')}s';
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
       decoration: const BoxDecoration(
-        color: Color(0xFF111319),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border(top: BorderSide(color: Color(0xFF262B3D), width: 1.5)),
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(width: 36, height: 4, margin: const EdgeInsets.only(bottom: 20), decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
-          const Icon(Icons.check_circle_outline, color: Color(0xFF00E676), size: 48),
-          const SizedBox(height: 12),
-          const Text('Session Complete!', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-          const SizedBox(height: 4),
-          const Text('You successfully honored your boundary and stepped away.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Color(0xFF7E869E))),
-          const SizedBox(height: 20),
-
-          // Telemetry
           Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: const Color(0xFF151824), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFF262B3D))),
+            width: 36,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: AwareScrollTheme.outline,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const Icon(Icons.check_circle_rounded, color: AwareScrollTheme.secondaryEmerald, size: 44),
+          const SizedBox(height: 10),
+          const Text(
+            'Session Complete!',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AwareScrollTheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'You successfully honored your boundary and stepped away.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              color: AwareScrollTheme.onSurfaceVariant,
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AwareScrollTheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AwareScrollTheme.outline),
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Column(
                   children: [
-                    const Text('SCROLLED', style: TextStyle(fontSize: 10, color: Color(0xFF7E869E))),
-                    const SizedBox(height: 4),
-                    Text(timeStr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'monospace')),
+                    const Text(
+                      'SCROLLED',
+                      style: TextStyle(
+                        fontSize: 9,
+                        letterSpacing: 0.6,
+                        color: AwareScrollTheme.onSurfaceVariant,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      timeStr,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: AwareScrollTheme.onSurface,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
                   ],
                 ),
-                Container(height: 30, width: 1, color: Colors.white12),
+                Container(height: 30, width: 1, color: AwareScrollTheme.outline),
                 const Column(
                   children: [
-                    Text('CALM SAVED', style: TextStyle(fontSize: 10, color: Color(0xFF00E676))),
-                    SizedBox(height: 4),
-                    Text('+15m 00s', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF00E676), fontFamily: 'monospace')),
+                    Text(
+                      'CALM SAVED',
+                      style: TextStyle(
+                        fontSize: 9,
+                        letterSpacing: 0.6,
+                        color: AwareScrollTheme.secondaryEmerald,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      '+15m 00s',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: AwareScrollTheme.secondaryEmerald,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
                   ],
                 ),
               ],
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
 
-          // Sentiment
           const Align(
             alignment: Alignment.centerLeft,
-            child: Text('How do you feel right now?', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
+            child: Text(
+              'How do you feel right now?',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: AwareScrollTheme.onSurface,
+              ),
+            ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: _sentiments.map((item) {
@@ -1729,15 +3086,24 @@ class _PostSessionDebriefModalState extends State<PostSessionDebriefModal> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isSel ? const Color(0xFFE1306C).withOpacity(0.2) : const Color(0xFF151824),
+                    color: isSel ? AwareScrollTheme.primaryFixed : AwareScrollTheme.surfaceContainerLow,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: isSel ? const Color(0xFFE1306C) : const Color(0xFF262B3D)),
+                    border: Border.all(
+                      color: isSel ? AwareScrollTheme.primary : AwareScrollTheme.outline,
+                    ),
                   ),
                   child: Column(
                     children: [
-                      Text(emoji, style: const TextStyle(fontSize: 22)),
+                      Text(emoji, style: const TextStyle(fontSize: 20)),
                       const SizedBox(height: 4),
-                      Text(label, style: TextStyle(fontSize: 9, color: isSel ? Colors.white : const Color(0xFF7E869E))),
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                          color: isSel ? AwareScrollTheme.primary : AwareScrollTheme.onSurfaceVariant,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -1747,34 +3113,42 @@ class _PostSessionDebriefModalState extends State<PostSessionDebriefModal> {
 
           const SizedBox(height: 16),
 
-          // Accountability toggle
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Did this delay your planned tasks?', style: TextStyle(fontSize: 12, color: Color(0xFFC5CBE0))),
+              const Text(
+                'Did this delay your planned tasks?',
+                style: TextStyle(fontSize: 12, color: AwareScrollTheme.onSurface),
+              ),
               Row(
                 children: [
                   GestureDetector(
                     onTap: () => setState(() => _taskDelayed = false),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: !_taskDelayed ? const Color(0xFF00E676).withOpacity(0.2) : const Color(0xFF151824),
+                        color: !_taskDelayed ? AwareScrollTheme.secondaryContainer : AwareScrollTheme.surfaceContainerLow,
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: !_taskDelayed ? AwareScrollTheme.secondaryEmerald : AwareScrollTheme.outline,
+                        ),
                       ),
-                      child: const Text('No 👍', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+                      child: const Text('No 👍', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                     ),
                   ),
                   const SizedBox(width: 6),
                   GestureDetector(
                     onTap: () => setState(() => _taskDelayed = true),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: _taskDelayed ? const Color(0xFFE1306C).withOpacity(0.2) : const Color(0xFF151824),
+                        color: _taskDelayed ? AwareScrollTheme.primaryFixed : AwareScrollTheme.surfaceContainerLow,
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _taskDelayed ? AwareScrollTheme.primary : AwareScrollTheme.outline,
+                        ),
                       ),
-                      child: const Text('Yes ⏳', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+                      child: const Text('Yes ⏳', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -1786,15 +3160,18 @@ class _PostSessionDebriefModalState extends State<PostSessionDebriefModal> {
 
           SizedBox(
             width: double.infinity,
-            height: 50,
+            height: 48,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00E676),
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                backgroundColor: AwareScrollTheme.secondaryEmerald,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
               onPressed: widget.onFinished,
-              child: const Text('Finish & Return to Home →', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              child: const Text(
+                'Finish & Return to Home →',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
             ),
           ),
         ],
