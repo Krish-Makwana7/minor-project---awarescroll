@@ -4,8 +4,10 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 
@@ -48,6 +50,7 @@ object AwareScrollMonitor {
         isTargetInForeground = false
         isBlockerShowing = false
         isRestricted = false
+        AwareScrollOverlayManager.hide()
         stopTicker()
     }
 
@@ -70,6 +73,7 @@ object AwareScrollMonitor {
         extensionSeconds += (minutes * 60)
         isRestricted = false
         isBlockerShowing = false
+        AwareScrollOverlayManager.hide()
         Log.d("AwareScroll", "Extension granted: $minutes min. Total allowed: ${targetTotalSeconds + extensionSeconds}s")
     }
 
@@ -103,11 +107,19 @@ object AwareScrollMonitor {
         isRestricted = true
         if (isBlockerShowing) return
         isBlockerShowing = true
-        Log.d("AwareScroll", "BLOCKING SCREEN for $targetAppName after $elapsedSeconds s! Showing Blocker Activity...")
+        Log.d("AwareScroll", "BLOCKING SCREEN for $targetAppName after $elapsedSeconds s!")
 
         val ctx = appContext ?: return
 
-        // Launch Blocker Activity on top of target app (DO NOT close target app yet!)
+        // Priority 1: Fullscreen overlay directly on top of Instagram via WindowManager
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(ctx)) {
+            Log.d("AwareScroll", "Displaying overlay directly over Instagram")
+            AwareScrollOverlayManager.show(ctx, targetAppName, limitMinutes)
+            return
+        }
+
+        // Priority 2: Fallback to Activity if overlay permission is missing
+        Log.d("AwareScroll", "Overlay permission missing, falling back to Activity")
         val blockerIntent = Intent(ctx, AwareScrollBlockerActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or
                     Intent.FLAG_ACTIVITY_CLEAR_TOP or
@@ -119,7 +131,6 @@ object AwareScrollMonitor {
             putExtra("ELAPSED_MINUTES", elapsedSeconds / 60)
         }
 
-        // 1. Post High-Priority FullScreenIntent alert so Android shows it over target app
         try {
             val fullScreenPendingIntent = PendingIntent.getActivity(
                 ctx,
@@ -144,27 +155,19 @@ object AwareScrollMonitor {
             Log.e("AwareScroll", "Failed fullScreenIntent notification", e)
         }
 
-        // 2. Launch Activity directly
         try {
             ctx.startActivity(blockerIntent)
         } catch (e: Exception) {
-            Log.e("AwareScroll", "Failed direct startActivity", e)
+            Log.e("AwareScroll", "Direct startActivity failed", e)
         }
     }
 
     fun isMatchingPackage(fgPackage: String, targetPackage: String): Boolean {
         if (fgPackage.equals(targetPackage, ignoreCase = true)) return true
-        if (fgPackage.startsWith(targetPackage) || targetPackage.startsWith(fgPackage)) return true
-
-        // Known ecosystem aliases
-        if (targetPackage.contains("youtube", ignoreCase = true) && fgPackage.contains("youtube", ignoreCase = true)) return true
         if (targetPackage.contains("instagram", ignoreCase = true) && fgPackage.contains("instagram", ignoreCase = true)) return true
-        if (targetPackage.contains("facebook", ignoreCase = true) && (fgPackage.contains("facebook", ignoreCase = true) || fgPackage.contains("katana", ignoreCase = true))) return true
+        if (targetPackage.contains("youtube", ignoreCase = true) && fgPackage.contains("youtube", ignoreCase = true)) return true
         if (targetPackage.contains("snapchat", ignoreCase = true) && fgPackage.contains("snapchat", ignoreCase = true)) return true
-        if (targetPackage.contains("reddit", ignoreCase = true) && fgPackage.contains("reddit", ignoreCase = true)) return true
-        if ((targetPackage.contains("twitter", ignoreCase = true) || targetPackage.contains("x", ignoreCase = true)) && (fgPackage.contains("twitter", ignoreCase = true) || fgPackage.contains("x", ignoreCase = true))) return true
-        if (targetPackage.contains("musically", ignoreCase = true) && (fgPackage.contains("musically", ignoreCase = true) || fgPackage.contains("tiktok", ignoreCase = true))) return true
-
+        if (targetPackage.contains("facebook", ignoreCase = true) && fgPackage.contains("facebook", ignoreCase = true)) return true
         return false
     }
 }

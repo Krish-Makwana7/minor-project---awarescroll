@@ -105,6 +105,25 @@ class MainActivity : FlutterActivity() {
                     )
                 }
 
+                "grantExtension" -> {
+                    val minutes = call.argument<Int>("minutes") ?: 5
+                    AwareScrollMonitor.grantExtension(minutes)
+                    result.success(true)
+                }
+
+                "closeTargetApp" -> {
+                    AwareScrollOverlayManager.hide()
+                    val closed = AwareScrollAccessibilityService.instance?.closeAppToHome() ?: false
+                    if (!closed) {
+                        val homeIntent = Intent(Intent.ACTION_MAIN).apply {
+                            addCategory(Intent.CATEGORY_HOME)
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        startActivity(homeIntent)
+                    }
+                    result.success(true)
+                }
+
                 "testBlocker" -> {
                     AwareScrollMonitor.triggerBlocker()
                     result.success(true)

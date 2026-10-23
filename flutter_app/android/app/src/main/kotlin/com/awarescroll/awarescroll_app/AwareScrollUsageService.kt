@@ -63,6 +63,8 @@ class AwareScrollUsageService : Service() {
 
                         if (isTarget && AwareScrollMonitor.isRestricted && !AwareScrollMonitor.isBlockerShowing) {
                             AwareScrollMonitor.triggerBlocker()
+                        } else if (!isTarget && AwareScrollMonitor.isRestricted && AwareScrollOverlayManager.isShowing && fgPackage != "com.awarescroll.awarescroll_app" && fgPackage != "com.android.systemui") {
+                            AwareScrollOverlayManager.hide()
                         }
                     }
 
