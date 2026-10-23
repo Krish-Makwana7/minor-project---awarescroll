@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -2384,17 +2385,161 @@ class UserAccountInsightsTab extends StatefulWidget {
 class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
   static const MethodChannel _channel = MethodChannel('com.awarescroll/restriction');
 
+  static const List<String> _authorizedAdminEmails = [
+    '24bt04d233@gsfcuniversity.ac.in',
+    '24sc06007@gsfcuniversity.ac.in',
+    '24sc06028@gsfcuniversity.ac.in',
+  ];
+
   String _selectedRange = 'today';
   List<Map<String, dynamic>> _records = [];
   bool _isLoading = true;
   String _studentId = 'Loading...';
-  String _cloudSyncUrl = 'https://script.google.com/macros/s/AKfycby_awarescroll/exec';
+  String _cloudSyncUrl = 'https://script.google.com/macros/s/AKfycbz0UGg5UuExe1joA5LYNWkAbyKp3vl5l-2Pk1MXVoN3U-AOSzePm78Q1BKWsRVsdQ8l/exec';
   bool _isSyncing = false;
+  String? _verifiedAdminEmail;
+
+  bool get _isAdminUnlocked =>
+      _verifiedAdminEmail != null &&
+      _authorizedAdminEmails.contains(_verifiedAdminEmail!.toLowerCase().trim());
 
   @override
   void initState() {
     super.initState();
+    _checkAdminStatus();
     _loadTelemetry();
+  }
+
+  Future<void> _checkAdminStatus() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString('admin_verified_email');
+      if (saved != null && _authorizedAdminEmails.contains(saved.toLowerCase().trim())) {
+        if (mounted) {
+          setState(() => _verifiedAdminEmail = saved.toLowerCase().trim());
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _promptAdminLogin() async {
+    final controller = TextEditingController(text: _verifiedAdminEmail ?? '');
+    final enteredEmail = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.admin_panel_settings_rounded, color: AwareScrollTheme.primary),
+            SizedBox(width: 8),
+            Text('Lead Researcher Portal', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Enter your authorized GSFC University email to unlock the Master Data Science Lab, raw responses, and CSV/JSON exports.',
+              style: TextStyle(fontSize: 12, color: AwareScrollTheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                labelText: 'University Email ID',
+                hintText: 'e.g. 24bt04d233@gsfcuniversity.ac.in',
+                prefixIcon: const Icon(Icons.email_outlined, size: 18),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AwareScrollTheme.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(ctx, controller.text.trim().toLowerCase()),
+            child: const Text('Verify Access'),
+          ),
+        ],
+      ),
+    );
+
+    if (enteredEmail != null && enteredEmail.isNotEmpty) {
+      if (_authorizedAdminEmails.contains(enteredEmail)) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('admin_verified_email', enteredEmail);
+        } catch (_) {}
+        setState(() => _verifiedAdminEmail = enteredEmail);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: AwareScrollTheme.secondaryEmerald,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              content: Row(
+                children: [
+                  const Icon(Icons.verified, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Access Granted! Welcome $enteredEmail',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: const Color(0xFFE53935),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              content: const Row(
+                children: [
+                  Icon(Icons.lock_outline, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Access Denied: This email is not authorized for Data Science exports.',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _logoutAdmin() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('admin_verified_email');
+    } catch (_) {}
+    setState(() => _verifiedAdminEmail = null);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Logged out of Lead Researcher Portal.')),
+      );
+    }
   }
 
   Future<void> _loadTelemetry() async {
@@ -3034,27 +3179,63 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
                           ),
                         ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: AwareScrollTheme.tertiaryContainer,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AwareScrollTheme.tertiaryAmber.withOpacity(0.3)),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.local_fire_department, size: 15, color: AwareScrollTheme.tertiaryAmber),
-                            SizedBox(width: 4),
-                            Text(
-                              '14d Streak',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: AwareScrollTheme.onTertiaryText,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: AwareScrollTheme.tertiaryContainer,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AwareScrollTheme.tertiaryAmber.withOpacity(0.3)),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.local_fire_department, size: 15, color: AwareScrollTheme.tertiaryAmber),
+                                SizedBox(width: 4),
+                                Text(
+                                  '14d Streak',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: AwareScrollTheme.onTertiaryText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          GestureDetector(
+                            onTap: _isAdminUnlocked ? _logoutAdmin : _promptAdminLogin,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: _isAdminUnlocked ? const Color(0xFFEDE9FE) : AwareScrollTheme.surfaceContainerLow,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: _isAdminUnlocked ? const Color(0xFF7C3AED) : AwareScrollTheme.outline),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _isAdminUnlocked ? Icons.verified_user : Icons.admin_panel_settings_outlined,
+                                    size: 11,
+                                    color: _isAdminUnlocked ? const Color(0xFF7C3AED) : AwareScrollTheme.onSurfaceVariant,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _isAdminUnlocked ? 'Lead Verified' : 'Lead Access',
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      color: _isAdminUnlocked ? const Color(0xFF7C3AED) : AwareScrollTheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -3632,12 +3813,13 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
               ),
             ),
 
-            const SizedBox(height: 16),
+            if (_isAdminUnlocked) ...[
+              const SizedBox(height: 16),
 
-            // ==========================================
-            // 60+ STUDENTS RESEARCH & MASTER CLOUD SYNC
-            // ==========================================
-            Container(
+              // ==========================================
+              // 60+ STUDENTS RESEARCH & MASTER CLOUD SYNC (ADMIN ONLY)
+              // ==========================================
+              Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
@@ -3885,8 +4067,9 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
                 ],
               ),
             ),
+          ],
 
-            const SizedBox(height: 16),
+          const SizedBox(height: 16),
 
             // Compulsive Trigger Breakdown (from Real Dataset!)
             Container(

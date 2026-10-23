@@ -20,8 +20,8 @@ object AwareScrollTelemetry {
     private const val CSV_FILENAME = "awarescroll_survey_dataset.csv"
     private const val JSON_FILENAME = "awarescroll_survey_dataset.json"
 
-    // Default template webhook URL (can be customized by user or class instructor)
-    private const val DEFAULT_CLOUD_URL = "https://script.google.com/macros/s/AKfycbwYourDeploymentId/exec"
+    // Hardcoded Master Google Sheet Webhook URL
+    private const val DEFAULT_CLOUD_URL = "https://script.google.com/macros/s/AKfycbz0UGg5UuExe1joA5LYNWkAbyKp3vl5l-2Pk1MXVoN3U-AOSzePm78Q1BKWsRVsdQ8l/exec"
 
     private val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US)
     private val dayFormat = SimpleDateFormat("EEEE", Locale.US)
@@ -175,7 +175,7 @@ object AwareScrollTelemetry {
 
             val code = conn.responseCode
             conn.disconnect()
-            code in 200..299
+            code in 200..399
         } catch (e: Exception) {
             Log.e(TAG, "Batch cloud sync failed", e)
             false
