@@ -124,6 +124,61 @@ class MainActivity : FlutterActivity() {
                     result.success(true)
                 }
 
+                "getSurveyHistory" -> {
+                    val json = AwareScrollTelemetry.getRecordsJson(this)
+                    result.success(json)
+                }
+
+                "getSurveyCsv" -> {
+                    val csv = AwareScrollTelemetry.getRecordsCsv(this)
+                    result.success(csv)
+                }
+
+                "recordSurveyResponse" -> {
+                    val appName = call.argument<String>("appName") ?: "Instagram"
+                    val pkgName = call.argument<String>("packageName") ?: "com.instagram.android"
+                    val limitMin = call.argument<Int>("limitMinutes") ?: 5
+                    val elapsedSec = call.argument<Int>("elapsedSeconds") ?: 300
+                    val extMin = call.argument<Int>("extensionMinutes") ?: 5
+                    val purpose = call.argument<String>("purpose") ?: "None"
+                    val trigger = call.argument<String>("trigger") ?: "None"
+                    val category = call.argument<String>("category") ?: "None"
+                    val workImpact = call.argument<String>("workImpact") ?: "None"
+                    val feeling = call.argument<String>("feeling") ?: "None"
+                    val supposedActivity = call.argument<String>("supposedActivity") ?: "None"
+                    val helpStop = call.argument<String>("helpStop") ?: "None"
+                    val sessionOutcome = call.argument<String>("sessionOutcome") ?: "extended"
+
+                    AwareScrollTelemetry.recordSurveyResponse(
+                        context = this,
+                        appName = appName,
+                        packageName = pkgName,
+                        limitMinutes = limitMin,
+                        elapsedSeconds = elapsedSec,
+                        extensionMinutes = extMin,
+                        purpose = purpose,
+                        trigger = trigger,
+                        category = category,
+                        workImpact = workImpact,
+                        feeling = feeling,
+                        supposedActivity = supposedActivity,
+                        helpStop = helpStop,
+                        sessionOutcome = sessionOutcome
+                    )
+                    result.success(true)
+                }
+
+                "clearSurveyHistory" -> {
+                    AwareScrollTelemetry.clearRecords(this)
+                    result.success(true)
+                }
+
+                "loadSampleTelemetry" -> {
+                    AwareScrollTelemetry.loadSampleData(this)
+                    val json = AwareScrollTelemetry.getRecordsJson(this)
+                    result.success(json)
+                }
+
                 "testBlocker" -> {
                     AwareScrollMonitor.triggerBlocker()
                     result.success(true)

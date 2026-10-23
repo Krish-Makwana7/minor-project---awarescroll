@@ -210,6 +210,14 @@ class AwareScrollBlockerActivity : Activity() {
 
         inner.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(1, dpToPx(18)) })
 
+        var selectedPurpose = "Reply to a message"
+        var selectedTrigger = "Interesting content"
+        var selectedCategory = "Comedy / Memes"
+        var selectedWorkImpact = "Delayed a task"
+        var selectedFeeling = "Neutral"
+        var selectedSupposedActivity = "Working"
+        var selectedHelpStop = "Time warning"
+
         // Q1: Purpose
         addSurveyQuestion(
             inner,
@@ -225,7 +233,7 @@ class AwareScrollBlockerActivity : Activity() {
                 "Study or research",
                 "Opened automatically / out of habit"
             )
-        )
+        ) { selectedPurpose = it }
 
         // Q2: Decision to continue
         addSurveyQuestion(
@@ -241,7 +249,7 @@ class AwareScrollBlockerActivity : Activity() {
                 "Habitual scrolling",
                 "Unfinished original purpose"
             )
-        )
+        ) { selectedTrigger = it }
 
         // Q3: Content Category
         addSurveyQuestion(
@@ -258,7 +266,7 @@ class AwareScrollBlockerActivity : Activity() {
                 "Music / Entertainment",
                 "Other / Mixed"
             )
-        )
+        ) { selectedCategory = it }
 
         // Q4: Effect on planned work
         addSurveyQuestion(
@@ -272,7 +280,7 @@ class AwareScrollBlockerActivity : Activity() {
                 "Interrupted a task",
                 "No negative impact / planned break"
             )
-        )
+        ) { selectedWorkImpact = it }
 
         // Q5: Feeling after scrolling
         addSurveyQuestion(
@@ -287,7 +295,7 @@ class AwareScrollBlockerActivity : Activity() {
                 "Bored",
                 "Stressed / regretful"
             )
-        )
+        ) { selectedFeeling = it }
 
         // Q6: Supposed to be doing
         addSurveyQuestion(
@@ -303,7 +311,7 @@ class AwareScrollBlockerActivity : Activity() {
                 "Relaxing",
                 "Nothing planned"
             )
-        )
+        ) { selectedSupposedActivity = it }
 
         // Q7: What would have helped stop
         addSurveyQuestion(
@@ -318,7 +326,7 @@ class AwareScrollBlockerActivity : Activity() {
                 "Break suggestion",
                 "App closure"
             )
-        )
+        ) { selectedHelpStop = it }
 
         // Q8: Extension Duration
         addExtensionDurationSection(inner)
@@ -340,6 +348,22 @@ class AwareScrollBlockerActivity : Activity() {
                 dpToPx(52)
             )
             setOnClickListener {
+                AwareScrollTelemetry.recordSurveyResponse(
+                    context = this@AwareScrollBlockerActivity,
+                    appName = appName,
+                    packageName = AwareScrollMonitor.targetPackageName,
+                    limitMinutes = limitMinutes,
+                    elapsedSeconds = AwareScrollMonitor.elapsedSeconds,
+                    extensionMinutes = selectedExtensionMin,
+                    purpose = selectedPurpose,
+                    trigger = selectedTrigger,
+                    category = selectedCategory,
+                    workImpact = selectedWorkImpact,
+                    feeling = selectedFeeling,
+                    supposedActivity = selectedSupposedActivity,
+                    helpStop = selectedHelpStop,
+                    sessionOutcome = "extended"
+                )
                 AwareScrollMonitor.grantExtension(selectedExtensionMin)
                 finish()
             }
@@ -352,7 +376,8 @@ class AwareScrollBlockerActivity : Activity() {
         number: String,
         title: String,
         subtitle: String,
-        options: List<String>
+        options: List<String>,
+        onSelect: ((String) -> Unit)? = null
     ) {
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -422,13 +447,14 @@ class AwareScrollBlockerActivity : Activity() {
             tv.setOnClickListener {
                 selectedIdx = i
                 update()
+                onSelect?.invoke(opt)
             }
 
             optionViews.add(tv)
             card.addView(tv)
         }
 
-        // Initialize styling
+        // Initialize styling and trigger initial default selection
         for (j in optionViews.indices) {
             val isSel = (j == 0)
             optionViews[j].apply {
@@ -440,6 +466,9 @@ class AwareScrollBlockerActivity : Activity() {
                     cornerRadius = dpToPx(12).toFloat()
                 }
             }
+        }
+        if (options.isNotEmpty()) {
+            onSelect?.invoke(options[0])
         }
 
         parent.addView(card)

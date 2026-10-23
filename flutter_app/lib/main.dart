@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -1386,6 +1387,21 @@ class _InteractiveBlockerTabState extends State<InteractiveBlockerTab>
 
   Future<void> _handleUnlockCommitment() async {
     try {
+      await _channel.invokeMethod('recordSurveyResponse', {
+        'appName': 'Instagram',
+        'packageName': 'com.instagram.android',
+        'limitMinutes': 5,
+        'elapsedSeconds': 300,
+        'extensionMinutes': _selectedExtensionMin,
+        'purpose': _selectedPurpose,
+        'trigger': _selectedTrigger,
+        'category': _selectedCategory,
+        'workImpact': _selectedWorkImpact,
+        'feeling': _selectedFeeling,
+        'supposedActivity': _selectedSupposedActivity,
+        'helpStop': _selectedHelpStop,
+        'sessionOutcome': 'extended',
+      });
       await _channel.invokeMethod('grantExtension', {
         'minutes': _selectedExtensionMin,
       });
@@ -2356,7 +2372,7 @@ class _InteractiveBlockerTabState extends State<InteractiveBlockerTab>
 }
 
 // ==========================================
-// TAB 3: USER ACCOUNT & INSIGHTS (SCREEN 3)
+// TAB 3: USER ACCOUNT & INSIGHTS (DATA SCIENCE LAB)
 // ==========================================
 class UserAccountInsightsTab extends StatefulWidget {
   const UserAccountInsightsTab({super.key});
@@ -2366,10 +2382,278 @@ class UserAccountInsightsTab extends StatefulWidget {
 }
 
 class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
+  static const MethodChannel _channel = MethodChannel('com.awarescroll/restriction');
+
   String _selectedRange = 'today';
+  List<Map<String, dynamic>> _records = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTelemetry();
+  }
+
+  Future<void> _loadTelemetry() async {
+    setState(() => _isLoading = true);
+    try {
+      final jsonStr = await _channel.invokeMethod<String>('getSurveyHistory');
+      if (jsonStr != null && jsonStr.isNotEmpty) {
+        final decoded = jsonDecode(jsonStr);
+        if (decoded is List) {
+          _records = decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        }
+      }
+    } catch (_) {}
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _copyCsvDataset() async {
+    try {
+      final csv = await _channel.invokeMethod<String>('getSurveyCsv') ?? '';
+      await Clipboard.setData(ClipboardData(text: csv));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AwareScrollTheme.secondaryEmerald,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'CSV Dataset copied! (${_records.length} records ready for Excel / Google Sheets)',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to copy CSV: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _copyJsonDataset() async {
+    try {
+      final jsonStr = await _channel.invokeMethod<String>('getSurveyHistory') ?? '';
+      await Clipboard.setData(ClipboardData(text: jsonStr));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AwareScrollTheme.primary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            content: Row(
+              children: [
+                const Icon(Icons.code, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'JSON Dataset copied! (${_records.length} records ready for Python / Pandas)',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to copy JSON: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _reloadSampleTelemetry() async {
+    try {
+      await _channel.invokeMethod('loadSampleTelemetry');
+      await _loadTelemetry();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: AwareScrollTheme.primary,
+            content: Text('Loaded 15+ Data Science sample sessions across 7 days!'),
+          ),
+        );
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _clearTelemetry() async {
+    try {
+      await _channel.invokeMethod('clearSurveyHistory');
+      setState(() => _records = []);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Telemetry dataset cleared.')),
+        );
+      }
+    } catch (_) {}
+  }
+
+  void _showRawDataTable() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AwareScrollTheme.outline,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.table_chart, color: AwareScrollTheme.primary, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Raw Dataset (${_records.length} rows)',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AwareScrollTheme.onSurface),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            const Text(
+              'Telemetry collected from Instagram continuation surveys for your Data Science project.',
+              style: TextStyle(fontSize: 12, color: AwareScrollTheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: _records.isEmpty
+                  ? const Center(child: Text('No records collected yet.'))
+                  : SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SingleChildScrollView(
+                        child: DataTable(
+                          headingRowColor: MaterialStateProperty.all(AwareScrollTheme.surfaceContainerLow),
+                          columns: const [
+                            DataColumn(label: Text('ID', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11))),
+                            DataColumn(label: Text('Time', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11))),
+                            DataColumn(label: Text('Day', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11))),
+                            DataColumn(label: Text('Trigger (Q2)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11))),
+                            DataColumn(label: Text('Category (Q3)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11))),
+                            DataColumn(label: Text('Work Impact (Q4)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11))),
+                            DataColumn(label: Text('Feeling (Q5)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11))),
+                            DataColumn(label: Text('Supposed (Q6)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11))),
+                            DataColumn(label: Text('Ext (Min)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11))),
+                          ],
+                          rows: _records.map((r) {
+                            return DataRow(
+                              cells: [
+                                DataCell(Text((r['id'] ?? '').toString().replaceFirst('session_', '').replaceFirst('sample_', ''), style: const TextStyle(fontSize: 11, fontFamily: 'monospace'))),
+                                DataCell(Text((r['timestamp'] ?? '').toString().split('T').last.split('+').first, style: const TextStyle(fontSize: 11, fontFamily: 'monospace'))),
+                                DataCell(Text((r['dayOfWeek'] ?? '').toString(), style: const TextStyle(fontSize: 11))),
+                                DataCell(Text((r['trigger'] ?? '').toString(), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AwareScrollTheme.primary))),
+                                DataCell(Text((r['category'] ?? '').toString(), style: const TextStyle(fontSize: 11))),
+                                DataCell(Text((r['workImpact'] ?? '').toString(), style: const TextStyle(fontSize: 11))),
+                                DataCell(Text((r['feeling'] ?? '').toString(), style: const TextStyle(fontSize: 11))),
+                                DataCell(Text((r['supposedActivity'] ?? '').toString(), style: const TextStyle(fontSize: 11))),
+                                DataCell(Text('+${r['extensionMinutes'] ?? 0}m', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AwareScrollTheme.secondaryEmerald))),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Helper metrics calculations
+  Map<String, double> _computeDistribution(String key) {
+    if (_records.isEmpty) return {};
+    final counts = <String, int>{};
+    for (final r in _records) {
+      final val = (r[key] ?? 'Unknown').toString();
+      counts[val] = (counts[val] ?? 0) + 1;
+    }
+    final total = _records.length;
+    final res = <String, double>{};
+    counts.forEach((k, v) {
+      res[k] = v / total;
+    });
+    return res;
+  }
+
+  Map<String, int> _computeDayMinutes() {
+    final dayMinutes = {'M': 35, 'T': 40, 'W': 45, 'T2': 42, 'F': 28, 'S': 30, 'S2': 24};
+    for (final r in _records) {
+      final day = (r['dayOfWeek'] ?? '').toString().toLowerCase();
+      final sec = (r['elapsedSeconds'] as int?) ?? 300;
+      final m = (sec / 60).round();
+      if (day.startsWith('mon')) dayMinutes['M'] = (dayMinutes['M']! + m) ~/ 2;
+      if (day.startsWith('tue')) dayMinutes['T'] = (dayMinutes['T']! + m) ~/ 2;
+      if (day.startsWith('wed')) dayMinutes['W'] = (dayMinutes['W']! + m) ~/ 2;
+      if (day.startsWith('thu')) dayMinutes['T2'] = (dayMinutes['T2']! + m) ~/ 2;
+      if (day.startsWith('fri')) dayMinutes['F'] = (dayMinutes['F']! + m) ~/ 2;
+      if (day.startsWith('sat')) dayMinutes['S'] = (dayMinutes['S']! + m) ~/ 2;
+      if (day.startsWith('sun')) dayMinutes['S2'] = (dayMinutes['S2']! + m) ~/ 2;
+    }
+    return dayMinutes;
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: AwareScrollTheme.background,
+        body: Center(child: CircularProgressIndicator(color: AwareScrollTheme.primary)),
+      );
+    }
+
+    final triggerDist = _computeDistribution('trigger');
+    final categoryDist = _computeDistribution('category');
+    final workImpactDist = _computeDistribution('workImpact');
+    final feelingDist = _computeDistribution('feeling');
+    final dayMins = _computeDayMinutes();
+
+    final totalInterventions = _records.length;
+    final totalMinutes = _records.fold<int>(0, (sum, r) => sum + (((r['elapsedSeconds'] as int?) ?? 300) ~/ 60));
+    final calmPreservedMin = _records.fold<int>(0, (sum, r) {
+      final ext = (r['extensionMinutes'] as int?) ?? 0;
+      return sum + (ext <= 2 ? 15 : (ext <= 5 ? 10 : 5));
+    });
+
     return Scaffold(
       backgroundColor: AwareScrollTheme.background,
       body: SafeArea(
@@ -2505,10 +2789,10 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
                       color: AwareScrollTheme.surfaceContainerLow,
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        Column(
+                        const Column(
                           children: [
                             Text(
                               'SHIELD HEALTH',
@@ -2533,7 +2817,7 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
                         ),
                         Column(
                           children: [
-                            Text(
+                            const Text(
                               'AWARENESS',
                               style: TextStyle(
                                 fontSize: 9,
@@ -2543,10 +2827,10 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
                                 fontFamily: 'monospace',
                               ),
                             ),
-                            SizedBox(height: 3),
+                            const SizedBox(height: 3),
                             Text(
-                              'Lvl 8',
-                              style: TextStyle(
+                              'Lvl ${(totalInterventions / 3).clamp(1, 10).toInt()}',
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: AwareScrollTheme.primary,
@@ -2556,7 +2840,7 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
                         ),
                         Column(
                           children: [
-                            Text(
+                            const Text(
                               'NET CALM',
                               style: TextStyle(
                                 fontSize: 9,
@@ -2566,10 +2850,10 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
                                 fontFamily: 'monospace',
                               ),
                             ),
-                            SizedBox(height: 3),
+                            const SizedBox(height: 3),
                             Text(
-                              '+3.4h',
-                              style: TextStyle(
+                              '+${(calmPreservedMin / 60).toStringAsFixed(1)}h',
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: AwareScrollTheme.secondaryEmerald,
@@ -2657,12 +2941,12 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
                           color: AwareScrollTheme.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Text(
-                          'Today, Oct 24',
-                          style: TextStyle(
+                        child: Text(
+                          '${_records.length} Sessions',
+                          style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: AwareScrollTheme.onSurfaceVariant,
+                            color: AwareScrollTheme.primary,
                           ),
                         ),
                       ),
@@ -2673,21 +2957,21 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
 
                   Row(
                     children: [
-                      _buildKpiCard('SCREEN TIME', '42m', '-38% vs lw', AwareScrollTheme.secondaryEmerald),
+                      _buildKpiCard('TOTAL TIME', '${totalMinutes}m', 'Tracked', AwareScrollTheme.secondaryEmerald),
                       const SizedBox(width: 8),
-                      _buildKpiCard('INTERVENTIONS', '6', '4 held / 2 ext', AwareScrollTheme.primary),
+                      _buildKpiCard('INTERVENTIONS', '$totalInterventions', 'Responses', AwareScrollTheme.primary),
                       const SizedBox(width: 8),
-                      _buildKpiCard('CALM SAVED', '18m', 'Preserved', AwareScrollTheme.secondaryEmerald),
+                      _buildKpiCard('CALM SAVED', '${calmPreservedMin}m', 'Preserved', AwareScrollTheme.secondaryEmerald),
                     ],
                   ),
 
                   const SizedBox(height: 16),
 
                   // 7-day chart
-                  const Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      const Text(
                         'Daily Rhythm vs 45m Cap',
                         style: TextStyle(
                           fontSize: 12,
@@ -2696,8 +2980,8 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
                         ),
                       ),
                       Text(
-                        'Avg: 37m/day',
-                        style: TextStyle(
+                        'Avg: ${(totalMinutes / 7).round()}m/day',
+                        style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: AwareScrollTheme.primary,
@@ -2712,13 +2996,13 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      _buildBar('M', 35, 45),
-                      _buildBar('T', 40, 45),
-                      _buildBar('W', 52, 45, isExceeded: true),
-                      _buildBar('T', 42, 45, isToday: true),
-                      _buildBar('F', 28, 45),
-                      _buildBar('S', 30, 45),
-                      _buildBar('S', 24, 45),
+                      _buildBar('M', dayMins['M']!, 45),
+                      _buildBar('T', dayMins['T']!, 45),
+                      _buildBar('W', dayMins['W']!, 45, isExceeded: dayMins['W']! > 45),
+                      _buildBar('T', dayMins['T2']!, 45, isToday: true),
+                      _buildBar('F', dayMins['F']!, 45),
+                      _buildBar('S', dayMins['S']!, 45),
+                      _buildBar('S', dayMins['S2']!, 45),
                     ],
                   ),
                 ],
@@ -2727,7 +3011,187 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
 
             const SizedBox(height: 16),
 
-            // Compulsive Trigger Breakdown
+            // ==========================================
+            // DATA SCIENCE LAB & EXPORT CARD
+            // ==========================================
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFFFFFF), Color(0xFFF7F5FF)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AwareScrollTheme.primary.withOpacity(0.3), width: 1.5),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x103A5BFF),
+                    blurRadius: 12,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AwareScrollTheme.primaryFixed,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.analytics_rounded, color: AwareScrollTheme.primary, size: 20),
+                          ),
+                          const SizedBox(width: 10),
+                          const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Data Science Project Lab',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: AwareScrollTheme.onSurface,
+                                ),
+                              ),
+                              Text(
+                                'Export dataset for Python, Pandas & Excel',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AwareScrollTheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AwareScrollTheme.secondaryContainer,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '$totalInterventions Rows',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: AwareScrollTheme.secondaryEmerald,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  const Text(
+                    'All survey choices (Purpose, Trigger, Category, Work Impact, Feeling, Displaced Activity) are logged and ready for your class presentation.',
+                    style: TextStyle(fontSize: 11, color: AwareScrollTheme.onSurfaceVariant, height: 1.4),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Export Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AwareScrollTheme.secondaryEmerald,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          icon: const Icon(Icons.file_download_outlined, size: 16),
+                          label: const Text('Copy CSV', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          onPressed: _copyCsvDataset,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AwareScrollTheme.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          icon: const Icon(Icons.code_rounded, size: 16),
+                          label: const Text('Copy JSON', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          onPressed: _copyJsonDataset,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: AwareScrollTheme.onSurface,
+                            side: const BorderSide(color: AwareScrollTheme.outline),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: const Icon(Icons.table_view_outlined, size: 16, color: AwareScrollTheme.primary),
+                          label: const Text('Inspect Table', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                          onPressed: _showRawDataTable,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: AwareScrollTheme.onSurface,
+                            side: const BorderSide(color: AwareScrollTheme.outline),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: const Icon(Icons.auto_graph_outlined, size: 16, color: AwareScrollTheme.tertiaryAmber),
+                          label: const Text('Reload Sample', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                          onPressed: _reloadSampleTelemetry,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      icon: const Icon(Icons.delete_outline, size: 14, color: AwareScrollTheme.onSurfaceVariant),
+                      label: const Text('Clear Telemetry', style: TextStyle(fontSize: 10, color: AwareScrollTheme.onSurfaceVariant)),
+                      onPressed: _clearTelemetry,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Compulsive Trigger Breakdown (from Real Dataset!)
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -2745,24 +3209,153 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Compulsive Trigger Breakdown',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: AwareScrollTheme.onSurface,
-                    ),
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Compulsive Trigger Breakdown',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AwareScrollTheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        'Q2 Telemetry',
+                        style: TextStyle(fontSize: 10, color: AwareScrollTheme.primary, fontFamily: 'monospace', fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 14),
-                  _buildTriggerBar('Boredom / Under-stimulation', 0.44, '44%', AwareScrollTheme.primary),
-                  _buildTriggerBar('Habitual / Reflexive', 0.28, '28%', AwareScrollTheme.tertiaryAmber),
-                  _buildTriggerBar('Notifications & DMs', 0.16, '16%', const Color(0xFF6C8CFF)),
-                  _buildTriggerBar('Dopamine / Content Hook', 0.12, '12%', AwareScrollTheme.secondaryEmerald),
+                  if (triggerDist.isEmpty)
+                    const Text('No trigger data recorded yet.', style: TextStyle(fontSize: 12, color: AwareScrollTheme.onSurfaceVariant))
+                  else
+                    ...triggerDist.entries.map((e) {
+                      final pct = (e.value * 100).round();
+                      final color = e.key.contains('Boredom')
+                          ? AwareScrollTheme.primary
+                          : (e.key.contains('Habitual')
+                              ? AwareScrollTheme.tertiaryAmber
+                              : (e.key.contains('Notifications')
+                                  ? const Color(0xFF6C8CFF)
+                                  : AwareScrollTheme.secondaryEmerald));
+                      return _buildTriggerBar(e.key, e.value, '$pct%', color);
+                    }),
                 ],
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+
+            // Content Category Distribution (from Real Dataset!)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AwareScrollTheme.outline),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x08141528),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Content Category Distribution',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AwareScrollTheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        'Q3 Telemetry',
+                        style: TextStyle(fontSize: 10, color: AwareScrollTheme.secondaryEmerald, fontFamily: 'monospace', fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  if (categoryDist.isEmpty)
+                    const Text('No category data recorded yet.', style: TextStyle(fontSize: 12, color: AwareScrollTheme.onSurfaceVariant))
+                  else
+                    ...categoryDist.entries.map((e) {
+                      final pct = (e.value * 100).round();
+                      return _buildTriggerBar(e.key, e.value, '$pct%', AwareScrollTheme.secondaryEmerald);
+                    }),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Productivity Impact & Emotional Sentiment Breakdown
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AwareScrollTheme.outline),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x08141528),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Work Impact & Post-Scroll Sentiment',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AwareScrollTheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        'Q4 & Q5',
+                        style: TextStyle(fontSize: 10, color: AwareScrollTheme.tertiaryAmber, fontFamily: 'monospace', fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  if (workImpactDist.isEmpty && feelingDist.isEmpty)
+                    const Text('No impact data recorded yet.', style: TextStyle(fontSize: 12, color: AwareScrollTheme.onSurfaceVariant))
+                  else ...[
+                    const Text('Work Impact:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AwareScrollTheme.onSurfaceVariant)),
+                    const SizedBox(height: 6),
+                    ...workImpactDist.entries.map((e) {
+                      final pct = (e.value * 100).round();
+                      final col = e.key.contains('Delayed') || e.key.contains('Interrupted') ? const Color(0xFFE53935) : AwareScrollTheme.secondaryEmerald;
+                      return _buildTriggerBar(e.key, e.value, '$pct%', col);
+                    }),
+                    const SizedBox(height: 8),
+                    const Text('Post-Scroll Emotion:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AwareScrollTheme.onSurfaceVariant)),
+                    const SizedBox(height: 6),
+                    ...feelingDist.entries.map((e) {
+                      final pct = (e.value * 100).round();
+                      final col = e.key.contains('Stressed') ? const Color(0xFFE53935) : AwareScrollTheme.primary;
+                      return _buildTriggerBar(e.key, e.value, '$pct%', col);
+                    }),
+                  ],
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -3167,7 +3760,26 @@ class _PostSessionDebriefModalState extends State<PostSessionDebriefModal> {
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
-              onPressed: widget.onFinished,
+              onPressed: () async {
+                try {
+                  const MethodChannel('com.awarescroll/restriction').invokeMethod('recordSurveyResponse', {
+                    'appName': 'Instagram',
+                    'packageName': 'com.instagram.android',
+                    'limitMinutes': widget.limitSeconds ~/ 60,
+                    'elapsedSeconds': widget.elapsedSeconds,
+                    'extensionMinutes': 0,
+                    'purpose': 'Mindful Wrap-up',
+                    'trigger': 'Mindful Exit',
+                    'category': 'General',
+                    'workImpact': _taskDelayed ? 'Delayed a task' : 'No task planned',
+                    'feeling': _selectedSentiment,
+                    'supposedActivity': 'Stepped Away',
+                    'helpStop': 'App closure',
+                    'sessionOutcome': 'closed_mindfully',
+                  });
+                } catch (_) {}
+                widget.onFinished();
+              },
               child: const Text(
                 'Finish & Return to Home →',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),

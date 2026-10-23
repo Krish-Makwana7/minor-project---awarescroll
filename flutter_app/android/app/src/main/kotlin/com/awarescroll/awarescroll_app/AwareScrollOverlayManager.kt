@@ -344,6 +344,13 @@ object AwareScrollOverlayManager {
         root.removeAllViews()
         breathAnimator?.cancel()
 
+        var selectedPurpose = "Reply to a message"
+        var selectedTrigger = "Interesting content"
+        var selectedCategory = "Comedy / Memes"
+        var selectedWorkImpact = "Delayed a task"
+        var selectedFeeling = "Neutral"
+        var selectedSupposedActivity = "Working"
+        var selectedHelpStop = "Time warning"
         var selectedExtensionMin = 5
 
         val scroll = ScrollView(context).apply {
@@ -443,7 +450,7 @@ object AwareScrollOverlayManager {
                 "Study or research",
                 "Opened automatically / out of habit"
             )
-        )
+        ) { selectedPurpose = it }
 
         addSurveyQuestion(
             context, container, "2", "Decision Factor",
@@ -456,7 +463,7 @@ object AwareScrollOverlayManager {
                 "Habitual scrolling",
                 "Unfinished original purpose"
             )
-        )
+        ) { selectedTrigger = it }
 
         addSurveyQuestion(
             context, container, "3", "Content Category",
@@ -470,7 +477,7 @@ object AwareScrollOverlayManager {
                 "Music / Entertainment",
                 "Other / Mixed"
             )
-        )
+        ) { selectedCategory = it }
 
         addSurveyQuestion(
             context, container, "4", "Effect on Planned Work",
@@ -481,7 +488,7 @@ object AwareScrollOverlayManager {
                 "Interrupted a task",
                 "No negative impact / planned break"
             )
-        )
+        ) { selectedWorkImpact = it }
 
         addSurveyQuestion(
             context, container, "5", "Emotional State",
@@ -493,7 +500,7 @@ object AwareScrollOverlayManager {
                 "Bored",
                 "Stressed / regretful"
             )
-        )
+        ) { selectedFeeling = it }
 
         addSurveyQuestion(
             context, container, "6", "Displaced Intention",
@@ -506,7 +513,7 @@ object AwareScrollOverlayManager {
                 "Relaxing",
                 "Nothing planned"
             )
-        )
+        ) { selectedSupposedActivity = it }
 
         addSurveyQuestion(
             context, container, "7", "Intervention Help",
@@ -518,7 +525,7 @@ object AwareScrollOverlayManager {
                 "Break suggestion",
                 "App closure"
             )
-        )
+        ) { selectedHelpStop = it }
 
         // Question 8: Extension Commitment
         val extCard = LinearLayout(context).apply {
@@ -631,6 +638,24 @@ object AwareScrollOverlayManager {
                 dpToPx(context, 52)
             )
             setOnClickListener {
+                // Record telemetry for Data Science
+                AwareScrollTelemetry.recordSurveyResponse(
+                    context = context,
+                    appName = appName,
+                    packageName = AwareScrollMonitor.targetPackageName,
+                    limitMinutes = limitMinutes,
+                    elapsedSeconds = AwareScrollMonitor.elapsedSeconds,
+                    extensionMinutes = selectedExtensionMin,
+                    purpose = selectedPurpose,
+                    trigger = selectedTrigger,
+                    category = selectedCategory,
+                    workImpact = selectedWorkImpact,
+                    feeling = selectedFeeling,
+                    supposedActivity = selectedSupposedActivity,
+                    helpStop = selectedHelpStop,
+                    sessionOutcome = "extended"
+                )
+
                 // Grant extension and unlock Instagram!
                 AwareScrollMonitor.grantExtension(selectedExtensionMin)
                 hide()
@@ -654,7 +679,8 @@ object AwareScrollOverlayManager {
         number: String,
         title: String,
         subtitle: String,
-        options: List<String>
+        options: List<String>,
+        onSelect: ((String) -> Unit)? = null
     ) {
         val card = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -723,13 +749,14 @@ object AwareScrollOverlayManager {
             tv.setOnClickListener {
                 selectedIdx = i
                 update()
+                onSelect?.invoke(opt)
             }
 
             optionViews.add(tv)
             card.addView(tv)
         }
 
-        // Initialize option styles
+        // Initialize option styles and trigger default selection callback
         for (j in optionViews.indices) {
             val isSel = (j == 0)
             optionViews[j].apply {
@@ -741,6 +768,9 @@ object AwareScrollOverlayManager {
                     cornerRadius = dpToPx(context, 12).toFloat()
                 }
             }
+        }
+        if (options.isNotEmpty()) {
+            onSelect?.invoke(options[0])
         }
 
         parent.addView(card)
