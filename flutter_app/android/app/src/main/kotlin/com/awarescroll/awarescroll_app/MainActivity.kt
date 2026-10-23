@@ -179,6 +179,35 @@ class MainActivity : FlutterActivity() {
                     result.success(json)
                 }
 
+                "getStudentId" -> {
+                    result.success(AwareScrollTelemetry.getStudentId(this))
+                }
+
+                "setStudentId" -> {
+                    val id = call.argument<String>("studentId") ?: ""
+                    AwareScrollTelemetry.setStudentId(this, id)
+                    result.success(true)
+                }
+
+                "getCloudSyncUrl" -> {
+                    result.success(AwareScrollTelemetry.getCloudSyncUrl(this))
+                }
+
+                "setCloudSyncUrl" -> {
+                    val url = call.argument<String>("url") ?: ""
+                    AwareScrollTelemetry.setCloudSyncUrl(this, url)
+                    result.success(true)
+                }
+
+                "syncAllToCloud" -> {
+                    Thread {
+                        val success = AwareScrollTelemetry.syncAllToCloud(this)
+                        runOnUiThread {
+                            result.success(success)
+                        }
+                    }.start()
+                }
+
                 "testBlocker" -> {
                     AwareScrollMonitor.triggerBlocker()
                     result.success(true)
