@@ -2474,6 +2474,8 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
   String _selectedRange = 'today';
   List<Map<String, dynamic>> _records = [];
   bool _isLoading = true;
+  String _studentName = 'Student';
+  String _studentEmail = '';
   String _studentId = 'Loading...';
   String _cloudSyncUrl = 'https://script.google.com/macros/s/AKfycbz0UGg5UuExe1joA5LYNWkAbyKp3vl5l-2Pk1MXVoN3U-AOSzePm78Q1BKWsRVsdQ8l/exec';
   bool _isSyncing = false;
@@ -2632,9 +2634,16 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
           _records = decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
         }
       }
+      final prefs = await SharedPreferences.getInstance();
+      _studentName = prefs.getString('student_user_name') ?? 'Student';
+      _studentEmail = prefs.getString('student_user_email') ?? '';
+
       final sId = await _channel.invokeMethod<String>('getStudentId');
       if (sId != null && sId.isNotEmpty) {
         _studentId = sId;
+        if (_studentEmail.isEmpty && sId.contains('@')) {
+          _studentEmail = sId;
+        }
       }
       final cUrl = await _channel.invokeMethod<String>('getCloudSyncUrl');
       if (cUrl != null && cUrl.isNotEmpty) {
@@ -2646,61 +2655,100 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
     }
   }
 
-  Future<void> _changeStudentId() async {
-    final controller = TextEditingController(text: _studentId);
-    final newId = await showDialog<String>(
+  Future<void> _editStudentProfile() async {
+    final nameController = TextEditingController(text: _studentName == 'Student' ? '' : _studentName);
+    final emailController = TextEditingController(
+      text: _studentEmail.isNotEmpty ? _studentEmail : (_studentId.contains('@') ? _studentId : ''),
+    );
+
+    final saved = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Set Student / Roll No ID', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        title: const Row(
+          children: [
+            Icon(Icons.person_pin_rounded, color: AwareScrollTheme.primary),
+            SizedBox(width: 8),
+            Text('Student Profile & Gmail', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Each of the 60+ students in your study should have a distinct identifier for data science grouping.',
+              'Enter your Full Name and Gmail / College Email. This appears in the Excel / Google Sheet so your survey data is attributed to you.',
               style: TextStyle(fontSize: 12, color: AwareScrollTheme.onSurfaceVariant),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             TextField(
-              controller: controller,
-              autofocus: true,
+              controller: nameController,
               decoration: InputDecoration(
-                labelText: 'Student Identifier',
-                hintText: 'e.g. Student_042 or ROLL_105',
+                labelText: 'Full Name',
+                hintText: 'e.g. Krish Makwana',
+                prefixIcon: const Icon(Icons.person_outline, size: 18),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                labelText: 'Gmail / University Email',
+                hintText: 'e.g. 24bt04d233@gsfcuniversity.ac.in',
+                prefixIcon: const Icon(Icons.email_outlined, size: 18),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AwareScrollTheme.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('Save'),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Save Profile'),
           ),
         ],
       ),
     );
 
-    if (newId != null && newId.isNotEmpty && newId != _studentId) {
-      try {
-        await _channel.invokeMethod('setStudentId', {'studentId': newId});
-        setState(() => _studentId = newId);
+    if (saved == true) {
+      final name = nameController.text.trim();
+      final email = emailController.text.trim().toLowerCase();
+      if (email.isNotEmpty || name.isNotEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        if (name.isNotEmpty) await prefs.setString('student_user_name', name);
+        if (email.isNotEmpty) await prefs.setString('student_user_email', email);
+
+        final identifier = email.isNotEmpty
+            ? (name.isNotEmpty ? '$name ($email)' : email)
+            : name;
+
+        try {
+          await _channel.invokeMethod('setStudentId', {'studentId': identifier});
+        } catch (_) {}
+
+        setState(() {
+          if (name.isNotEmpty) _studentName = name;
+          if (email.isNotEmpty) _studentEmail = email;
+          _studentId = identifier;
+        });
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               backgroundColor: AwareScrollTheme.secondaryEmerald,
-              content: Text('Student ID updated to $newId'),
+              content: Text('Saved: $identifier will be logged in the Excel sheet!'),
             ),
           );
         }
-      } catch (_) {}
+      }
     }
   }
 
@@ -2986,7 +3034,7 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
                         child: DataTable(
                           headingRowColor: MaterialStateProperty.all(AwareScrollTheme.surfaceContainerLow),
                           columns: const [
-                            DataColumn(label: Text('Student ID', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11))),
+                            DataColumn(label: Text('Student Gmail / Name', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11))),
                             DataColumn(label: Text('Time', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11))),
                             DataColumn(label: Text('Day', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11))),
                             DataColumn(label: Text('Trigger (Q2)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11))),
@@ -3219,40 +3267,36 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                children: [
-                                  const Text(
-                                    'Alex Morgan',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: AwareScrollTheme.onSurface,
+                              GestureDetector(
+                                onTap: _editStudentProfile,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          _studentName,
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.bold,
+                                            color: AwareScrollTheme.onSurface,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 5),
+                                        const Icon(Icons.edit_outlined, size: 13, color: AwareScrollTheme.primary),
+                                      ],
                                     ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                                    decoration: BoxDecoration(
-                                      color: AwareScrollTheme.primaryFixed,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: const Text(
-                                      'PRO',
+                                    Text(
+                                      _studentEmail.isNotEmpty
+                                          ? _studentEmail
+                                          : (_studentId.contains('@') ? _studentId : 'Tap to add your Gmail ID'),
                                       style: TextStyle(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.bold,
-                                        color: AwareScrollTheme.primary,
-                                        fontFamily: 'monospace',
+                                        fontSize: 11,
+                                        fontWeight: _studentEmail.isEmpty ? FontWeight.bold : FontWeight.normal,
+                                        color: _studentEmail.isEmpty ? AwareScrollTheme.tertiaryAmber : AwareScrollTheme.onSurfaceVariant,
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const Text(
-                                '@alex.mindful',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: AwareScrollTheme.onSurfaceVariant,
+                                  ],
                                 ),
                               ),
                             ],
@@ -3406,6 +3450,43 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
                 ],
               ),
             ),
+
+            if (_studentEmail.isEmpty && !_studentId.contains('@')) ...[
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: _editStudentProfile,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AwareScrollTheme.tertiaryContainer,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AwareScrollTheme.tertiaryAmber.withOpacity(0.5)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.badge_outlined, size: 18, color: AwareScrollTheme.onTertiaryText),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Set Name & Gmail for Research Credit',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AwareScrollTheme.onTertiaryText),
+                            ),
+                            Text(
+                              'Replaces anonymous IDs with your Gmail in the class Excel sheet.',
+                              style: TextStyle(fontSize: 10, color: AwareScrollTheme.onTertiaryText),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AwareScrollTheme.onTertiaryText),
+                    ],
+                  ),
+                ),
+              ),
+            ],
 
             const SizedBox(height: 16),
 
@@ -3957,7 +4038,7 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
                         ],
                       ),
                       GestureDetector(
-                        onTap: _changeStudentId,
+                        onTap: _editStudentProfile,
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(

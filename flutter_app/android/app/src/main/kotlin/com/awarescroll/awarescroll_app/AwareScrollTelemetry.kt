@@ -229,24 +229,24 @@ object AwareScrollTelemetry {
     @Synchronized
     fun loadSampleData(context: Context) {
         val sampleList = listOf(
-            SampleItem("Student_A1", "Reply to a message", "Boredom", "Comedy / Memes", "Delayed a task", "Neutral", "Working", "Time warning", 5, 310, "Friday", 14),
-            SampleItem("Student_A1", "Check updates", "Interesting content", "Reels / Entertainment", "Delayed a task", "Bored", "Studying", "App closure", 10, 620, "Friday", 16),
-            SampleItem("Student_B2", "Nothing to do, so watch reels", "Boredom", "Comedy / Memes", "Interrupted a task", "Bored", "Working", "Time warning", 5, 305, "Thursday", 11),
-            SampleItem("Student_B2", "Reply to a message", "Notifications / messages", "Stories / Personal content", "No task planned", "Satisfied", "Relaxing", "Mood check", 2, 130, "Thursday", 19),
-            SampleItem("Student_C3", "Finished all tasks, want to watch reels", "Habitual scrolling", "Reels / Entertainment", "No negative impact / planned break", "Relaxed", "Nothing planned", "Break suggestion", 5, 320, "Wednesday", 21),
-            SampleItem("Student_C3", "Opened automatically / out of habit", "Habitual scrolling", "Comedy / Memes", "Delayed a task", "Stressed / regretful", "Studying", "Original-purpose reminder", 5, 315, "Wednesday", 15),
-            SampleItem("Student_D4", "Study or research", "Unfinished original purpose", "Education / Technology", "No negative impact / planned break", "Satisfied", "Working", "Time warning", 10, 600, "Tuesday", 10),
-            SampleItem("Student_D4", "Nothing to do, so watch reels", "Boredom", "Fitness / Lifestyle", "Delayed a task", "Neutral", "Studying", "Time warning", 5, 302, "Tuesday", 17),
-            SampleItem("Student_E5", "Checking someone's reply", "Stress / mood", "Music / Entertainment", "Interrupted a task", "Bored", "Working", "Break suggestion", 5, 340, "Monday", 13),
-            SampleItem("Student_E5", "Opened automatically / out of habit", "Boredom", "Reels / Entertainment", "Delayed a task", "Stressed / regretful", "Sleeping", "App closure", 15, 920, "Monday", 23),
-            SampleItem("Student_F6", "Check updates", "Notifications / messages", "News / Politics", "No negative impact / planned break", "Relaxed", "Socializing", "Mood check", 2, 125, "Sunday", 12),
-            SampleItem("Student_F6", "Nothing to do, so watch reels", "Interesting content", "Comedy / Memes", "Delayed a task", "Neutral", "Studying", "Time warning", 5, 310, "Saturday", 18),
-            SampleItem("Student_G7", "Finished all tasks, want to watch reels", "Boredom", "Music / Entertainment", "No negative impact / planned break", "Satisfied", "Nothing planned", "Break suggestion", 10, 605, "Saturday", 20),
-            SampleItem("Student_G7", "Reply to a message", "Habitual scrolling", "Stories / Personal content", "Delayed a task", "Bored", "Working", "Time warning", 5, 310, "Friday", 15),
-            SampleItem("Student_H8", "Opened automatically / out of habit", "Boredom", "Comedy / Memes", "Delayed a task", "Stressed / regretful", "Studying", "App closure", 5, 305, "Thursday", 14),
-            SampleItem("Student_H8", "Reply to a message", "Notifications / messages", "Reels / Entertainment", "Delayed a task", "Neutral", "Working", "Time warning", 5, 315, "Wednesday", 16),
-            SampleItem("Student_I9", "Check updates", "Interesting content", "Comedy / Memes", "Interrupted a task", "Bored", "Studying", "App closure", 5, 320, "Tuesday", 19),
-            SampleItem("Student_I9", "Nothing to do, so watch reels", "Boredom", "Reels / Entertainment", "Delayed a task", "Stressed / regretful", "Sleeping", "App closure", 10, 610, "Monday", 22)
+            SampleItem("24bt04d233@gsfcuniversity.ac.in", "Reply to a message", "Boredom", "Comedy / Memes", "Delayed a task", "Neutral", "Working", "Time warning", 5, 310, "Friday", 14),
+            SampleItem("24bt04d233@gsfcuniversity.ac.in", "Check updates", "Interesting content", "Reels / Entertainment", "Delayed a task", "Bored", "Studying", "App closure", 10, 620, "Friday", 16),
+            SampleItem("24sc06007@gsfcuniversity.ac.in", "Nothing to do, so watch reels", "Boredom", "Comedy / Memes", "Interrupted a task", "Bored", "Working", "Time warning", 5, 305, "Thursday", 11),
+            SampleItem("24sc06007@gsfcuniversity.ac.in", "Reply to a message", "Notifications / messages", "Stories / Personal content", "No task planned", "Satisfied", "Relaxing", "Mood check", 2, 130, "Thursday", 19),
+            SampleItem("24sc06028@gsfcuniversity.ac.in", "Finished all tasks, want to watch reels", "Habitual scrolling", "Reels / Entertainment", "No negative impact / planned break", "Relaxed", "Nothing planned", "Break suggestion", 5, 320, "Wednesday", 21),
+            SampleItem("24sc06028@gsfcuniversity.ac.in", "Opened automatically / out of habit", "Habitual scrolling", "Comedy / Memes", "Delayed a task", "Stressed / regretful", "Studying", "Original-purpose reminder", 5, 315, "Wednesday", 15),
+            SampleItem("rohit.patel@gmail.com", "Study or research", "Unfinished original purpose", "Education / Technology", "No negative impact / planned break", "Satisfied", "Working", "Time warning", 10, 600, "Tuesday", 10),
+            SampleItem("rohit.patel@gmail.com", "Nothing to do, so watch reels", "Boredom", "Fitness / Lifestyle", "Delayed a task", "Neutral", "Studying", "Time warning", 5, 302, "Tuesday", 17),
+            SampleItem("sneha.sharma@gmail.com", "Checking someone's reply", "Stress / mood", "Music / Entertainment", "Interrupted a task", "Bored", "Working", "Break suggestion", 5, 340, "Monday", 13),
+            SampleItem("sneha.sharma@gmail.com", "Opened automatically / out of habit", "Boredom", "Reels / Entertainment", "Delayed a task", "Stressed / regretful", "Sleeping", "App closure", 15, 920, "Monday", 23),
+            SampleItem("ananya.shah@gmail.com", "Check updates", "Notifications / messages", "News / Politics", "No negative impact / planned break", "Relaxed", "Socializing", "Mood check", 2, 125, "Sunday", 12),
+            SampleItem("ananya.shah@gmail.com", "Nothing to do, so watch reels", "Interesting content", "Comedy / Memes", "Delayed a task", "Neutral", "Studying", "Time warning", 5, 310, "Saturday", 18),
+            SampleItem("manav.desai@gmail.com", "Finished all tasks, want to watch reels", "Boredom", "Music / Entertainment", "No negative impact / planned break", "Satisfied", "Nothing planned", "Break suggestion", 10, 605, "Saturday", 20),
+            SampleItem("manav.desai@gmail.com", "Reply to a message", "Habitual scrolling", "Stories / Personal content", "Delayed a task", "Bored", "Working", "Time warning", 5, 310, "Friday", 15),
+            SampleItem("dev.joshi@gmail.com", "Opened automatically / out of habit", "Boredom", "Comedy / Memes", "Delayed a task", "Stressed / regretful", "Studying", "App closure", 5, 305, "Thursday", 14),
+            SampleItem("dev.joshi@gmail.com", "Reply to a message", "Notifications / messages", "Reels / Entertainment", "Delayed a task", "Neutral", "Working", "Time warning", 5, 315, "Wednesday", 16),
+            SampleItem("khushi.mehta@gmail.com", "Check updates", "Interesting content", "Comedy / Memes", "Interrupted a task", "Bored", "Studying", "App closure", 5, 320, "Tuesday", 19),
+            SampleItem("khushi.mehta@gmail.com", "Nothing to do, so watch reels", "Boredom", "Reels / Entertainment", "Delayed a task", "Stressed / regretful", "Sleeping", "App closure", 10, 610, "Monday", 22)
         )
 
         val arr = JSONArray()
