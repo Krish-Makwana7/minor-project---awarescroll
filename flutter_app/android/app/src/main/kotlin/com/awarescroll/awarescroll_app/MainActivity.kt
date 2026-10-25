@@ -30,6 +30,35 @@ class MainActivity : FlutterActivity() {
                     )
                 }
 
+                "openOneClickAuthorization" -> {
+                    if (!hasAccessibilityPermission()) {
+                        try {
+                            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                        } catch (e: Exception) {
+                            startActivity(Intent(Settings.ACTION_SETTINGS))
+                        }
+                    } else if (!hasOverlayPermission() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        try {
+                            startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+                        } catch (e: Exception) {
+                            startActivity(Intent(Settings.ACTION_SETTINGS))
+                        }
+                    } else if (!hasUsageAccess()) {
+                        try {
+                            startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
+                                data = Uri.parse("package:$packageName")
+                            })
+                        } catch (e: Exception) {
+                            try {
+                                startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                            } catch (e2: Exception) {
+                                startActivity(Intent(Settings.ACTION_SETTINGS))
+                            }
+                        }
+                    }
+                    result.success(true)
+                }
+
                 "openUsageSettings" -> {
                     try {
                         startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))

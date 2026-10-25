@@ -237,6 +237,9 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
   bool _hasUsage = false;
   bool _hasOverlay = false;
   bool _hasAccessibility = false;
+  bool _showAdvancedPermissions = false;
+
+  bool get _isInstagramAuthorized => _hasAccessibility || (_hasUsage && _hasOverlay);
 
   late AnimationController _pulseController;
 
@@ -314,8 +317,8 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
         _showPostSessionDebrief();
       }
     } else {
-      if (!_hasAccessibility && !_hasUsage) {
-        _showPermissionRequiredDialog();
+      if (!_isInstagramAuthorized) {
+        _showInstagramAuthWizard();
         return;
       }
 
@@ -375,52 +378,16 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
     );
   }
 
-  void _showPermissionRequiredDialog() {
-    showDialog(
+  void _showInstagramAuthWizard() {
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.shield_outlined, color: AwareScrollTheme.primary),
-            SizedBox(width: 8),
-            Text(
-              'Permissions Needed',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AwareScrollTheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-        content: const Text(
-          'AwareScroll requires Accessibility Service or Usage Access to track Instagram usage and block compulsive scrolling.',
-          style: TextStyle(
-            fontSize: 13,
-            color: AwareScrollTheme.onSurfaceVariant,
-            height: 1.4,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AwareScrollTheme.onSurfaceVariant)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AwareScrollTheme.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              _openSettings('openAccessibilitySettings');
-            },
-            child: const Text('Grant Access'),
-          ),
-        ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => InstagramAuthWizardModal(
+        onAuthorized: () {
+          _checkPermissions();
+          _handleGuardButtonClick();
+        },
       ),
     );
   }
@@ -443,10 +410,6 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
         ? (_elapsedSeconds / _limitSeconds).clamp(0.0, 1.0)
         : 0.0;
     final progressPct = (progress * 100).toInt();
-
-    final grantedCount = (_hasAccessibility ? 1 : 0) +
-        (_hasUsage ? 1 : 0) +
-        (_hasOverlay ? 1 : 0);
 
     return Scaffold(
       backgroundColor: AwareScrollTheme.background,
@@ -1063,84 +1026,201 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
               ),
             ),
 
-            // Android Guard Permissions
+            // Instagram Shield Authorization & Device Compliance Card
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.verified_user_outlined, size: 17, color: AwareScrollTheme.secondaryEmerald),
-                        SizedBox(width: 6),
-                        Text(
-                          'Android Guard Permissions',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: AwareScrollTheme.onSurface,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      '$grantedCount/3 OPERATIONAL',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.8,
-                        color: AwareScrollTheme.secondaryEmerald,
-                        fontFamily: 'monospace',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: AwareScrollTheme.outline),
-                    boxShadow: const [
+                    gradient: LinearGradient(
+                      colors: _isInstagramAuthorized
+                          ? [Colors.white, const Color(0xFFF0FDF4)]
+                          : [Colors.white, const Color(0xFFFFFBEB)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: _isInstagramAuthorized
+                          ? AwareScrollTheme.secondaryEmerald.withOpacity(0.4)
+                          : AwareScrollTheme.tertiaryAmber.withOpacity(0.5),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
                       BoxShadow(
-                        color: Color(0x08141528),
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
+                        color: _isInstagramAuthorized
+                            ? const Color(0x1000B894)
+                            : const Color(0x10FF9F43),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildPermissionItem(
-                        icon: Icons.accessibility_new_rounded,
-                        title: 'Accessibility Service',
-                        subtitle: 'Active & Monitoring Feed Actions',
-                        isGranted: _hasAccessibility,
-                        onEnable: () => _openSettings('openAccessibilitySettings'),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  gradient: AwareScrollTheme.instagramGradient,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Center(
+                                  child: Icon(Icons.shield_rounded, color: Colors.white, size: 22),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _isInstagramAuthorized
+                                        ? 'Instagram Shield Authorized'
+                                        : 'Authorize Instagram Protection',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: AwareScrollTheme.onSurface,
+                                    ),
+                                  ),
+                                  Text(
+                                    _isInstagramAuthorized
+                                        ? 'Official on-device screen time guard'
+                                        : '1-tap setup needed to enforce limits',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AwareScrollTheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _isInstagramAuthorized
+                                  ? AwareScrollTheme.secondaryContainer
+                                  : AwareScrollTheme.tertiaryContainer,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: _isInstagramAuthorized
+                                    ? AwareScrollTheme.secondaryEmerald
+                                    : AwareScrollTheme.tertiaryAmber,
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              _isInstagramAuthorized ? '● ACTIVE' : 'SETUP REQUIRED',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: _isInstagramAuthorized
+                                    ? AwareScrollTheme.secondaryEmerald
+                                    : AwareScrollTheme.onTertiaryText,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const Divider(color: AwareScrollTheme.outline, height: 16),
-                      _buildPermissionItem(
-                        icon: Icons.query_stats_rounded,
-                        title: 'Usage Access',
-                        subtitle: 'Granted Foreground Window Telemetry',
-                        isGranted: _hasUsage,
-                        onEnable: () => _openSettings('openUsageSettings'),
+
+                      if (!_isInstagramAuthorized) ...[
+                        const SizedBox(height: 12),
+                        const Text(
+                          'AwareScroll uses Android\'s official Screen Time API to count minutes on Instagram. No Instagram password or login needed.',
+                          style: TextStyle(fontSize: 11, color: AwareScrollTheme.onSurfaceVariant, height: 1.35),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 44,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AwareScrollTheme.primary,
+                              foregroundColor: Colors.white,
+                              elevation: 1,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: const Icon(Icons.bolt_rounded, size: 18),
+                            label: const Text(
+                              '⚡ 1-Click Authorize Instagram Shield',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                            onPressed: _showInstagramAuthWizard,
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 10),
+
+                      // Privacy guarantee badge & expander
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.lock_outline, size: 13, color: AwareScrollTheme.secondaryEmerald),
+                              SizedBox(width: 4),
+                              Text(
+                                'Private • On-Device Only • Zero Password Access',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: AwareScrollTheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          GestureDetector(
+                            onTap: () => setState(() => _showAdvancedPermissions = !_showAdvancedPermissions),
+                            child: Text(
+                              _showAdvancedPermissions ? 'Hide Details' : 'Details ▾',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: AwareScrollTheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const Divider(color: AwareScrollTheme.outline, height: 16),
-                      _buildPermissionItem(
-                        icon: Icons.layers_rounded,
-                        title: 'Display Over Other Apps',
-                        subtitle: 'Overlay & Mindful Blocker Ready',
-                        isGranted: _hasOverlay,
-                        onEnable: () => _openSettings('openOverlaySettings'),
-                      ),
+
+                      if (_showAdvancedPermissions) ...[
+                        const SizedBox(height: 12),
+                        const Divider(color: AwareScrollTheme.outline, height: 1),
+                        const SizedBox(height: 10),
+                        _buildPermissionItem(
+                          icon: Icons.accessibility_new_rounded,
+                          title: 'Accessibility Shield',
+                          subtitle: 'Detects when Instagram opens/closes',
+                          isGranted: _hasAccessibility,
+                          onEnable: () => _openSettings('openAccessibilitySettings'),
+                        ),
+                        const Divider(color: AwareScrollTheme.outline, height: 12),
+                        _buildPermissionItem(
+                          icon: Icons.query_stats_rounded,
+                          title: 'Usage Screen Time',
+                          subtitle: 'Measures active Instagram minutes',
+                          isGranted: _hasUsage,
+                          onEnable: () => _openSettings('openUsageSettings'),
+                        ),
+                        const Divider(color: AwareScrollTheme.outline, height: 12),
+                        _buildPermissionItem(
+                          icon: Icons.layers_rounded,
+                          title: 'Screen Blocker Window',
+                          subtitle: 'Displays pause questions when limit is reached',
+                          isGranted: _hasOverlay,
+                          onEnable: () => _openSettings('openOverlaySettings'),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -4391,6 +4471,312 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ==========================================
+// 1-CLICK INSTAGRAM AUTHORIZATION WIZARD MODAL
+// ==========================================
+class InstagramAuthWizardModal extends StatefulWidget {
+  final VoidCallback onAuthorized;
+
+  const InstagramAuthWizardModal({super.key, required this.onAuthorized});
+
+  @override
+  State<InstagramAuthWizardModal> createState() =>
+      _InstagramAuthWizardModalState();
+}
+
+class _InstagramAuthWizardModalState extends State<InstagramAuthWizardModal> {
+  static const MethodChannel _channel =
+      MethodChannel('com.awarescroll/restriction');
+  bool _hasAccessibility = false;
+  bool _hasOverlay = false;
+  bool _hasUsage = false;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _check();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _check());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _check() async {
+    try {
+      final res = await _channel.invokeMethod<Map>('checkPermissions');
+      if (res != null && mounted) {
+        final access = res['accessibility'] == true;
+        final ov = res['overlay'] == true;
+        final us = res['usage'] == true;
+        if (access != _hasAccessibility ||
+            ov != _hasOverlay ||
+            us != _hasUsage) {
+          setState(() {
+            _hasAccessibility = access;
+            _hasOverlay = ov;
+            _hasUsage = us;
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  bool get _isAuthorized => _hasAccessibility || (_hasUsage && _hasOverlay);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AwareScrollTheme.outline,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    gradient: AwareScrollTheme.instagramGradient,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.shield_rounded, color: Colors.white, size: 26),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Instagram Protection Setup',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AwareScrollTheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        'Official On-Device Digital Wellbeing Authorization',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AwareScrollTheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Privacy Guarantee Box
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AwareScrollTheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AwareScrollTheme.outline),
+              ),
+              child: const Column(
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.lock_rounded, size: 15, color: AwareScrollTheme.secondaryEmerald),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'No Instagram password or login required',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AwareScrollTheme.onSurface),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.visibility_off_rounded, size: 15, color: AwareScrollTheme.primary),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'AwareScroll never reads your DMs, feed, or photos',
+                          style: TextStyle(fontSize: 11, color: AwareScrollTheme.onSurfaceVariant),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.verified_user_rounded, size: 15, color: AwareScrollTheme.tertiaryAmber),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Operates within official Android Screen Time guidelines',
+                          style: TextStyle(fontSize: 11, color: AwareScrollTheme.onSurfaceVariant),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 18),
+
+            if (_isAuthorized) ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AwareScrollTheme.secondaryEmerald),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.check_circle_rounded, color: AwareScrollTheme.secondaryEmerald, size: 30),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Authorization Complete!',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AwareScrollTheme.onSurface),
+                          ),
+                          Text(
+                            'Instagram Shield is active and ready to protect your mindful limits.',
+                            style: TextStyle(fontSize: 11, color: AwareScrollTheme.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AwareScrollTheme.secondaryEmerald,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    widget.onAuthorized();
+                  },
+                  child: const Text('Start Guarding Instagram Now 🛡️', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                ),
+              ),
+            ] else ...[
+              const Text(
+                'Just 1 simple step to activate your shield:',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AwareScrollTheme.onSurface),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AwareScrollTheme.primary.withOpacity(0.3)),
+                ),
+                child: Column(
+                  children: [
+                    _buildStepRow('1', 'Tap the 1-Click button below to open Settings'),
+                    const SizedBox(height: 8),
+                    _buildStepRow('2', 'Select "AwareScroll" in the list'),
+                    const SizedBox(height: 8),
+                    _buildStepRow('3', 'Toggle the switch to "ON" and return here!'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AwareScrollTheme.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  icon: const Icon(Icons.bolt_rounded, size: 20),
+                  label: const Text(
+                    '⚡ 1-Click Authorize in Settings',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  onPressed: () {
+                    _channel.invokeMethod('openOneClickAuthorization');
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _buildStepRow(String number, String text) {
+    return Row(
+      children: [
+        Container(
+          width: 22,
+          height: 22,
+          decoration: const BoxDecoration(
+            color: AwareScrollTheme.primaryFixed,
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Text(
+              number,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: AwareScrollTheme.primary,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 12, color: AwareScrollTheme.onSurface),
+          ),
+        ),
+      ],
     );
   }
 }
