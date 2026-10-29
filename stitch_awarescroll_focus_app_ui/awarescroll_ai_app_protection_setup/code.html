@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;min-height:100vh;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}
+  @keyframes radarPing {
+    0% { transform: scale(0.9); opacity: 0.8; }
+    100% { transform: scale(1.6); opacity: 0; }
+  }
+  .animate-radar {
+    animation: radarPing 1.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+  @keyframes catBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+  .animate-cat-bounce {
+    animation: catBounce 2s ease-in-out infinite;
+  }
+</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"inverse-primary":"#bac3ff","surface-tint":"#2348ef","on-primary-container":"#f2f1ff","on-tertiary-fixed":"#2e1500","on-tertiary-container":"#ffefe5","tertiary-container":"#a65b00","on-secondary-container":"#00725b","on-tertiary":"#ffffff","inverse-surface":"#2d2e46","surface-container-low":"#f5f2ff","surface-variant":"#e1e0ff","error-container":"#ffdad6","outline":"#747688","secondary-fixed-dim":"#4bddb7","on-error":"#ffffff","on-primary":"#ffffff","surface-container-high":"#e7e6ff","secondary":"#006b55","on-surface-variant":"#444656","inverse-on-surface":"#f1efff","primary-fixed":"#dee0ff","on-primary-fixed":"#00105b","on-tertiary-fixed-variant":"#6d3a00","surface":"#fcf8ff","primary-fixed-dim":"#bac3ff","tertiary-fixed":"#ffdcc2","background":"#fcf8ff","surface-container":"#eeecff","primary-container":"#3a5bff","tertiary":"#824700","on-surface":"#181930","surface-bright":"#fcf8ff","surface-container-highest":"#e1e0ff","error":"#ba1a1a","secondary-fixed":"#6dfad2","secondary-container":"#6dfad2","tertiary-fixed-dim":"#ffb77a","on-secondary":"#ffffff","surface-dim":"#d8d7f6","outline-variant":"#c4c5d9","on-secondary-fixed":"#002018","on-primary-fixed-variant":"#002fc9","on-error-container":"#93000a","primary":"#123de7","surface-container-lowest":"#ffffff","on-secondary-fixed-variant":"#005140","on-background":"#181930"},borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},spacing:{"gutter-mobile":"0.75rem","space-sm":"0.5rem","gutter":"1rem","space-lg":"1.5rem","space-xl":"2rem","space-xs":"0.25rem","margin-mobile":"1rem","margin":"1.25rem","space-md":"1rem"},fontFamily:{"headline-h2":["Inter"],"caption-medium":["Inter"],"headline-h1":["Inter"],"display-timer":["IBM Plex Mono"],"headline-h3":["Inter"],"body-large":["Inter"],"label-mono":["IBM Plex Mono"],"body-medium":["Inter"]},fontSize:{"headline-h2":["22px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"600"}],"caption-medium":["12px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"500"}],"headline-h1":["28px",{"lineHeight":"34px","letterSpacing":"-0.02em","fontWeight":"700"}],"display-timer":["56px",{"lineHeight":"64px","letterSpacing":"-0.04em","fontWeight":"600"}],"headline-h3":["18px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}],"body-large":["16px",{"lineHeight":"24px","letterSpacing":"-0.005em","fontWeight":"400"}],"label-mono":["14px",{"lineHeight":"18px","letterSpacing":"0.02em","fontWeight":"600"}],"body-medium":["14px",{"lineHeight":"20px","fontWeight":"400"}]}}}}</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head><body class="bg-surface font-body-medium text-body-medium text-on-surface flex flex-col min-h-screen relative select-none"><header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-gutter-mobile flex items-center justify-between"><button aria-label="Go Back" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container-low transition-colors" onclick="history.back()" type="button"><span class="material-symbols-outlined text-[22px]">arrow_back</span></button><h1 class="font-headline-h3 text-headline-h3 text-on-surface truncate px-space-xs">Protection Permissions</h1><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center cursor-pointer shadow-sm active:scale-95 transition-transform" onclick="triggerCatToast('Purr-fect focus today! 🐾', '😸')"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="flex flex-col flex-1 relative w-full pt-16 pb-safe bg-surface"><div class="flex flex-col w-full">
+<div class="px-gutter-mobile pt-space-sm pb-space-lg flex flex-col gap-space-lg">
+<!-- Top Step Bar Tracker -->
+<div class="flex items-center justify-between">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-fixed text-primary font-caption-medium text-caption-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+<span>Step 2 of 2</span>
+</div>
+<span class="font-caption-medium text-caption-medium text-on-surface-variant flex items-center gap-1 cursor-pointer hover:text-secondary transition-colors" onclick="triggerCatToast('Shield level strengthens as apps are guarded! 🛡️', '🐱')">
+<span class="material-symbols-outlined text-[16px] text-secondary">verified_user</span>
+        System Shield Level 1
+      </span>
+</div>
+<!-- Hero Visual Graphic Badge with Interactive Radar & Sparks -->
+<div class="relative w-full flex items-center justify-center py-space-sm">
+<div class="relative w-44 h-44 flex items-center justify-center cursor-pointer select-none group" id="shieldInteractiveContainer" onclick="pulseShield()">
+<!-- Ripple radar waves triggered on tap -->
+<div class="absolute inset-0 rounded-full border-2 border-secondary-fixed opacity-0 pointer-events-none transition-all" id="radarWave1"></div>
+<div class="absolute inset-2 rounded-full border-2 border-primary-fixed-dim opacity-0 pointer-events-none transition-all" id="radarWave2"></div>
+<!-- Soft Radial Glowing Ambient Backdrop -->
+<div class="absolute inset-0 rounded-full bg-surface-container-high opacity-70 blur-xl transition-all duration-300 group-hover:opacity-90" id="shieldGlow"></div>
+<div class="absolute inset-3 rounded-full bg-secondary-fixed/40 blur-md"></div>
+<!-- Warm Focus Rings & Sparkles -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none transition-transform duration-700" fill="none" id="shieldDecorRings" viewbox="0 0 176 176">
+<!-- Concentric Protective Arc Rings -->
+<circle class="text-tertiary-fixed-dim" cx="88" cy="88" opacity="0.8" r="76" stroke="currentColor" stroke-dasharray="6 8" stroke-width="1.5"></circle>
+<circle class="text-secondary-fixed-dim" cx="88" cy="88" opacity="0.6" r="64" stroke="currentColor" stroke-width="2"></circle>
+<!-- Mint Green Sparkles & Dots -->
+<path class="sparkle-star transition-transform duration-300" d="M142 38L144.5 44.5L151 47L144.5 49.5L142 56L139.5 49.5L133 47L139.5 44.5L142 38Z" fill="#4bddb7"></path>
+<path class="sparkle-star transition-transform duration-300" d="M30 120L31.8 124.2L36 126L31.8 127.8L30 132L28.2 127.8L24 126L28.2 124.2L30 120Z" fill="#ffb77a"></path>
+<circle cx="136" cy="128" fill="#4bddb7" r="3"></circle>
+<circle cx="42" cy="46" fill="#4bddb7" r="2.5"></circle>
+</svg>
+<!-- Central AwareScroll Shield Emblem -->
+<div class="relative w-28 h-28 rounded-full bg-surface-container-lowest shadow-xl flex items-center justify-center transition-all duration-200 transform group-active:scale-95 group-hover:shadow-2xl" id="shieldCoreButton">
+<!-- Ambient inner border glow -->
+<div class="absolute inset-1.5 rounded-full bg-gradient-to-tr from-surface-container-low via-surface-container to-surface-variant flex items-center justify-center">
+<!-- Shield Symbol with Embedded Device Icons -->
+<div class="relative flex items-center justify-center" id="shieldIconWrapper">
+<!-- Outer Primary Shield -->
+<span class="material-symbols-outlined text-[62px] text-primary transition-all duration-300" id="mainShieldIcon" style="font-variation-settings: 'FILL' 1;">
+                shield
+              </span>
+<!-- Overlaid App Cluster Badge in center of Shield -->
+<div class="absolute flex items-center justify-center gap-0.5 mt-0.5 pointer-events-none">
+<!-- Camera Symbol for Reels/Social -->
+<div class="w-5 h-5 rounded-md bg-surface-container-lowest shadow-sm flex items-center justify-center">
+<span class="material-symbols-outlined text-[13px] text-tertiary" style="font-variation-settings: 'FILL' 1;">
+                    photo_camera
+                  </span>
+</div>
+<!-- Play Center Icon -->
+<div class="w-6 h-6 rounded-full bg-secondary text-on-secondary shadow-md flex items-center justify-center -ml-1 z-10">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">
+                    play_arrow
+                  </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Tap Hint Label -->
+<div class="absolute -bottom-2 px-2.5 py-0.5 rounded-full bg-surface-container-highest/90 text-on-surface-variant text-[10px] font-caption-medium tracking-wide shadow-sm opacity-80 backdrop-blur pointer-events-none">
+  TAP SHIELD TO PULSE
+</div>
+</div>
+</div>
+<!-- Headline & Context -->
+<div class="flex flex-col text-center px-space-xs gap-1">
+<h2 class="font-headline-h2 text-headline-h2 text-on-surface">Select Apps to Guard</h2>
+<p class="font-body-medium text-body-medium text-on-surface-variant">
+        AwareScroll AI activates whenever you tap these apps, asking for your planned limit and purpose.
+      </p>
+</div>
+<!-- App Permission Toggle List -->
+<div class="flex flex-col gap-3">
+<!-- Item 1: Instagram -->
+<div class="p-3.5 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col transition-all cursor-pointer border border-transparent hover:border-surface-container-high" data-app="Instagram" id="item-instagram" onclick="toggleExpandCard('item-instagram', event)">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3 min-w-0">
+<!-- Gradient Camera Instagram Stylized Icon -->
+<div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-tertiary-container via-error to-primary-container flex items-center justify-center shadow-sm shrink-0">
+<span class="material-symbols-outlined text-on-primary text-[22px]">
+              photo_camera
+            </span>
+</div>
+<!-- App Info -->
+<div class="flex flex-col min-w-0">
+<div class="font-headline-h3 text-headline-h3 text-on-surface truncate flex items-center gap-1.5">
+<span>Instagram</span>
+<span class="text-caption-medium font-caption-medium text-on-surface-variant font-normal">(Reels &amp; Feed)</span>
+</div>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="w-2 h-2 rounded-full bg-secondary shrink-0 transition-colors" data-role="status-dot"></span>
+<span class="font-caption-medium text-caption-medium text-secondary truncate transition-colors" data-role="status-label">Guarded • <span data-role="limit-display">5 min</span> limit</span>
+<span class="material-symbols-outlined text-[15px] text-on-surface-variant/70 transition-transform duration-200" data-role="expand-arrow">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Toggle Button (Active) -->
+<button aria-checked="true" class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-200 ease-in-out bg-secondary focus:outline-none ml-2" onclick="onToggleClick(this, event, 'item-instagram')" role="switch" type="button">
+<span class="sr-only">Toggle Instagram Guard</span>
+<span class="pointer-events-none inline-block h-6 w-6 transform rounded-full bg-on-secondary shadow-md transition duration-200 ease-in-out translate-x-5"></span>
+</button>
+</div>
+<!-- Expandable Limit Selector Pills Drawer -->
+<div class="overflow-hidden transition-all duration-300 max-h-0 opacity-0 pt-0" data-role="limit-drawer">
+<div class="pt-3 mt-3 border-t border-surface-container flex items-center justify-between">
+<span class="text-[12px] font-caption-medium text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-primary">timer</span> Mindful limit:
+    </span>
+<div class="flex items-center gap-1.5">
+<button class="px-2.5 py-1 rounded-full text-caption-medium font-caption-medium bg-primary text-on-primary transition-all shadow-xs" onclick="setAppLimit('item-instagram', '5 min', this, event)" type="button">5m</button>
+<button class="px-2.5 py-1 rounded-full text-caption-medium font-caption-medium bg-surface-container-high text-on-surface hover:bg-surface-variant transition-all" onclick="setAppLimit('item-instagram', '10 min', this, event)" type="button">10m</button>
+<button class="px-2.5 py-1 rounded-full text-caption-medium font-caption-medium bg-surface-container-high text-on-surface hover:bg-surface-variant transition-all" onclick="setAppLimit('item-instagram', '15 min', this, event)" type="button">15m</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Item 2: YouTube -->
+<div class="p-3.5 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col transition-all cursor-pointer border border-transparent hover:border-surface-container-high" data-app="YouTube" id="item-youtube" onclick="toggleExpandCard('item-youtube', event)">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3 min-w-0">
+<!-- Red Play Icon -->
+<div class="w-11 h-11 rounded-xl bg-error flex items-center justify-center shadow-sm shrink-0">
+<span class="material-symbols-outlined text-on-error text-[24px]" style="font-variation-settings: 'FILL' 1;">
+              smart_display
+            </span>
+</div>
+<!-- App Info -->
+<div class="flex flex-col min-w-0">
+<div class="font-headline-h3 text-headline-h3 text-on-surface truncate flex items-center gap-1.5">
+<span>YouTube</span>
+<span class="text-caption-medium font-caption-medium text-on-surface-variant font-normal">(Shorts &amp; Videos)</span>
+</div>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="w-2 h-2 rounded-full bg-secondary shrink-0 transition-colors" data-role="status-dot"></span>
+<span class="font-caption-medium text-caption-medium text-secondary truncate transition-colors" data-role="status-label">Guarded • <span data-role="limit-display">15 min</span> limit</span>
+<span class="material-symbols-outlined text-[15px] text-on-surface-variant/70 transition-transform duration-200" data-role="expand-arrow">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Toggle Button (Active) -->
+<button aria-checked="true" class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-200 ease-in-out bg-secondary focus:outline-none ml-2" onclick="onToggleClick(this, event, 'item-youtube')" role="switch" type="button">
+<span class="sr-only">Toggle YouTube Guard</span>
+<span class="pointer-events-none inline-block h-6 w-6 transform rounded-full bg-on-secondary shadow-md transition duration-200 ease-in-out translate-x-5"></span>
+</button>
+</div>
+<!-- Expandable Limit Selector Pills Drawer -->
+<div class="overflow-hidden transition-all duration-300 max-h-0 opacity-0 pt-0" data-role="limit-drawer">
+<div class="pt-3 mt-3 border-t border-surface-container flex items-center justify-between">
+<span class="text-[12px] font-caption-medium text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-primary">timer</span> Mindful limit:
+    </span>
+<div class="flex items-center gap-1.5">
+<button class="px-2.5 py-1 rounded-full text-caption-medium font-caption-medium bg-surface-container-high text-on-surface hover:bg-surface-variant transition-all" onclick="setAppLimit('item-youtube', '5 min', this, event)" type="button">5m</button>
+<button class="px-2.5 py-1 rounded-full text-caption-medium font-caption-medium bg-surface-container-high text-on-surface hover:bg-surface-variant transition-all" onclick="setAppLimit('item-youtube', '10 min', this, event)" type="button">10m</button>
+<button class="px-2.5 py-1 rounded-full text-caption-medium font-caption-medium bg-primary text-on-primary transition-all shadow-xs" onclick="setAppLimit('item-youtube', '15 min', this, event)" type="button">15m</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Item 3: Snapchat -->
+<div class="p-3.5 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col transition-all cursor-pointer border border-transparent hover:border-surface-container-high" data-app="Snapchat" id="item-snapchat" onclick="toggleExpandCard('item-snapchat', event)">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3 min-w-0">
+<!-- Yellow Ghost Icon -->
+<div class="w-11 h-11 rounded-xl bg-tertiary-fixed flex items-center justify-center shadow-sm shrink-0">
+<span class="material-symbols-outlined text-on-tertiary-fixed text-[24px]" style="font-variation-settings: 'FILL' 1;">
+              sentiment_satisfied
+            </span>
+</div>
+<!-- App Info -->
+<div class="flex flex-col min-w-0">
+<div class="font-headline-h3 text-headline-h3 text-on-surface truncate flex items-center gap-1.5">
+<span>Snapchat</span>
+<span class="text-caption-medium font-caption-medium text-on-surface-variant font-normal">(Spotlight)</span>
+</div>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="w-2 h-2 rounded-full bg-outline-variant shrink-0 transition-colors" data-role="status-dot"></span>
+<span class="font-caption-medium text-caption-medium text-on-surface-variant truncate transition-colors" data-role="status-label">Optional • Not guarded</span>
+<span class="material-symbols-outlined text-[15px] text-on-surface-variant/70 transition-transform duration-200" data-role="expand-arrow">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Toggle Button (Inactive) -->
+<button aria-checked="false" class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-200 ease-in-out bg-surface-variant focus:outline-none ml-2" onclick="onToggleClick(this, event, 'item-snapchat')" role="switch" type="button">
+<span class="sr-only">Toggle Snapchat Guard</span>
+<span class="pointer-events-none inline-block h-6 w-6 transform rounded-full bg-surface-container-lowest shadow-md transition duration-200 ease-in-out translate-x-0"></span>
+</button>
+</div>
+<!-- Expandable Limit Selector Pills Drawer -->
+<div class="overflow-hidden transition-all duration-300 max-h-0 opacity-0 pt-0" data-role="limit-drawer">
+<div class="pt-3 mt-3 border-t border-surface-container flex items-center justify-between">
+<span class="text-[12px] font-caption-medium text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-primary">timer</span> Mindful limit:
+    </span>
+<div class="flex items-center gap-1.5">
+<button class="px-2.5 py-1 rounded-full text-caption-medium font-caption-medium bg-surface-container-high text-on-surface hover:bg-surface-variant transition-all" onclick="setAppLimit('item-snapchat', '5 min', this, event)" type="button">5m</button>
+<button class="px-2.5 py-1 rounded-full text-caption-medium font-caption-medium bg-primary text-on-primary transition-all shadow-xs" onclick="setAppLimit('item-snapchat', '10 min', this, event)" type="button">10m</button>
+<button class="px-2.5 py-1 rounded-full text-caption-medium font-caption-medium bg-surface-container-high text-on-surface hover:bg-surface-variant transition-all" onclick="setAppLimit('item-snapchat', '15 min', this, event)" type="button">15m</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Safety Explainer Card with Cat Companion Badge -->
+<div class="rounded-xl p-3 bg-tertiary-fixed/30 flex gap-2.5 items-start relative overflow-hidden cursor-pointer hover:bg-tertiary-fixed/40 transition-colors" onclick="triggerCatToast('AwareScroll keeps your dopamine loop intentional!', '🐾')">
+<div class="w-7 h-7 rounded-full bg-tertiary/10 flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px] text-tertiary" style="font-variation-settings: 'FILL' 1;">
+          lightbulb
+        </span>
+</div>
+<div class="flex flex-col flex-1">
+<p class="font-caption-medium text-caption-medium text-on-surface leading-snug">
+          You will always have full control. After your timer ends, you can close immediately or take a quick 3-second reflection to unlock extra time.
+        </p>
+</div>
+<!-- Mini Cat Mascot peeking -->
+<div class="shrink-0 flex items-center self-center pl-1 text-[20px] animate-cat-bounce" title="AwareScroll Cat Companion">
+  🐱
+</div>
+</div>
+<!-- Floating Action CTA Stack with Ripple & Success States -->
+<div class="flex flex-col gap-2 pt-space-xs pb-space-sm relative">
+<button class="relative overflow-hidden w-full h-[52px] rounded-full bg-primary text-on-primary font-headline-h3 text-headline-h3 flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all hover:bg-primary-container" id="enableProtectionBtn" onclick="handleEnableProtection(event)" type="button">
+<span class="relative z-10 flex items-center gap-2" id="ctaBtnContent">
+<span>ENABLE SMART PROTECTION</span>
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</span>
+<!-- Ripple container inside CTA -->
+<span class="absolute inset-0 pointer-events-none" id="ctaRipple"></span>
+</button>
+<button class="w-full py-2.5 font-body-medium text-body-medium text-on-surface-variant text-center active:opacity-75 transition-opacity hover:text-on-surface" onclick="triggerCatToast('You can customize settings any time in Dashboard!', '✨')" type="button">
+        Configure later in Dashboard
+      </button>
+</div>
+</div>
+</div>
+<!-- Cute Cat Companion Micro-Reaction Floating Toast -->
+<div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-4 py-2.5 bg-inverse-surface text-inverse-on-surface rounded-full shadow-2xl transition-all duration-300 opacity-0 pointer-events-none translate-y-4 scale-95" id="catToast">
+<div class="w-7 h-7 rounded-full bg-surface-container-highest/20 flex items-center justify-center text-[16px] shrink-0" id="catToastEmoji">
+    🐾
+  </div>
+<p class="font-caption-medium text-caption-medium font-medium pr-1" id="catToastMessage">
+    Paw-some choice! Keeping focus clear.
+  </p>
+</div>
+<script>
+  // App default limit values store
+  const appLimits = {
+    'item-instagram': '5 min',
+    'item-youtube': '15 min',
+    'item-snapchat': '10 min'
+  };
+
+  // Cat micro-toast reaction helper
+  let catToastTimeout;
+  function triggerCatToast(message, emoji = '🐾') {
+    const toast = document.getElementById('catToast');
+    const toastMsg = document.getElementById('catToastMessage');
+    const toastEmoji = document.getElementById('catToastEmoji');
+    if (!toast || !toastMsg) return;
+
+    toastMsg.textContent = message;
+    toastEmoji.textContent = emoji;
+
+    toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4', 'scale-95');
+    toast.classList.add('opacity-100', 'translate-y-0', 'scale-100');
+
+    clearTimeout(catToastTimeout);
+    catToastTimeout = setTimeout(() => {
+      toast.classList.remove('opacity-100', 'translate-y-0', 'scale-100');
+      toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4', 'scale-95');
+    }, 2400);
+  }
+
+  // Interactive toggle handler with card UI sync
+  function onToggleClick(button, event, cardId) {
+    if (event) event.stopPropagation();
+
+    const isChecked = button.getAttribute('aria-checked') === 'true';
+    const nextState = !isChecked;
+    button.setAttribute('aria-checked', String(nextState));
+
+    const thumb = button.querySelector('span:not(.sr-only)');
+    const card = document.getElementById(cardId);
+    const dot = card.querySelector('[data-role="status-dot"]');
+    const label = card.querySelector('[data-role="status-label"]');
+    const currentLimit = appLimits[cardId] || '10 min';
+    const appName = card.getAttribute('data-app') || 'App';
+
+    if (nextState) {
+      button.classList.remove('bg-surface-variant');
+      button.classList.add('bg-secondary');
+      thumb.classList.remove('translate-x-0', 'bg-surface-container-lowest');
+      thumb.classList.add('translate-x-5', 'bg-on-secondary');
+
+      dot.classList.remove('bg-outline-variant');
+      dot.classList.add('bg-secondary');
+
+      label.classList.remove('text-on-surface-variant');
+      label.classList.add('text-secondary');
+      label.innerHTML = `Guarded • <span data-role="limit-display">${currentLimit}</span> limit`;
+
+      triggerCatToast(`Purr! ${appName} is guarded with a ${currentLimit} limit! 🛡️`, '🐱');
+    } else {
+      button.classList.remove('bg-secondary');
+      button.classList.add('bg-surface-variant');
+      thumb.classList.remove('translate-x-5', 'bg-on-secondary');
+      thumb.classList.add('translate-x-0', 'bg-surface-container-lowest');
+
+      dot.classList.remove('bg-secondary');
+      dot.classList.add('bg-outline-variant');
+
+      label.classList.remove('text-secondary');
+      label.classList.add('text-on-surface-variant');
+      label.innerHTML = 'Optional • Not guarded';
+
+      triggerCatToast(`${appName} shield disabled. Take care! 🐾`, '😿');
+    }
+  }
+
+  // Expandable limit drawer toggle
+  function toggleExpandCard(cardId, event) {
+    // If the click originated on an interactive child button, ignore card collapse
+    if (event && event.target.closest('button')) return;
+
+    const card = document.getElementById(cardId);
+    const drawer = card.querySelector('[data-role="limit-drawer"]');
+    const arrow = card.querySelector('[data-role="expand-arrow"]');
+    const isExpanded = drawer.classList.contains('max-h-24');
+
+    if (isExpanded) {
+      drawer.classList.remove('max-h-24', 'opacity-100', 'pt-2');
+      drawer.classList.add('max-h-0', 'opacity-0');
+      if (arrow) arrow.style.transform = 'rotate(0deg)';
+    } else {
+      drawer.classList.remove('max-h-0', 'opacity-0');
+      drawer.classList.add('max-h-24', 'opacity-100', 'pt-2');
+      if (arrow) arrow.style.transform = 'rotate(180deg)';
+      triggerCatToast('Pick a mindful screen time limit! ⏱️', '🐾');
+    }
+  }
+
+  // Change default limit time via pills
+  function setAppLimit(cardId, limitTime, pillBtn, event) {
+    if (event) event.stopPropagation();
+
+    appLimits[cardId] = limitTime;
+    const card = document.getElementById(cardId);
+    const toggleBtn = card.querySelector('button[role="switch"]');
+    const isGuarded = toggleBtn.getAttribute('aria-checked') === 'true';
+    const limitDisplay = card.querySelector('[data-role="limit-display"]');
+
+    // Update pill styles in drawer
+    const drawer = card.querySelector('[data-role="limit-drawer"]');
+    drawer.querySelectorAll('button').forEach(btn => {
+      btn.classList.remove('bg-primary', 'text-on-primary', 'shadow-xs');
+      btn.classList.add('bg-surface-container-high', 'text-on-surface');
+    });
+    pillBtn.classList.remove('bg-surface-container-high', 'text-on-surface');
+    pillBtn.classList.add('bg-primary', 'text-on-primary', 'shadow-xs');
+
+    // If already guarded, update label
+    if (isGuarded && limitDisplay) {
+      limitDisplay.textContent = limitTime;
+    } else if (!isGuarded) {
+      // Auto-turn on toggle when user picks a limit
+      onToggleClick(toggleBtn, null, cardId);
+    }
+
+    const appName = card.getAttribute('data-app') || 'App';
+    triggerCatToast(`${appName} limit set to ${limitTime}! Stay mindful 🐾`, '⏱️');
+  }
+
+  // Reactive radar pulse & sparkle on shield
+  function pulseShield() {
+    const shieldWrap = document.getElementById('shieldIconWrapper');
+    const shieldGlow = document.getElementById('shieldGlow');
+    const radarWave1 = document.getElementById('radarWave1');
+    const radarWave2 = document.getElementById('radarWave2');
+    const decorRings = document.getElementById('shieldDecorRings');
+
+    // Haptic scale animation
+    shieldWrap.classList.add('scale-110');
+    shieldGlow.classList.add('opacity-100', 'scale-110');
+    if (decorRings) decorRings.style.transform = 'rotate(45deg)';
+
+    // Trigger radar waves
+    radarWave1.classList.remove('opacity-0');
+    radarWave1.classList.add('animate-radar');
+
+    setTimeout(() => {
+      radarWave2.classList.remove('opacity-0');
+      radarWave2.classList.add('animate-radar');
+    }, 200);
+
+    setTimeout(() => {
+      shieldWrap.classList.remove('scale-110');
+      shieldGlow.classList.remove('opacity-100', 'scale-110');
+      if (decorRings) decorRings.style.transform = 'rotate(0deg)';
+    }, 400);
+
+    setTimeout(() => {
+      radarWave1.classList.remove('animate-radar');
+      radarWave1.classList.add('opacity-0');
+      radarWave2.classList.remove('animate-radar');
+      radarWave2.classList.add('opacity-0');
+    }, 1200);
+
+    const catQuotes = [
+      'Radar shield fully calibrated! 🐾',
+      'Purr-tection matrix at 100%! 🛡️',
+      'Deep work boundaries active! Meow! 🐱',
+      'AwareScroll AI watching your back! ✨'
+    ];
+    const quote = catQuotes[Math.floor(Math.random() * catQuotes.length)];
+    triggerCatToast(quote, '🛡️');
+  }
+
+  // Handle Enable Protection CTA with ripple & completion state
+  function handleEnableProtection(e) {
+    const btn = document.getElementById('enableProtectionBtn');
+    const content = document.getElementById('ctaBtnContent');
+    if (btn.dataset.locked === 'true') return;
+
+    // Ripple effect
+    const rect = btn.getBoundingClientRect();
+    const ripple = document.createElement('span');
+    const size = Math.max(rect.width, rect.height);
+    const x = e.clientX ? e.clientX - rect.left - size / 2 : rect.width / 2 - size / 2;
+    const y = e.clientY ? e.clientY - rect.top - size / 2 : rect.height / 2 - size / 2;
+    
+    ripple.style.width = ripple.style.height = `${size}px`;
+    ripple.style.left = `${x}px`;
+    ripple.style.top = `${y}px`;
+    ripple.className = 'absolute rounded-full bg-white/30 pointer-events-none animate-ping';
+    btn.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 700);
+
+    // Loading State
+    btn.dataset.locked = 'true';
+    btn.classList.add('opacity-90');
+    content.innerHTML = `
+      <span class="material-symbols-outlined animate-spin text-[20px]">sync</span>
+      <span>SYNCING SHIELDS...</span>
+    `;
+
+    setTimeout(() => {
+      // Success State
+      btn.classList.remove('bg-primary', 'hover:bg-primary-container', 'opacity-90');
+      btn.classList.add('bg-secondary', 'shadow-secondary/30');
+      content.innerHTML = `
+        <span class="material-symbols-outlined text-[22px] text-white">check_circle</span>
+        <span>PROTECTION ARMED</span>
+      `;
+      pulseShield();
+      triggerCatToast('All shields active! Happy mindful scrolling! 🐾🎉', '😻');
+
+      // Reset button after 3 seconds for continuous interactivity
+      setTimeout(() => {
+        btn.dataset.locked = 'false';
+        btn.classList.remove('bg-secondary', 'shadow-secondary/30');
+        btn.classList.add('bg-primary');
+        content.innerHTML = `
+          <span>ENABLE SMART PROTECTION</span>
+          <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+        `;
+      }, 3500);
+    }, 750);
+  }
+</script></main></body></html>

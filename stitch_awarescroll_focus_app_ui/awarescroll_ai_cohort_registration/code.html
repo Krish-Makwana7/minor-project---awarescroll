@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;min-height:100vh;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"inverse-primary":"#bac3ff","surface-tint":"#2348ef","on-primary-container":"#f2f1ff","on-tertiary-fixed":"#2e1500","on-tertiary-container":"#ffefe5","tertiary-container":"#a65b00","on-secondary-container":"#00725b","on-tertiary":"#ffffff","inverse-surface":"#2d2e46","surface-container-low":"#f5f2ff","surface-variant":"#e1e0ff","error-container":"#ffdad6","outline":"#747688","secondary-fixed-dim":"#4bddb7","on-error":"#ffffff","on-primary":"#ffffff","surface-container-high":"#e7e6ff","secondary":"#006b55","on-surface-variant":"#444656","inverse-on-surface":"#f1efff","primary-fixed":"#dee0ff","on-primary-fixed":"#00105b","on-tertiary-fixed-variant":"#6d3a00","surface":"#fcf8ff","primary-fixed-dim":"#bac3ff","tertiary-fixed":"#ffdcc2","background":"#fcf8ff","surface-container":"#eeecff","primary-container":"#3a5bff","tertiary":"#824700","on-surface":"#181930","surface-bright":"#fcf8ff","surface-container-highest":"#e1e0ff","error":"#ba1a1a","secondary-fixed":"#6dfad2","secondary-container":"#6dfad2","tertiary-fixed-dim":"#ffb77a","on-secondary":"#ffffff","surface-dim":"#d8d7f6","outline-variant":"#c4c5d9","on-secondary-fixed":"#002018","on-primary-fixed-variant":"#002fc9","on-error-container":"#93000a","primary":"#123de7","surface-container-lowest":"#ffffff","on-secondary-fixed-variant":"#005140","on-background":"#181930"},borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},spacing:{"gutter-mobile":"0.75rem","space-sm":"0.5rem","gutter":"1rem","space-lg":"1.5rem","space-xl":"2rem","space-xs":"0.25rem","margin-mobile":"1rem","margin":"1.25rem","space-md":"1rem"},fontFamily:{"headline-h2":["Inter"],"caption-medium":["Inter"],"headline-h1":["Inter"],"display-timer":["IBM Plex Mono"],"headline-h3":["Inter"],"body-large":["Inter"],"label-mono":["IBM Plex Mono"],"body-medium":["Inter"]},fontSize:{"headline-h2":["22px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"600"}],"caption-medium":["12px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"500"}],"headline-h1":["28px",{"lineHeight":"34px","letterSpacing":"-0.02em","fontWeight":"700"}],"display-timer":["56px",{"lineHeight":"64px","letterSpacing":"-0.04em","fontWeight":"600"}],"headline-h3":["18px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}],"body-large":["16px",{"lineHeight":"24px","letterSpacing":"-0.005em","fontWeight":"400"}],"label-mono":["14px",{"lineHeight":"18px","letterSpacing":"0.02em","fontWeight":"600"}],"body-medium":["14px",{"lineHeight":"20px","fontWeight":"400"}]}}}}</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-medium text-body-medium text-on-surface flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-gutter-mobile flex items-center justify-between"><button aria-label="Go Back" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container-low transition-colors" onclick="history.back()" type="button"><span class="material-symbols-outlined text-[22px]">arrow_back</span></button><h1 class="font-headline-h3 text-headline-h3 text-on-surface truncate px-space-xs">Account Registration</h1><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="flex flex-col flex-1 relative w-full pt-16 pb-safe bg-surface"><div class="flex flex-col w-full px-gutter-mobile pb-space-xl">
+<!-- Warm Welcome & Header Info (No duplicate H1, flows from shell navigation) -->
+<div class="flex flex-col pt-space-sm pb-space-md">
+<div class="inline-flex items-center gap-1.5 self-start px-2.5 py-1 rounded-full bg-surface-container-high mb-2">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary-fixed-dim"></span>
+<span class="font-caption-medium text-caption-medium text-secondary">Step 2 of 3 · Study Onboarding</span>
+</div>
+<h2 class="font-headline-h2 text-headline-h2 text-on-surface tracking-tight">Join Your Cohort</h2>
+<p class="font-body-medium text-body-medium text-on-surface-variant mt-1 leading-relaxed">
+      Connect your device to view your personal scroll telemetry and participate in the study.
+    </p>
+</div>
+<!-- Form Fields Stack (Elevated Level 1 White Containers) -->
+<div class="flex flex-col gap-space-md">
+<!-- 1. Google Account Verified Chip -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_4px_16px_-2px_rgba(20,21,43,0.04)] flex items-center justify-between">
+<div class="flex items-center gap-3 min-w-0">
+<div class="relative shrink-0">
+<img class="w-12 h-12 rounded-full object-cover" data-alt="Close-up friendly profile portrait of student Alex Rivera with soft warm natural studio lighting, neutral minimal background, and authentic warm smile styled in clean modern aesthetics." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPNWT8K41iwRqGrzVvonQzIw-NZeFeFU6ngJlcWO9MUi-1zZZ2yYy9MjM-zFWJ8Nqrcu3hXeDO4-BAwx8gkempOWLIZcnsr81jWWE_oOwv2idkQlKlAwqL1eEJSbHDsE5njUQ2_MFRyIus5qBHo0-WHVa5RBS7g3ceDYgSaDEsUE06fgIgqpYab-jNof133AeBEvPWr3V3txEKU1irDJySIebl33RZ9D1Ip2BnGlsAj1TiHy9HwFk_Ow"/>
+<span class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-secondary text-on-secondary flex items-center justify-center text-[10px] font-bold shadow-sm">
+<span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">check</span>
+</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-h3 text-headline-h3 text-on-surface truncate">Alex Rivera</span>
+<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-caption-medium text-[10px]">
+              Verified
+            </span>
+</div>
+<span class="font-body-medium text-caption-medium text-on-surface-variant truncate">alex.rivera@gmail.com</span>
+</div>
+</div>
+<button aria-label="Account settings" class="w-9 h-9 rounded-full flex items-center justify-center text-outline hover:bg-surface-container transition-colors shrink-0" type="button">
+<span class="material-symbols-outlined text-[20px]">lock_reset</span>
+</button>
+</div>
+<!-- 2. Student Roll / ID Field -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_4px_16px_-2px_rgba(20,21,43,0.04)] flex items-center justify-between group focus-within:shadow-[0_8px_20px_-2px_rgba(58,91,255,0.08)] transition-all">
+<div class="flex flex-col min-w-0 flex-1">
+<span class="font-caption-medium text-caption-medium text-outline uppercase tracking-wider font-semibold">STUDENT ID / ROLL NO.</span>
+<div class="flex items-center gap-2 mt-0.5">
+<input class="font-display-timer text-headline-h3 font-semibold text-on-surface bg-transparent outline-none w-full tracking-wide" readonly="" type="text" value="CS-2026-42"/>
+</div>
+</div>
+<div class="flex items-center gap-1.5 shrink-0">
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-primary-container bg-surface-container-low hover:bg-surface-container transition-all active:scale-95" id="copy-id-btn" onclick="const btn = this; navigator.clipboard.writeText('CS-2026-42'); btn.innerHTML='&lt;span class=\'material-symbols-outlined text-[18px] text-secondary\'&gt;check&lt;/span&gt;'; setTimeout(()=&gt;{btn.innerHTML='&lt;span class=\'material-symbols-outlined text-[18px]\'&gt;content_copy&lt;/span&gt;'}, 1800);" title="Copy Student ID" type="button">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+<span class="w-8 h-8 rounded-full flex items-center justify-center text-secondary bg-surface-container-low">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</span>
+</div>
+</div>
+<!-- 3. Batch / Class Selector -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_4px_16px_-2px_rgba(20,21,43,0.04)] flex flex-col gap-2 cursor-pointer active:scale-[0.99] transition-transform">
+<span class="font-caption-medium text-caption-medium text-outline uppercase tracking-wider font-semibold">ACADEMIC COHORT &amp; BATCH</span>
+<div class="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-surface-container-low">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-7 h-7 rounded-full bg-primary-fixed flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[18px]">school</span>
+</div>
+<span class="font-body-large text-body-medium font-medium text-on-surface truncate">
+            Computer Science — Final Year (DBMS Study)
+          </span>
+</div>
+<span class="material-symbols-outlined text-outline text-[20px] shrink-0">expand_more</span>
+</div>
+</div>
+<!-- Telemetry Teaser Visual Accent (Delight Moment) -->
+<div class="bg-gradient-to-r from-surface-container-low via-surface-container to-surface-container-low rounded-xl p-3.5 flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary-container text-[20px]">equalizer</span>
+<div class="flex flex-col">
+<span class="font-headline-h3 text-caption-medium text-on-surface">Baseline Adherence Window</span>
+<span class="font-caption-medium text-caption-medium text-on-surface-variant">Live sync synced via Bluetooth Smart Beacon</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-primary font-caption-medium text-[11px] font-semibold">94.2% Synced</span>
+</div>
+<!-- Research Consent Card -->
+<div class="bg-surface-container-low rounded-2xl p-4 shadow-[0_2px_12px_rgba(58,91,255,0.06)] flex items-start gap-3.5">
+<div class="w-8 h-8 rounded-full bg-primary-container/15 flex items-center justify-center text-primary-container shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">shield</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between gap-2">
+<span class="font-headline-h3 text-[13px] leading-snug font-semibold text-on-surface">Anonymous Presentation Consent</span>
+<!-- Mint Green Toggle Switch -->
+<label class="relative inline-flex items-center cursor-pointer shrink-0">
+<input checked="" class="sr-only peer" id="consent-toggle" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-variant rounded-full peer peer-checked:bg-secondary-fixed-dim peer-focus:outline-none transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-secondary after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full peer-checked:after:bg-secondary"></div>
+</label>
+</div>
+<p class="font-body-medium text-[11px] leading-relaxed text-on-surface-variant mt-1">
+          Allow AwareScroll to aggregate your adherence rates (without personal reel history) for the monthly class presentation.
+        </p>
+</div>
+</div>
+</div>
+<!-- Primary Action Container & Reassurance -->
+<div class="flex flex-col items-center gap-3 mt-space-lg">
+<button class="w-full h-[52px] rounded-xl bg-primary-container text-on-primary font-body-large font-semibold text-body-large tracking-wide flex items-center justify-center gap-2 shadow-[0_8px_24px_-4px_rgba(58,91,255,0.35)] hover:bg-surface-tint active:scale-[0.98] transition-all" onclick="this.classList.add('opacity-90'); this.innerHTML='&lt;span class=\'material-symbols-outlined animate-spin text-[20px]\'&gt;progress_activity&lt;/span&gt;&lt;span&gt;Linking Telemetry...&lt;/span&gt;';" type="button">
+<span>COMPLETE SETUP &amp; ENTER DASHBOARD</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+<p class="font-caption-medium text-[11px] text-outline text-center flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[14px]">info</span>
+<span>You can modify cohort permissions at any time.</span>
+</p>
+</div>
+</div></main></body></html>

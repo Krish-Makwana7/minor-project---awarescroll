@@ -1,0 +1,484 @@
+<!DOCTYPE html><html class="h-full" lang="en" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"><meta content="mobile_blank" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@600&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{width:100vw;min-height:100vh;margin:0;padding:0;}body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-secondary-fixed-variant":"#005140","secondary-fixed":"#6dfad2","on-primary-container":"#f2f1ff","tertiary-container":"#a65b00","on-tertiary-container":"#ffefe5","inverse-primary":"#bac3ff","background":"#fcf8ff","surface-bright":"#fcf8ff","on-surface":"#181930","on-error":"#ffffff","on-primary":"#ffffff","on-secondary":"#ffffff","on-surface-variant":"#444656","error-container":"#ffdad6","primary-fixed":"#dee0ff","error":"#ba1a1a","surface":"#fcf8ff","inverse-surface":"#2d2e46","on-error-container":"#93000a","surface-container-low":"#f5f2ff","outline":"#747688","on-primary-fixed-variant":"#002fc9","tertiary":"#824700","surface-dim":"#d8d7f6","on-primary-fixed":"#00105b","on-tertiary-fixed":"#2e1500","on-tertiary-fixed-variant":"#6d3a00","primary":"#123de7","secondary-fixed-dim":"#4bddb7","on-secondary-container":"#00725b","surface-container-high":"#e7e6ff","surface-container-highest":"#e1e0ff","tertiary-fixed":"#ffdcc2","on-background":"#181930","inverse-on-surface":"#f1efff","surface-container":"#eeecff","primary-container":"#3a5bff","surface-tint":"#2348ef","on-secondary-fixed":"#002018","surface-container-lowest":"#ffffff","secondary-container":"#6dfad2","tertiary-fixed-dim":"#ffb77a","secondary":"#006b55","on-tertiary":"#ffffff","surface-variant":"#e1e0ff","primary-fixed-dim":"#bac3ff","outline-variant":"#c4c5d9"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"gutter-mobile":"0.75rem","gutter":"1rem","space-xs":"0.25rem","space-md":"1rem","space-lg":"1.5rem","space-xl":"2rem","margin-mobile":"1rem","margin":"1.25rem","space-sm":"0.5rem"},"fontFamily":{"headline-h2":["Inter"],"headline-h1":["Inter"],"label-mono":["IBM Plex Mono"],"headline-h3":["Inter"],"caption-medium":["Inter"],"body-medium":["Inter"],"display-timer":["IBM Plex Mono"],"body-large":["Inter"]},"fontSize":{"headline-h2":["22px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"600"}],"headline-h1":["28px",{"lineHeight":"34px","letterSpacing":"-0.02em","fontWeight":"700"}],"label-mono":["14px",{"lineHeight":"18px","letterSpacing":"0.02em","fontWeight":"600"}],"headline-h3":["18px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}],"caption-medium":["12px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"500"}],"body-medium":["14px",{"lineHeight":"20px","fontWeight":"400"}],"display-timer":["56px",{"lineHeight":"64px","letterSpacing":"-0.04em","fontWeight":"600"}],"body-large":["16px",{"lineHeight":"24px","letterSpacing":"-0.005em","fontWeight":"400"}]}}}};</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+    @keyframes floatParticle {
+      0% {
+        opacity: 1;
+        transform: translateY(0) scale(0.8) rotate(0deg);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-55px) scale(1.3) rotate(20deg);
+      }
+    }
+    .float-particle {
+      position: absolute;
+      pointer-events: none;
+      user-select: none;
+      animation: floatParticle 0.85s ease-out forwards;
+      z-index: 50;
+    }
+    @keyframes mascotWiggle {
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      25% { transform: scale(1.05) rotate(-3deg); }
+      75% { transform: scale(1.05) rotate(3deg); }
+    }
+    .mascot-wiggle {
+      animation: mascotWiggle 0.4s ease-in-out;
+    }
+    @keyframes pawHop {
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      30% { transform: scale(0.9) rotate(-12deg); }
+      60% { transform: scale(1.15) rotate(10deg); }
+      80% { transform: scale(1.02) rotate(-3deg); }
+    }
+    .paw-hop {
+      animation: pawHop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes rippleAnim {
+      0% { transform: scale(0); opacity: 0.35; }
+      100% { transform: scale(3.5); opacity: 0; }
+    }
+    .tap-ripple {
+      position: absolute;
+      border-radius: 9999px;
+      background: currentColor;
+      pointer-events: none;
+      animation: rippleAnim 0.5s ease-out forwards;
+    }
+    @keyframes spinInfinite {
+      to { transform: rotate(360deg); }
+    }
+    .spin-loader {
+      animation: spinInfinite 0.8s linear infinite;
+    }
+    @keyframes gentlePulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+    .gentle-pulse {
+      animation: gentlePulse 2s infinite ease-in-out;
+    }
+  </style>
+</head><body class="bg-surface font-body-large text-on-surface min-h-screen flex flex-col relative selection:bg-primary-fixed selection:text-on-primary-fixed"><header class="fixed top-0 inset-x-0 z-50 pt-safe bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.03)]"><div class="h-14 px-margin-mobile flex items-center justify-between"><div class="flex items-center gap-space-xs cursor-pointer select-none active:scale-95 transition-transform" onclick="triggerPawMascot()"><div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center shadow-sm"><span class="material-symbols-outlined text-on-primary text-[18px]">spa</span></div><span class="font-headline-h3 text-headline-h3 text-on-surface tracking-tight">AwareScroll</span></div><div class="flex items-center gap-space-xs"><span class="font-caption-medium text-caption-medium text-on-surface-variant bg-surface-container px-space-sm py-space-xs rounded-full flex items-center gap-1 cursor-default"><span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>AI Mindful</span></div></div></header><main class="flex-1 flex flex-col relative w-full pt-14 pb-safe bg-surface"><div class="flex flex-col w-full px-margin-mobile pb-space-xl">
+<!-- Zen Mascot Floating Badge (Interactive) -->
+<div class="flex items-center justify-center pt-space-md pb-space-sm relative">
+<button class="relative inline-flex items-center gap-space-xs bg-surface-container-high px-space-md py-space-xs rounded-full shadow-sm cursor-pointer select-none transition-all duration-200 active:scale-95 hover:bg-surface-container-highest border border-transparent hover:border-primary-fixed focus:outline-none" id="mascotBadge" onclick="cycleMochiQuote(event)" type="button">
+<span class="text-[16px] transition-transform" id="mochiIcon">🐱</span>
+<span class="font-caption-medium text-caption-medium text-on-surface transition-opacity duration-150" id="mochiText">Mochi says: “Take a deep breath first” 🐾</span>
+</button>
+</div>
+<!-- Emblem & Welcome Header (Interactive Paw Logo) -->
+<div class="flex flex-col items-center text-center mt-space-sm mb-space-lg">
+<div aria-label="Interact with Mochi mascot emblem" class="relative flex items-center justify-center w-20 h-20 rounded-full bg-surface-container-highest shadow-md mb-space-md cursor-pointer select-none active:scale-90 transition-transform focus:outline-none" id="pawEmblemContainer" onclick="animateEmblem(event)" role="button">
+<div class="absolute inset-0 rounded-full bg-primary/15 animate-ping" id="pawPingRing" style="animation-duration: 3s;"></div>
+<div class="relative w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-sm transition-transform duration-300" id="pawInnerOrb">
+<span class="material-symbols-outlined text-on-primary text-[28px]" style="font-variation-settings: 'FILL' 1;">pets</span>
+</div>
+<div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-on-secondary shadow-sm transition-transform hover:rotate-45">
+<span class="material-symbols-outlined text-[14px]">spa</span>
+</div>
+</div>
+<h1 class="font-headline-h1 text-headline-h1 text-on-surface">Welcome Back</h1>
+<p class="font-body-medium text-body-medium text-on-surface-variant mt-space-xs max-w-[280px]">
+      Pause, breathe, and reclaim your digital balance.
+    </p>
+</div>
+<!-- Mindful Card Container -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-md flex flex-col gap-space-md">
+<!-- Form Area -->
+<form class="flex flex-col gap-space-md" id="loginForm" novalidate="" onsubmit="event.preventDefault(); handleLogin();">
+<!-- Email Field -->
+<div class="flex flex-col gap-space-xs">
+<label class="font-caption-medium text-caption-medium text-on-surface-variant flex items-center justify-between" for="email">
+<span class="">Email Address</span>
+<span class="text-secondary opacity-0 transition-all duration-200 inline-flex items-center gap-1 font-caption-medium text-caption-medium" id="emailHint"><span class="material-symbols-outlined text-[14px] text-secondary">check_circle</span> Serene &amp; verified ✨</span>
+</label>
+<div class="relative flex items-center bg-surface-container-low rounded-lg transition-all duration-200 border border-outline-variant focus-within:border-primary focus-within:bg-surface-container-lowest focus-within:shadow-sm" id="emailWrapper"><div class="pl-space-md flex items-center pointer-events-none text-outline transition-colors border-none bg-transparent" id="emailIcon"><span class="material-symbols-outlined text-[20px]">alternate_email</span></div><input class="w-full h-12 bg-transparent pl-space-sm pr-space-md font-body-medium text-body-medium text-on-surface placeholder:text-outline/70 focus:outline-none border-none outline-none shadow-none" id="email" oninput="checkEmail(this.value)" placeholder="mindful.scroller@domain.com" required="" type="email" style="border-width: medium !important; border-style: none !important; border-color: currentcolor !important; border-image: none !important; outline: none !important; box-shadow: none !important; background: transparent !important;"></div>
+</div>
+<!-- Password Field -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<label class="font-caption-medium text-caption-medium text-on-surface-variant" for="password">Password</label>
+<button class="font-caption-medium text-caption-medium text-primary hover:underline hover:opacity-80 active:opacity-60 transition-opacity focus:outline-none" onclick="showForgotPasswordNotice()" type="button">Forgot Password?</button>
+</div>
+<div class="relative flex items-center bg-surface-container-low rounded-lg transition-all duration-200 border border-outline-variant focus-within:border-primary focus-within:bg-surface-container-lowest focus-within:shadow-sm" id="passwordWrapper"><div class="pl-space-md flex items-center pointer-events-none text-outline transition-colors border-none bg-transparent" id="passwordIcon"><span class="material-symbols-outlined text-[20px]">lock_outline</span></div><input class="w-full h-12 bg-transparent pl-space-sm pr-12 font-body-medium text-body-medium text-on-surface placeholder:text-outline/70 focus:outline-none border-none outline-none shadow-none" id="password" oninput="checkPassword(this.value)" placeholder="••••••••••••" required="" type="password" style="border-width: medium !important; border-style: none !important; border-color: currentcolor !important; border-image: none !important; outline: none !important; box-shadow: none !important; background: transparent !important;"><button aria-label="Toggle password visibility" class="absolute right-0 top-0 bottom-0 px-space-md flex items-center text-outline hover:text-on-surface active:scale-90 transition-all focus:outline-none bg-transparent border-none" id="togglePassword" onclick="togglePasswordVisibility()" type="button"><span class="material-symbols-outlined text-[20px]" id="eyeIcon">visibility</span></button></div>
+<!-- Dynamic Password Strength Hint -->
+<div class="hidden items-center justify-between px-1 transition-all duration-200" id="passwordStrengthRow">
+<div class="flex items-center gap-1.5 w-28">
+<div class="h-1 flex-1 rounded-full bg-surface-container-high transition-colors" id="pwdBar1"></div>
+<div class="h-1 flex-1 rounded-full bg-surface-container-high transition-colors" id="pwdBar2"></div>
+<div class="h-1 flex-1 rounded-full bg-surface-container-high transition-colors" id="pwdBar3"></div>
+</div>
+<span class="font-caption-medium text-caption-medium text-outline text-[11px]" id="passwordFeedback">Mindful password</span>
+</div>
+</div>
+<!-- Remember Me & Micro Intention Toggle (Smooth Row Interaction) -->
+<div class="flex items-center justify-between pt-space-xs">
+<label class="flex items-center gap-space-sm cursor-pointer select-none group" id="rememberRow" onclick="toggleRemember(event)">
+<div class="relative flex items-center justify-center">
+<input checked="" class="peer sr-only" id="rememberMe" type="checkbox">
+<div class="w-5 h-5 rounded-md bg-primary transition-all duration-200 flex items-center justify-center text-on-primary shadow-sm group-hover:ring-2 group-hover:ring-primary/20" id="customCheckbox">
+<span class="material-symbols-outlined text-[16px] scale-100 transition-transform duration-200 font-bold" id="checkIcon">check</span>
+</div>
+</div>
+<span class="font-caption-medium text-caption-medium text-on-surface select-none">Stay signed in</span>
+</label>
+<span class="inline-flex items-center gap-1 font-caption-medium text-caption-medium text-secondary">
+<span class="material-symbols-outlined text-[14px]">shield_with_heart</span> Safe session
+        </span>
+</div>
+<!-- Primary Action CTA -->
+<button class="relative overflow-hidden w-full h-12 mt-space-xs rounded-full bg-primary-container text-on-primary font-headline-h3 text-headline-h3 tracking-tight shadow-md hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-space-sm focus:outline-none" id="submitBtn" type="submit">
+<span class="hidden material-symbols-outlined text-[20px] spin-loader" id="btnSpinner">progress_activity</span>
+<span class="hidden material-symbols-outlined text-[22px]" id="btnSuccessIcon">check_circle</span>
+<span id="btnText" class="">Sign In to AwareScroll</span>
+<span class="material-symbols-outlined text-[20px] transition-transform duration-200" id="btnArrow">arrow_forward</span>
+</button>
+</form>
+<!-- Divider -->
+<div class="relative flex items-center justify-center my-space-xs">
+<div class="w-full h-px bg-surface-container-high"></div>
+<span class="absolute px-space-md bg-surface-container-lowest font-caption-medium text-caption-medium text-outline">
+        or continue with
+      </span>
+</div>
+<!-- Social SSO Grid -->
+<div class="grid grid-cols-2 gap-space-sm">
+<!-- Google SSO Button (Interactive Press Ripple Feedback) -->
+<button class="relative overflow-hidden h-12 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface font-body-medium text-body-medium flex items-center justify-center gap-space-sm transition-all duration-150 active:scale-[0.97] active:bg-surface-container-high shadow-sm focus:outline-none" onclick="handleSocialAuth('Google', this, event)" type="button">
+<svg class="w-5 h-5 pointer-events-none" viewBox="0 0 24 24">
+<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
+<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
+<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"></path>
+<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"></path>
+</svg>
+<span class="pointer-events-none">Google</span>
+</button>
+<!-- Apple SSO Button (Interactive Press Ripple Feedback) -->
+<button class="relative overflow-hidden h-12 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface font-body-medium text-body-medium flex items-center justify-center gap-space-sm transition-all duration-150 active:scale-[0.97] active:bg-surface-container-high shadow-sm focus:outline-none" onclick="handleSocialAuth('Apple', this, event)" type="button">
+<svg class="w-5 h-5 fill-current pointer-events-none" viewBox="0 0 24 24">
+<path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-1.99.6-2.63 1.35-.57.65-1.06 1.71-.93 2.73.99.08 2.02-.48 2.64-1.23"></path>
+</svg>
+<span class="pointer-events-none">Apple</span>
+</button>
+</div>
+</div>
+<!-- Bottom Intentional Inspiration & Sign Up Prompt -->
+<div class="mt-space-lg flex flex-col items-center gap-space-sm text-center">
+<div class="flex items-center gap-1 font-body-medium text-body-medium text-on-surface-variant">
+<span class="">Don't have an account?</span>
+<button class="font-headline-h3 text-headline-h3 text-primary hover:underline hover:opacity-85 active:scale-95 transition-all focus:outline-none" onclick="handleSignUpClick()" type="button">
+        Sign Up
+      </button>
+</div>
+<div class="flex items-center gap-space-xs text-outline font-caption-medium text-caption-medium">
+<span class="material-symbols-outlined text-[16px]">lock</span>
+<span class="">Encrypted locally • Zero mindful data selling</span>
+</div>
+</div>
+</div>
+<!-- Friendly Toast Notification -->
+<div class="fixed bottom-6 inset-x-4 max-w-sm mx-auto bg-inverse-surface text-inverse-on-surface px-4 py-3 rounded-xl shadow-xl flex items-center justify-between gap-3 transform translate-y-24 opacity-0 pointer-events-none transition-all duration-300 z-50" id="mindfulToast">
+<div class="flex items-center gap-2.5">
+<span class="text-[18px]" id="toastIcon">💌</span>
+<span class="font-body-medium text-body-medium leading-snug" id="toastMessage">Reset link sent with mindful care!</span>
+</div>
+<button class="text-inverse-on-surface/70 hover:text-inverse-on-surface p-1 focus:outline-none" onclick="hideToast()" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<script>
+  // 1. Password Visibility Toggle
+  function togglePasswordVisibility() {
+    const passwordInput = document.getElementById('password');
+    const eyeIcon = document.getElementById('eyeIcon');
+    if (passwordInput.type === 'password') {
+      passwordInput.type = 'text';
+      eyeIcon.textContent = 'visibility_off';
+      eyeIcon.classList.add('text-primary');
+    } else {
+      passwordInput.type = 'password';
+      eyeIcon.textContent = 'visibility';
+      eyeIcon.classList.remove('text-primary');
+    }
+  }
+
+  // 2. Animated Mascot Greeting Banner (Cycle quotes & particle blast)
+  const mochiQuotes = [
+    { text: "Mochi says: “Take a deep breath first” 🐾", emoji: "🐾" },
+    { text: "Mochi says: “Your calm is waiting for you ✨”", emoji: "✨" },
+    { text: "Mochi says: “Proud of you for taking control! 💙”", emoji: "💙" },
+    { text: "Mochi says: “One mindful breath at a time 🌿”", emoji: "🌿" },
+    { text: "Mochi says: “Less infinite scroll, more soul 🌸”", emoji: "🌸" }
+  ];
+  let quoteIndex = 0;
+
+  function cycleMochiQuote(e) {
+    const badge = document.getElementById('mascotBadge');
+    const mochiText = document.getElementById('mochiText');
+    const mochiIcon = document.getElementById('mochiIcon');
+
+    // Trigger wiggle animation
+    badge.classList.remove('mascot-wiggle');
+    void badge.offsetWidth; // re-flow
+    badge.classList.add('mascot-wiggle');
+
+    // Spawn floating emojis
+    spawnEmojiParticles(e || badge, ['🐾', '✨', '❤️', '🌸', '✨']);
+
+    // Soft text swap transition
+    quoteIndex = (quoteIndex + 1) % mochiQuotes.length;
+    mochiText.style.opacity = '0';
+    setTimeout(() => {
+      mochiText.textContent = mochiQuotes[quoteIndex].text;
+      mochiText.style.opacity = '1';
+    }, 150);
+  }
+
+  function spawnEmojiParticles(targetOrEvent, emojiList) {
+    let x, y;
+    if (targetOrEvent.clientX !== undefined) {
+      x = targetOrEvent.clientX;
+      y = targetOrEvent.clientY;
+    } else {
+      const rect = targetOrEvent.getBoundingClientRect();
+      x = rect.left + rect.width / 2;
+      y = rect.top + rect.height / 2;
+    }
+
+    const count = 4 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < count; i++) {
+      const particle = document.createElement('span');
+      particle.className = 'float-particle font-emoji text-[16px]';
+      particle.textContent = emojiList[Math.floor(Math.random() * emojiList.length)];
+      
+      const offsetX = (Math.random() - 0.5) * 60;
+      const offsetY = (Math.random() - 0.5) * 20;
+      
+      particle.style.left = `${x + offsetX}px`;
+      particle.style.top = `${y + offsetY}px`;
+      particle.style.animationDelay = `${i * 0.08}s`;
+      document.body.appendChild(particle);
+
+      setTimeout(() => {
+        if (particle && particle.parentNode) {
+          particle.parentNode.removeChild(particle);
+        }
+      }, 1000);
+    }
+  }
+
+  // 3. Interactive Paw Logo Emblem
+  function animateEmblem(e) {
+    const orb = document.getElementById('pawInnerOrb');
+    const container = document.getElementById('pawEmblemContainer');
+    const ping = document.getElementById('pawPingRing');
+
+    orb.classList.remove('paw-hop');
+    void orb.offsetWidth;
+    orb.classList.add('paw-hop');
+
+    // Ping amplification
+    ping.style.transform = 'scale(1.4)';
+    setTimeout(() => ping.style.transform = '', 400);
+
+    // Spawn heart and sparkles
+    spawnEmojiParticles(container, ['❤️', '🐾', '✨', '🧘']);
+    showToast("Mochi sent a gentle purr! 🐾", "🐱");
+  }
+
+  function triggerPawMascot() {
+    const emblem = document.getElementById('pawEmblemContainer');
+    if (emblem) animateEmblem({ clientX: emblem.getBoundingClientRect().left + 40, clientY: emblem.getBoundingClientRect().top + 40 });
+  }
+
+  // 4. Live Email & Password Validation
+  function checkEmail(val) {
+    const hint = document.getElementById('emailHint');
+    const wrapper = document.getElementById('emailWrapper');
+    const icon = document.getElementById('emailIcon');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (val && emailRegex.test(val)) {
+      hint.style.opacity = '1';
+      wrapper.classList.remove('border-error');
+      wrapper.classList.add('border-secondary');
+      icon.classList.remove('text-outline');
+      icon.classList.add('text-secondary');
+    } else if (val.length > 0 && (!val.includes('@') || !val.includes('.'))) {
+      hint.style.opacity = '0';
+      wrapper.classList.remove('border-secondary');
+      wrapper.classList.add('border-primary/40');
+      icon.classList.remove('text-secondary');
+      icon.classList.add('text-outline');
+    } else {
+      hint.style.opacity = '0';
+      wrapper.classList.remove('border-secondary', 'border-primary/40');
+      icon.classList.remove('text-secondary');
+      icon.classList.add('text-outline');
+    }
+  }
+
+  function checkPassword(val) {
+    const strengthRow = document.getElementById('passwordStrengthRow');
+    const feedback = document.getElementById('passwordFeedback');
+    const b1 = document.getElementById('pwdBar1');
+    const b2 = document.getElementById('pwdBar2');
+    const b3 = document.getElementById('pwdBar3');
+    const wrapper = document.getElementById('passwordWrapper');
+
+    if (val.length > 0) {
+      strengthRow.classList.remove('hidden');
+      strengthRow.classList.add('flex');
+    } else {
+      strengthRow.classList.add('hidden');
+      strengthRow.classList.remove('flex');
+      b1.className = 'h-1 flex-1 rounded-full bg-surface-container-high transition-colors';
+      b2.className = 'h-1 flex-1 rounded-full bg-surface-container-high transition-colors';
+      b3.className = 'h-1 flex-1 rounded-full bg-surface-container-high transition-colors';
+      return;
+    }
+
+    if (val.length < 6) {
+      b1.className = 'h-1 flex-1 rounded-full bg-error transition-colors';
+      b2.className = 'h-1 flex-1 rounded-full bg-surface-container-high transition-colors';
+      b3.className = 'h-1 flex-1 rounded-full bg-surface-container-high transition-colors';
+      feedback.textContent = 'Keep breathing...';
+      feedback.className = 'font-caption-medium text-caption-medium text-error text-[11px]';
+    } else if (val.length < 10) {
+      b1.className = 'h-1 flex-1 rounded-full bg-tertiary-container transition-colors';
+      b2.className = 'h-1 flex-1 rounded-full bg-tertiary-container transition-colors';
+      b3.className = 'h-1 flex-1 rounded-full bg-surface-container-high transition-colors';
+      feedback.textContent = 'Good harmony';
+      feedback.className = 'font-caption-medium text-caption-medium text-tertiary text-[11px]';
+    } else {
+      b1.className = 'h-1 flex-1 rounded-full bg-secondary transition-colors';
+      b2.className = 'h-1 flex-1 rounded-full bg-secondary transition-colors';
+      b3.className = 'h-1 flex-1 rounded-full bg-secondary transition-colors';
+      feedback.textContent = 'Mindfully secure ✨';
+      feedback.className = 'font-caption-medium text-caption-medium text-secondary text-[11px]';
+    }
+  }
+
+  // 5. Checkbox Interaction
+  function toggleRemember(e) {
+    e.preventDefault();
+    const checkbox = document.getElementById('rememberMe');
+    const customBox = document.getElementById('customCheckbox');
+    const checkIcon = document.getElementById('checkIcon');
+
+    checkbox.checked = !checkbox.checked;
+    if (checkbox.checked) {
+      customBox.classList.remove('bg-surface-container-high');
+      customBox.classList.add('bg-primary');
+      checkIcon.classList.remove('scale-0');
+      checkIcon.classList.add('scale-100');
+    } else {
+      customBox.classList.remove('bg-primary');
+      customBox.classList.add('bg-surface-container-high');
+      checkIcon.classList.remove('scale-100');
+      checkIcon.classList.add('scale-0');
+    }
+  }
+
+  // 6. Primary Action ('Sign In to AwareScroll') Realistic Loading & Success State
+  let isSubmitting = false;
+  function handleLogin() {
+    if (isSubmitting) return;
+    const btn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const btnSpinner = document.getElementById('btnSpinner');
+    const btnArrow = document.getElementById('btnArrow');
+    const btnSuccess = document.getElementById('btnSuccessIcon');
+    const emailInput = document.getElementById('email');
+
+    isSubmitting = true;
+    btn.disabled = true;
+
+    // Loading State
+    btnSpinner.classList.remove('hidden');
+    btnArrow.classList.add('hidden');
+    btnText.textContent = 'Breathing in...';
+    btn.classList.add('bg-primary/90');
+
+    // Simulate authentic authentication delay
+    setTimeout(() => {
+      btnSpinner.classList.add('hidden');
+      btnSuccess.classList.remove('hidden');
+      btnText.textContent = 'Welcome back 🌿';
+      btn.classList.remove('bg-primary/90');
+      btn.classList.add('bg-secondary');
+
+      // Floating celebratory particles
+      spawnEmojiParticles(btn, ['✨', '🌿', '💙', '🐾', '🎉']);
+
+      setTimeout(() => {
+        // Reset smoothly
+        btnSuccess.classList.add('hidden');
+        btnArrow.classList.remove('hidden');
+        btnText.textContent = 'Sign In to AwareScroll';
+        btn.classList.remove('bg-secondary');
+        btn.disabled = false;
+        isSubmitting = false;
+      }, 2000);
+    }, 1200);
+  }
+
+  // 7. Social Sign-In Touch & Active Feedback
+  function handleSocialAuth(provider, btnElement, event) {
+    // Add micro-ripple visual effect
+    const rect = btnElement.getBoundingClientRect();
+    const ripple = document.createElement('span');
+    const size = Math.max(rect.width, rect.height);
+    ripple.style.width = ripple.style.height = `${size}px`;
+    ripple.style.left = `${event.clientX - rect.left - size / 2}px`;
+    ripple.style.top = `${event.clientY - rect.top - size / 2}px`;
+    ripple.className = 'tap-ripple text-primary-fixed';
+    btnElement.appendChild(ripple);
+
+    setTimeout(() => {
+      if (ripple.parentNode) ripple.parentNode.removeChild(ripple);
+    }, 600);
+
+    showToast(`Connecting with ${provider}... 🍃`, provider === 'Apple' ? '🍏' : '🌐');
+  }
+
+  // 8. Navigation Links (Sign Up and Forgot Password)
+  function handleSignUpClick() {
+    showToast("Welcome to AwareScroll! Preparing your mindful space...", "✨");
+  }
+
+  function showForgotPasswordNotice() {
+    showToast("Reset link sent with mindful care! 💌", "💌");
+  }
+
+  // Toast System
+  let toastTimer = null;
+  function showToast(msg, iconEmoji = "💌") {
+    const toast = document.getElementById('mindfulToast');
+    const toastMsg = document.getElementById('toastMessage');
+    const toastIcon = document.getElementById('toastIcon');
+
+    toastMsg.textContent = msg;
+    toastIcon.textContent = iconEmoji;
+
+    toast.classList.remove('translate-y-24', 'opacity-0', 'pointer-events-none');
+    toast.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
+
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      hideToast();
+    }, 3200);
+  }
+
+  function hideToast() {
+    const toast = document.getElementById('mindfulToast');
+    toast.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
+    toast.classList.add('translate-y-24', 'opacity-0', 'pointer-events-none');
+  }
+</script></main>
+
+</body></html>

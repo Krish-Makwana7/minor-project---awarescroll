@@ -5,6 +5,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'screens/onboarding_screens.dart';
+import 'screens/cat_oasis_screen.dart';
+import 'screens/limit_modals.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -75,10 +78,88 @@ class AwareScrollApp extends StatelessWidget {
         ),
         fontFamily: 'Inter',
       ),
-      home: const AwareScrollMainShell(),
+      home: const AppEntryGate(),
     );
   }
 }
+
+// ==========================================
+// ONBOARDING & STUDY COHORT ENTRY GATE
+// ==========================================
+class AppEntryGate extends StatefulWidget {
+  const AppEntryGate({super.key});
+
+  @override
+  State<AppEntryGate> createState() => _AppEntryGateState();
+}
+
+class _AppEntryGateState extends State<AppEntryGate> {
+  bool _isLoading = true;
+  bool _hasCompletedOnboarding = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkStatus();
+  }
+
+  Future<void> _checkStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _hasCompletedOnboarding =
+          prefs.getBool('has_completed_onboarding') ?? false;
+      _isLoading = false;
+    });
+  }
+
+  void _finishOnboarding() {
+    setState(() {
+      _hasCompletedOnboarding = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: AwareScrollTheme.background,
+        body: Center(
+          child: CircularProgressIndicator(color: AwareScrollTheme.primary),
+        ),
+      );
+    }
+
+    if (!_hasCompletedOnboarding) {
+      return WelcomeSignInScreen(
+        onProceedToCohort: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (ctx) => CohortRegistrationScreen(
+                onProceedToPermissions: () {
+                  Navigator.of(ctx).push(
+                    MaterialPageRoute(
+                      builder: (c2) => AppProtectionSetupScreen(
+                        onFinishOnboarding: () {
+                          _finishOnboarding();
+                          Navigator.of(ctx).popUntil((route) => route.isFirst);
+                        },
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
+        },
+        onSkipToDashboard: _finishOnboarding,
+      );
+    }
+
+    return const AwareScrollMainShell();
+  }
+}
+
+
 
 // ==========================================
 // ROOT NAVIGATION SHELL (3 BOTTOM TABS)
@@ -97,6 +178,27 @@ class _AwareScrollMainShellState extends State<AwareScrollMainShell> {
     setState(() => _currentTabIndex = index);
   }
 
+  void _openSetLimitModal() {
+    SetYourLimitModal.show(
+      context,
+      onLaunchInstagram: () async {
+        final prefs = await SharedPreferences.getInstance();
+        final mins = prefs.getInt('session_limit_minutes') ?? 5;
+        try {
+          const MethodChannel('com.awarescroll/restriction').invokeMethod('startRestriction', {
+            'appName': 'Instagram',
+            'packageName': 'com.instagram.android',
+            'minutes': mins,
+            'seconds': mins * 60,
+          });
+          const MethodChannel('com.awarescroll/restriction').invokeMethod('launchApp', {
+            'packageName': 'com.instagram.android',
+          });
+        } catch (_) {}
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -105,7 +207,11 @@ class _AwareScrollMainShellState extends State<AwareScrollMainShell> {
         index: _currentTabIndex,
         children: [
           MainControlDashboardTab(
-            onNavigateToBlocker: () => _onSwitchTab(1),
+            onNavigateToBlocker: () => _onSwitchTab(2),
+            onNavigateToCatOasis: () => _onSwitchTab(1),
+          ),
+          CatOasisScreen(
+            onReturnToDashboard: () => _onSwitchTab(0),
           ),
           InteractiveBlockerTab(
             onReturnToControl: () => _onSwitchTab(0),
@@ -129,24 +235,77 @@ class _AwareScrollMainShellState extends State<AwareScrollMainShell> {
         ),
         child: SafeArea(
           child: SizedBox(
-            height: 64,
+            height: 68,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 _buildNavItem(
                   index: 0,
-                  icon: Icons.shield_outlined,
-                  activeIcon: Icons.shield,
-                  label: 'CONTROL',
+                  icon: Icons.dashboard_outlined,
+                  activeIcon: Icons.dashboard,
+                  label: 'DASHBOARD',
                 ),
                 _buildNavItem(
                   index: 1,
+                  icon: Icons.pets_outlined,
+                  activeIcon: Icons.pets,
+                  label: 'CAT OASIS',
+                ),
+                // Center Floating Action Button (Stitch Elevated Launcher)
+                GestureDetector(
+                  onTap: _openSetLimitModal,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF3A5BFF), Color(0xFF6C8CFF)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF3A5BFF).withOpacity(0.35),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                          border: Border.all(color: Colors.white, width: 2.5),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.shield,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'OPEN',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.8,
+                          color: Color(0xFF3A5BFF),
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _buildNavItem(
+                  index: 2,
                   icon: Icons.lock_clock_outlined,
                   activeIcon: Icons.lock_clock,
                   label: 'BLOCKER',
                 ),
                 _buildNavItem(
-                  index: 2,
+                  index: 3,
                   icon: Icons.insights_outlined,
                   activeIcon: Icons.insights,
                   label: 'INSIGHTS',
@@ -174,7 +333,7 @@ class _AwareScrollMainShellState extends State<AwareScrollMainShell> {
       onTap: () => setState(() => _currentTabIndex = index),
       borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -188,8 +347,8 @@ class _AwareScrollMainShellState extends State<AwareScrollMainShell> {
             Text(
               label,
               style: TextStyle(
-                fontSize: 10,
-                letterSpacing: 0.8,
+                fontSize: 9,
+                letterSpacing: 0.6,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 color: color,
                 fontFamily: 'monospace',
@@ -207,10 +366,12 @@ class _AwareScrollMainShellState extends State<AwareScrollMainShell> {
 // ==========================================
 class MainControlDashboardTab extends StatefulWidget {
   final VoidCallback onNavigateToBlocker;
+  final VoidCallback? onNavigateToCatOasis;
 
   const MainControlDashboardTab({
     super.key,
     required this.onNavigateToBlocker,
+    this.onNavigateToCatOasis,
   });
 
   @override
@@ -314,7 +475,11 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
         _isTargetInForeground = false;
       });
       if (mounted) {
-        _showPostSessionDebrief();
+        if (_elapsedSeconds >= _limitSeconds && _limitSeconds > 0) {
+          _showLimitExpiry();
+        } else {
+          _showPostSessionDebrief();
+        }
       }
     } else {
       if (!_isInstagramAuthorized) {
@@ -361,6 +526,168 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
         );
       }
     }
+  }
+
+  void _openInstagramWithIntention() {
+    SetYourLimitModal.show(
+      context,
+      onLaunchInstagram: () async {
+        final prefs = await SharedPreferences.getInstance();
+        final mins = prefs.getInt('session_limit_minutes') ?? 5;
+        setState(() {
+          _limitMinutes = mins;
+          _limitSeconds = mins * 60;
+        });
+        await _handleGuardButtonClick();
+        try {
+          await _channel.invokeMethod('launchApp', {'packageName': targetPackage});
+        } catch (_) {}
+      },
+    );
+  }
+
+  void _showLimitExpiry() {
+    LimitExpirySheet.show(
+      context,
+      onCloseApp: () async {
+        try {
+          await _channel.invokeMethod('closeTargetApp');
+        } catch (_) {}
+        _showPostSessionDebrief();
+      },
+      onOpenCatOasis: () {
+        if (widget.onNavigateToCatOasis != null) {
+          widget.onNavigateToCatOasis!();
+        } else {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (ctx) => CatOasisScreen(
+                onReturnToDashboard: () => Navigator.of(ctx).pop(),
+              ),
+            ),
+          );
+        }
+      },
+      onOpenSurvey: () {
+        ReflectionSurveyModal.show(
+          context,
+          onCompleteSurvey: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Survey recorded! Mindful grace extension granted.'),
+                backgroundColor: AwareScrollTheme.secondaryEmerald,
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildRecentSessionCard({
+    required String duration,
+    required String intention,
+    required String status,
+    required Color statusColor,
+    required String subtext,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E4F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x06141528),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F3FB),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.camera_alt_outlined, size: 18, color: Color(0xFF3A5BFF)),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        duration,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'monospace',
+                          color: Color(0xFF14152B),
+                        ),
+                      ),
+                      Text(
+                        'Intention: $intention',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF6B6F8C),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: statusColor.withOpacity(0.3)),
+                ),
+                child: Text(
+                  status,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.only(left: 44),
+            child: Row(
+              children: [
+                Icon(icon, size: 14, color: statusColor),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    subtext,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF444656),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showPostSessionDebrief() {
@@ -476,19 +803,40 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
                         ),
                       ],
                     ),
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: AwareScrollTheme.surfaceContainerLow,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AwareScrollTheme.outline),
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.person_outline,
-                          color: AwareScrollTheme.onSurfaceVariant,
-                          size: 20,
+                    InkWell(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (ctx) => CohortRegistrationScreen(
+                              onProceedToPermissions: () {
+                                Navigator.of(ctx).push(
+                                  MaterialPageRoute(
+                                    builder: (c2) => AppProtectionSetupScreen(
+                                      onFinishOnboarding: () =>
+                                          Navigator.of(ctx).popUntil((r) => r.isFirst),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AwareScrollTheme.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AwareScrollTheme.outline),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.person_outline,
+                            color: AwareScrollTheme.onSurfaceVariant,
+                            size: 20,
+                          ),
                         ),
                       ),
                     ),
@@ -623,6 +971,573 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
                         ),
                       ),
                     ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Hero Card: Intentional Gatekeeper (Stitch Mindful Focus)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0E1021),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: const Color(0xFF1E2238)),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x330E1021),
+                        blurRadius: 18,
+                        offset: Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: -20,
+                        bottom: -20,
+                        child: Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFF3A5BFF).withOpacity(0.22),
+                          ),
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00B894).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: const Color(0xFF00B894).withOpacity(0.35),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.verified_user,
+                                  size: 13,
+                                  color: Color(0xFF00B894),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'PROTECTION ACTIVE: ${_limitMinutes}M CAP',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.8,
+                                    color: Color(0xFF00B894),
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Open Instagram Mindfully',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: -0.4,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Set boundaries before entering the feed. Define your purpose to prevent mindless scrolling.',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFFCBD5E1),
+                              height: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: _openInstagramWithIntention,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF3A5BFF),
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(double.infinity, 48),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 3,
+                            ),
+                            icon: const Icon(Icons.shield, size: 18),
+                            label: const Text(
+                              'SET LIMIT & OPEN INSTAGRAM',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Telemetry 2x2 Grid (Time Today & 5-Min Adherence)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: const Color(0xFFE2E4F0)),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x06141528),
+                              blurRadius: 10,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Time Today',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF6B6F8C),
+                                  ),
+                                ),
+                                Icon(Icons.timer_outlined, size: 16, color: Color(0xFFFF9F43)),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Text(
+                                  _formatTime(_elapsedSeconds > 0 ? _elapsedSeconds : 1750),
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'monospace',
+                                    color: Color(0xFF14152B),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Text(
+                                  '/ 30:00',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF747688),
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    flex: 75,
+                                    child: Container(height: 6, color: const Color(0xFF3A5BFF)),
+                                  ),
+                                  Expanded(
+                                    flex: 25,
+                                    child: Container(height: 6, color: const Color(0xFFFF9F43)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF0F0),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.trending_up, size: 11, color: Color(0xFFE5484D)),
+                                  SizedBox(width: 3),
+                                  Text(
+                                    '+2.3m vs yday',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFFE5484D),
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: const Color(0xFFE2E4F0)),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x06141528),
+                              blurRadius: 10,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '5-Min Adherence',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF6B6F8C),
+                                  ),
+                                ),
+                                Icon(Icons.verified, size: 16, color: Color(0xFF00B894)),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              '67%',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'monospace',
+                                color: Color(0xFF00B894),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            const Text(
+                              '8 of 12 guarded',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF747688),
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE6F8F2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.shield_outlined, size: 11, color: Color(0xFF00B894)),
+                                  SizedBox(width: 3),
+                                  Text(
+                                    'Closed on 5m alarm',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF00B894),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Scroll Quality Survey Breakdown Bar
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: const Color(0xFFE2E4F0)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.analytics_outlined, size: 18, color: Color(0xFF3A5BFF)),
+                              SizedBox(width: 8),
+                              Text(
+                                'Scroll Quality Survey Breakdown',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF14152B),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F3FB),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Text(
+                              '14 surveys',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'monospace',
+                                color: Color(0xFF6B6F8C),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 35,
+                              child: Container(height: 10, color: const Color(0xFF3A5BFF)),
+                            ),
+                            const SizedBox(width: 2),
+                            Expanded(
+                              flex: 65,
+                              child: Container(height: 10, color: const Color(0xFFFF9F43)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF3A5BFF),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              const Text(
+                                'Meaningful (35%)',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFFF9F43),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              const Text(
+                                'Mindless Scroll (65%)',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8F9FE),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE2E4F0)),
+                        ),
+                        child: const Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.lightbulb_outline, size: 16, color: Color(0xFFFF9F43)),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Based on 14 completed post-limit surveys. Most unintended scrolling begins after the 4.0m milestone.',
+                                style: TextStyle(fontSize: 11, color: Color(0xFF444656), height: 1.3),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Recent Sessions & Reflections Log
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                      child: Text(
+                        'Recent Sessions & Reflections Log',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF14152B),
+                        ),
+                      ),
+                    ),
+                    _buildRecentSessionCard(
+                      duration: '4.8m session',
+                      intention: 'Reply to DMs',
+                      status: 'Limit Respected',
+                      statusColor: const Color(0xFF00B894),
+                      subtext: 'Closed on 5m alarm • Calm state recorded',
+                      icon: Icons.check_circle,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildRecentSessionCard(
+                      duration: '14.5m session',
+                      intention: 'Quick check',
+                      status: 'Extended Limit',
+                      statusColor: const Color(0xFFFF9F43),
+                      subtext: 'Rated: Mindless • Hooked on Reels',
+                      icon: Icons.report_problem,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildRecentSessionCard(
+                      duration: '4.0m session',
+                      intention: 'Catch up',
+                      status: 'Limit Respected',
+                      statusColor: const Color(0xFF00B894),
+                      subtext: 'Intent accomplished without distractions',
+                      icon: Icons.check_circle,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Neko Wisdom Lounge Mindful Banner
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: InkWell(
+                  onTap: () {
+                    if (widget.onNavigateToCatOasis != null) {
+                      widget.onNavigateToCatOasis!();
+                    } else {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (ctx) => CatOasisScreen(
+                            onReturnToDashboard: () => Navigator.of(ctx).pop(),
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFEEF2FF), Color(0xFFE0E7FF)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFC4C5D9)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: const Text('🐾', style: TextStyle(fontSize: 22)),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Neko Wisdom Lounge',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF14152B),
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'Take a 2-minute dopamine reset with Mochi & Boba.',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF444656),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.arrow_forward_ios,
+                          size: 14,
+                          color: Color(0xFF3A5BFF),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

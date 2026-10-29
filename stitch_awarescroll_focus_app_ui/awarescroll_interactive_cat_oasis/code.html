@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AwareScroll: Mindful Cat Companion</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #F8F9FE;
+      color: #14152B;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .font-mono { font-family: 'IBM Plex Mono', monospace; }
+    .font-handwriting { font-family: 'Caveat', cursive; }
+    
+    @keyframes bob {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-7px) rotate(1.5deg); }
+    }
+    @keyframes wag {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(18deg); }
+    }
+    @keyframes breathe {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+    @keyframes pounce {
+      0% { transform: scale(1) translateY(0); }
+      30% { transform: scale(0.9, 1.15) translateY(-14px); }
+      60% { transform: scale(1.1, 0.85) translateY(2px); }
+      100% { transform: scale(1) translateY(0); }
+    }
+    @keyframes floatParticle {
+      0% { opacity: 0; transform: translateY(0px) scale(0.5); }
+      40% { opacity: 1; transform: translateY(-25px) scale(1.1); }
+      100% { opacity: 0; transform: translateY(-50px) scale(0.7); }
+    }
+
+    .cat-bob { animation: bob 4s ease-in-out infinite; }
+    .cat-wag { transform-origin: bottom center; animation: wag 2.8s ease-in-out infinite; }
+    .cat-breathe { animation: breathe 3.2s ease-in-out infinite; }
+    .pounce-anim { animation: pounce 0.5s ease-out; }
+    
+    .yarn-ball {
+      transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+      cursor: pointer;
+    }
+    .yarn-ball:active {
+      transform: scale(0.85);
+    }
+    
+    .quote-box {
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex justify-center items-center bg-slate-100 p-0 sm:p-4">
+  <!-- iPhone 15 Mobile Canvas Shell (390 x 844) -->
+  <div class="relative w-[390px] h-[844px] bg-[#F8F9FE] rounded-[44px] overflow-hidden shadow-2xl border-[6px] border-slate-900 flex flex-col justify-between">
+    
+    <!-- Top System Bar & Navigation -->
+    <div class="pt-3 px-6 z-20">
+      <!-- Status bar dummy -->
+      <div class="flex justify-between items-center text-xs font-semibold text-[#14152B] mb-2 tracking-tight">
+        <span>9:41</span>
+        <div class="flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.4c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.9-1.9C9.27 19.64 10.59 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9z"/></svg>
+          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98A16.88 16.88 0 0012 4z"/></svg>
+          <div class="w-5 h-2.5 border border-[#14152B] rounded-sm p-0.5 flex items-center">
+            <div class="w-3 h-full bg-[#14152B] rounded-[1px]"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- App Bar Header -->
+      <div class="flex items-center justify-between mt-2">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 rounded-full bg-[#3A5BFF]/10 flex items-center justify-center text-[#3A5BFF]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+          </div>
+          <div>
+            <span class="text-[10px] font-bold tracking-wider uppercase text-[#3A5BFF] bg-[#3A5BFF]/10 px-2 py-0.5 rounded-full">Mindful Break</span>
+            <h1 class="text-lg font-bold text-[#14152B] leading-none mt-1">Neko Wisdom Lounge</h1>
+          </div>
+        </div>
+        <button id="soundToggle" onclick="togglePurr()" class="flex items-center space-x-1 bg-white border border-slate-200 px-2.5 py-1.5 rounded-full shadow-sm text-xs font-semibold text-slate-700 active:scale-95 transition-transform">
+          <span id="soundIcon">🐾</span>
+          <span id="soundLabel" class="text-[11px]">Purr: ON</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Interactive Speech Bubble (Cat Quotes) -->
+    <div class="px-6 z-20 mt-1">
+      <div id="quoteCard" class="quote-box relative bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-lg border border-indigo-100 transition-all duration-300">
+        <!-- Floating Cat Tail indicator -->
+        <div class="absolute -bottom-2 left-16 w-4 h-4 bg-white border-b border-r border-indigo-100 transform rotate-45"></div>
+        
+        <div class="flex items-start justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#FF9F43]/15 text-[#FF9F43] text-xs font-bold">💬</span>
+            <span id="catSpeaker" class="text-xs font-bold text-[#14152B] tracking-tight">Mochi (Zen Master Cat)</span>
+          </div>
+          <span class="text-[10px] font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full font-semibold">Dopamine Reset</span>
+        </div>
+
+        <!-- Randomized Cat Wisdom Quote -->
+        <p id="catQuoteText" class="mt-2.5 text-[15px] font-medium leading-snug text-[#14152B]">
+          "The algorithm will still be there tomorrow, hooman. Your peaceful evening is happening right now."
+        </p>
+
+        <div class="mt-3 flex items-center justify-between pt-2 border-t border-slate-100">
+          <span class="text-[11px] text-slate-400 flex items-center">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>
+            Tap cat or button for new advice
+          </span>
+          <button onclick="rollNewQuote()" class="text-xs font-bold text-[#3A5BFF] hover:text-[#2d47d4] flex items-center space-x-1 active:scale-95 transition-transform">
+            <span>Next Wisdom</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Playful Cats Playground Canvas (SVG Illustration & Interactive Nodes) -->
+    <div class="relative flex-1 px-4 flex flex-col justify-end overflow-hidden pb-4">
+      
+      <!-- Interactive floating particles layer -->
+      <div id="particleContainer" class="absolute inset-0 pointer-events-none z-10"></div>
+
+      <!-- Background decorative scenery -->
+      <div class="absolute inset-x-0 bottom-0 top-10 pointer-events-none opacity-60">
+        <!-- Soft hill background -->
+        <svg class="w-full h-full" viewBox="0 0 390 400" fill="none" preserveAspectRatio="none">
+          <path d="M0,180 C90,140 180,210 390,150 L390,400 L0,400 Z" fill="#EEF2FF"/>
+          <path d="M0,240 C120,200 240,260 390,220 L390,400 L0,400 Z" fill="#E0E7FF"/>
+        </svg>
+      </div>
+
+      <!-- Cat Mascot 1 (Ginger Tabby "Mochi" playing with yarn) -->
+      <div class="relative z-20 flex items-end justify-between px-2 mb-2">
+        
+        <!-- Cat 1 (Ginger Bobbing & Reactive) -->
+        <div id="cat1Wrapper" onclick="catInteract('mochi')" class="cursor-pointer group select-none transition-transform active:scale-95">
+          <div class="relative">
+            <!-- Mood bubble on click -->
+            <div id="cat1Mood" class="absolute -top-7 left-6 opacity-0 transition-all duration-300 font-bold text-xs bg-[#FF9F43] text-white px-2 py-0.5 rounded-full shadow-sm pointer-events-none">
+              Purrrr! +1 Focus ✨
+            </div>
+
+            <!-- SVG Ginger Cat -->
+            <svg class="w-36 h-36 drop-shadow-md cat-bob" viewBox="0 0 160 160" fill="none">
+              <!-- Tail -->
+              <path class="cat-wag" d="M30 115 C15 100 10 70 25 58 C30 54 38 60 34 68 C24 80 32 105 45 110" stroke="#E67E22" stroke-width="8" stroke-linecap="round" fill="none"/>
+              <!-- Body -->
+              <ellipse cx="80" cy="115" rx="42" ry="32" fill="#F39C12"/>
+              <ellipse cx="78" cy="116" rx="30" ry="22" fill="#F8C471"/>
+              <!-- Stripes on body -->
+              <path d="M65 92 Q70 100 65 108" stroke="#D35400" stroke-width="3" stroke-linecap="round"/>
+              <path d="M80 89 Q83 98 80 108" stroke="#D35400" stroke-width="3" stroke-linecap="round"/>
+              <path d="M95 93 Q98 101 93 109" stroke="#D35400" stroke-width="3" stroke-linecap="round"/>
+              
+              <!-- Paws -->
+              <ellipse cx="60" cy="142" rx="10" ry="6" fill="#F8C471"/>
+              <ellipse cx="98" cy="142" rx="10" ry="6" fill="#F8C471"/>
+              <circle cx="56" cy="143" r="1.5" fill="#D35400"/>
+              <circle cx="60" cy="143" r="1.5" fill="#D35400"/>
+              <circle cx="94" cy="143" r="1.5" fill="#D35400"/>
+              <circle cx="98" cy="143" r="1.5" fill="#D35400"/>
+
+              <!-- Head -->
+              <circle cx="80" cy="74" r="30" fill="#F39C12"/>
+              <!-- Ears -->
+              <polygon points="56,54 50,26 72,48" fill="#F39C12"/>
+              <polygon points="58,52 54,34 70,47" fill="#F1948A"/>
+              <polygon points="104,54 110,26 88,48" fill="#F39C12"/>
+              <polygon points="102,52 106,34 90,47" fill="#F1948A"/>
+              <!-- Stripes on forehead -->
+              <path d="M74 50 L74 60" stroke="#D35400" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M80 48 L80 62" stroke="#D35400" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M86 50 L86 60" stroke="#D35400" stroke-width="2.5" stroke-linecap="round"/>
+
+              <!-- Eyes (Zen Closed Curve or Big Eyes) -->
+              <path id="cat1Eyes" d="M66 73 Q72 79 78 73 M86 73 Q92 79 98 73" stroke="#2C3E50" stroke-width="2.8" stroke-linecap="round" fill="none"/>
+              <!-- Pink Nose & Cute Mouth -->
+              <polygon points="80,78 76,82 84,82" fill="#E74C3C"/>
+              <path d="M76 83 Q80 87 80 85 Q80 87 84 83" stroke="#2C3E50" stroke-width="1.8" fill="none"/>
+              <!-- Whiskers -->
+              <path d="M52 77 L66 79 M50 84 L66 82" stroke="#D35400" stroke-width="1.5"/>
+              <path d="M108 77 L94 79 M110 84 L94 82" stroke="#D35400" stroke-width="1.5"/>
+            </svg>
+            <div class="text-center -mt-2">
+              <span class="text-[11px] font-bold text-amber-800 bg-amber-100/90 px-2 py-0.5 rounded-full border border-amber-200">Tap Mochi 🐾</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Central Interactive Yarn Ball Playground -->
+        <div class="flex flex-col items-center justify-end pb-3">
+          <div class="text-[10px] font-mono font-semibold text-slate-500 mb-1">Toss the Ball! 🧶</div>
+          
+          <!-- Dynamic Yarn Ball that bounces & reacts -->
+          <div id="yarnBall" onclick="playWithYarn()" class="yarn-ball relative w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-300 shadow-lg border-2 border-white flex items-center justify-center">
+            <!-- Yarn thread texture lines -->
+            <svg class="w-12 h-12 text-teal-700/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              <path d="M2 12h20"/>
+            </svg>
+            <!-- Wool swirl -->
+            <div class="absolute -top-1 -right-2 text-[10px]">✨</div>
+            <!-- Interactive bounce counter badge -->
+            <div id="yarnCounter" class="absolute -bottom-2 bg-[#14152B] text-white font-mono text-[9px] px-1.5 py-0.5 rounded-full font-bold shadow">
+              0 rolls
+            </div>
+          </div>
+          <!-- Yarn trailing thread -->
+          <svg class="w-24 h-6 text-emerald-400 -mt-1 overflow-visible" fill="none">
+            <path id="yarnThread" d="M20 2 Q 50 18 90 4" stroke="#00B894" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 3"/>
+          </svg>
+        </div>
+
+        <!-- Cat Mascot 2 (Calico/Chubby Grey Cat "Boba" snoozing or batting) -->
+        <div id="cat2Wrapper" onclick="catInteract('boba')" class="cursor-pointer group select-none transition-transform active:scale-95">
+          <div class="relative">
+            <!-- Mood bubble on click -->
+            <div id="cat2Mood" class="absolute -top-7 right-4 opacity-0 transition-all duration-300 font-bold text-xs bg-[#3A5BFF] text-white px-2 py-0.5 rounded-full shadow-sm pointer-events-none">
+              Meow! Calming down 🧘‍♂️
+            </div>
+
+            <!-- SVG Calico/Grey Cat -->
+            <svg class="w-32 h-32 drop-shadow-md cat-breathe" viewBox="0 0 140 140" fill="none">
+              <!-- Tail curled -->
+              <path d="M110 100 C125 90 130 65 118 55 C112 50 106 58 112 64 C120 72 115 88 102 96" stroke="#718096" stroke-width="7" stroke-linecap="round" fill="none"/>
+              <!-- Body -->
+              <ellipse cx="65" cy="98" rx="40" ry="28" fill="#A0AEC0"/>
+              <ellipse cx="62" cy="100" rx="30" ry="20" fill="#E2E8F0"/>
+              
+              <!-- Paws -->
+              <ellipse cx="48" cy="120" rx="8" ry="5" fill="#E2E8F0"/>
+              <ellipse cx="80" cy="120" rx="8" ry="5" fill="#E2E8F0"/>
+
+              <!-- Head -->
+              <circle cx="65" cy="65" r="26" fill="#A0AEC0"/>
+              <!-- Ears -->
+              <polygon points="45,48 40,25 58,42" fill="#718096"/>
+              <polygon points="46,46 43,32 56,41" fill="#FBB6CE"/>
+              <polygon points="85,48 90,25 72,42" fill="#A0AEC0"/>
+              <polygon points="84,46 87,32 74,41" fill="#FBB6CE"/>
+
+              <!-- Sleeping happy face -->
+              <path d="M53 64 Q58 69 63 64 M67 64 Q72 69 77 64" stroke="#2D3748" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+              <polygon points="65,68 62,71 68,71" fill="#F687B3"/>
+              <path d="M62 72 Q65 75 65 74 Q65 75 68 72" stroke="#2D3748" stroke-width="1.6" fill="none"/>
+              <!-- Zzz animated sleeping marker -->
+              <text x="88" y="42" class="font-handwriting font-bold fill-[#3A5BFF] text-base animate-pulse">z</text>
+              <text x="96" y="32" class="font-handwriting font-bold fill-[#3A5BFF] text-xs">Z</text>
+            </svg>
+            <div class="text-center -mt-2">
+              <span class="text-[11px] font-bold text-slate-700 bg-slate-200/90 px-2 py-0.5 rounded-full border border-slate-300">Tap Boba 💤</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick Action Controls & Mini Dopamine Reset Widget -->
+      <div class="relative z-20 bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200/80">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2.5">
+            <button onclick="feedCats()" class="w-10 h-10 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center text-lg active:scale-90 transition-transform">
+              🐟
+            </button>
+            <div>
+              <div class="text-xs font-bold text-[#14152B]">Feed Fish Treat</div>
+              <div class="text-[10px] text-slate-500">Unlocks happy purring mode</div>
+            </div>
+          </div>
+          
+          <button onclick="giveTreat()" class="bg-[#3A5BFF] hover:bg-[#2d47d4] text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-md shadow-indigo-200 active:scale-95 transition-all flex items-center space-x-1.5">
+            <span>Give Treat</span>
+            <span id="treatCount" class="bg-white/20 px-1.5 py-0.5 rounded text-[10px] font-mono">3 left</span>
+          </button>
+        </div>
+
+        <!-- Stress Meter (Drops as you play with cats) -->
+        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+          <span class="font-medium text-slate-600 flex items-center">
+            <span class="mr-1">🧠</span> Digital Urge Level:
+          </span>
+          <span id="stressValue" class="font-mono font-bold text-[#3A5BFF]">Low (12%)</span>
+        </div>
+        <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1.5">
+          <div id="stressBar" class="bg-gradient-to-r from-emerald-400 to-[#3A5BFF] h-full w-[12%] transition-all duration-500 rounded-full"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Navigation Bar (Goals, Intention, Insights, Play/Cats) -->
+    <div class="bg-white border-t border-slate-200/80 px-6 py-2.5 flex justify-between items-center z-20">
+      <!-- Tab 1: Goals -->
+      <button class="flex flex-col items-center space-y-1 text-slate-400 active:scale-95 transition-transform">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span class="text-[10px] font-medium">Goals</span>
+      </button>
+
+      <!-- Tab 2: Intention -->
+      <button class="flex flex-col items-center space-y-1 text-slate-400 active:scale-95 transition-transform">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span class="text-[10px] font-medium">Intention</span>
+      </button>
+
+      <!-- Tab 3: Interactive Cats / Break (Active) -->
+      <button class="flex flex-col items-center space-y-0.5 text-[#3A5BFF] active:scale-95 transition-transform relative">
+        <div class="w-7 h-7 rounded-full bg-[#3A5BFF]/15 flex items-center justify-center text-sm">
+          🐱
+        </div>
+        <span class="text-[10px] font-bold text-[#3A5BFF]">Cat Oasis</span>
+        <div class="w-1.5 h-1.5 rounded-full bg-[#3A5BFF] mt-0.5"></div>
+      </button>
+
+      <!-- Tab 4: Insights -->
+      <button class="flex flex-col items-center space-y-1 text-slate-400 active:scale-95 transition-transform">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        <span class="text-[10px] font-medium">Insights</span>
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    // Quotes Array curated for Mindful Phone Usage & Playful Cats
+    const catQuotes = [
+      {
+        cat: "Mochi (Zen Master Cat)",
+        quote: "The algorithm will still be there tomorrow, hooman. Your peaceful evening is happening right now."
+      },
+      {
+        cat: "Boba (Sleepy Guardian)",
+        quote: "I took a 14-hour nap and missed nothing important on social media. Try closing the app for 10 minutes."
+      },
+      {
+        cat: "Mochi (Zen Master Cat)",
+        quote: "Infinite scrolling does not lead to infinite wisdom. Come scratch my ears instead."
+      },
+      {
+        cat: "Boba (Sleepy Guardian)",
+        quote: "Doom-scrolling drains your battery and your soul. Put the phone down and breathe with me."
+      },
+      {
+        cat: "Mochi (Philosopher Cat)",
+        quote: "You opened Instagram to check one thing 45 minutes ago. Remember who holds the leash, friend."
+      },
+      {
+        cat: "Boba (Chief Nap Officer)",
+        quote: "Every notification is just someone else renting space in your head for free. Evict them!"
+      },
+      {
+        cat: "Mochi (Zen Master Cat)",
+        quote: "When you feel the itch to scroll, stretch like a cat, drink cold water, and reclaim your focus."
+      }
+    ];
+
+    let currentQuoteIndex = 0;
+    let yarnRollCount = 0;
+    let treatsRemaining = 3;
+    let stressLevel = 18;
+    let purrActive = true;
+
+    function rollNewQuote() {
+      currentQuoteIndex = (currentQuoteIndex + 1) % catQuotes.length;
+      const quoteCard = document.getElementById('quoteCard');
+      const quoteText = document.getElementById('catQuoteText');
+      const speaker = document.getElementById('catSpeaker');
+      
+      // Card subtle pop animation
+      quoteCard.style.transform = 'scale(0.96)';
+      quoteCard.style.opacity = '0.5';
+      
+      setTimeout(() => {
+        quoteText.innerText = `"${catQuotes[currentQuoteIndex].quote}"`;
+        speaker.innerText = catQuotes[currentQuoteIndex].cat;
+        quoteCard.style.transform = 'scale(1)';
+        quoteCard.style.opacity = '1';
+        spawnParticles('✨', 3);
+      }, 150);
+    }
+
+    function catInteract(catId) {
+      rollNewQuote();
+      lowerStress(3);
+
+      const moodElem = document.getElementById(catId === 'mochi' ? 'cat1Mood' : 'cat2Mood');
+      moodElem.style.opacity = '1';
+      moodElem.style.transform = 'translateY(-6px)';
+
+      spawnParticles(catId === 'mochi' ? '🐾' : '❤️', 4);
+
+      setTimeout(() => {
+        moodElem.style.opacity = '0';
+        moodElem.style.transform = 'translateY(0px)';
+      }, 1200);
+    }
+
+    function playWithYarn() {
+      yarnRollCount++;
+      document.getElementById('yarnCounter').innerText = `${yarnRollCount} rolls`;
+
+      const ball = document.getElementById('yarnBall');
+      const randomRot = (Math.random() - 0.5) * 80;
+      const randomY = - (12 + Math.random() * 20);
+      
+      ball.style.transform = `translateY(${randomY}px) rotate(${randomRot}deg)`;
+      lowerStress(2);
+      spawnParticles('🧶', 2);
+
+      setTimeout(() => {
+        ball.style.transform = 'translateY(0px) rotate(0deg)';
+      }, 350);
+
+      // Trigger playful reaction from cat 1
+      const cat1 = document.getElementById('cat1Wrapper');
+      cat1.classList.add('pounce-anim');
+      setTimeout(() => cat1.classList.remove('pounce-anim'), 500);
+    }
+
+    function feedCats() {
+      giveTreat();
+    }
+
+    function giveTreat() {
+      if (treatsRemaining > 0) {
+        treatsRemaining--;
+        document.getElementById('treatCount').innerText = `${treatsRemaining} left`;
+        lowerStress(6);
+        spawnParticles('🐟', 5);
+
+        // Flash both cat moods
+        ['cat1Mood', 'cat2Mood'].forEach(id => {
+          const el = document.getElementById(id);
+          el.innerText = 'Yummy fish! Nom nom 🐟';
+          el.style.opacity = '1';
+          setTimeout(() => el.style.opacity = '0', 1400);
+        });
+
+        rollNewQuote();
+      } else {
+        const btn = document.getElementById('treatCount');
+        btn.innerText = 'Refills in 5m';
+        spawnParticles('⏳', 2);
+      }
+    }
+
+    function lowerStress(amount) {
+      stressLevel = Math.max(4, stressLevel - amount);
+      document.getElementById('stressValue').innerText = `Low (${stressLevel}%)`;
+      document.getElementById('stressBar').style.width = `${stressLevel}%`;
+    }
+
+    function togglePurr() {
+      purrActive = !purrActive;
+      const lbl = document.getElementById('soundLabel');
+      const icon = document.getElementById('soundIcon');
+      if (purrActive) {
+        lbl.innerText = 'Purr: ON';
+        icon.innerText = '🐾';
+        spawnParticles('🎵', 3);
+      } else {
+        lbl.innerText = 'Purr: OFF';
+        icon.innerText = '🔇';
+      }
+    }
+
+    function spawnParticles(emoji, count) {
+      const container = document.getElementById('particleContainer');
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        p.innerText = emoji;
+        p.className = 'absolute text-base select-none pointer-events-none';
+        p.style.left = (35 + Math.random() * 50) + '%';
+        p.style.bottom = (20 + Math.random() * 40) + '%';
+        p.style.animation = 'floatParticle 0.9s forwards ease-out';
+        container.appendChild(p);
+
+        setTimeout(() => {
+          if (p.parentNode) p.parentNode.removeChild(p);
+        }, 900);
+      }
+    }
+  </script>
+</body>
+</html>

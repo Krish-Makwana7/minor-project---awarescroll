@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_blank" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@600&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;min-height:100vh;margin:0;padding:0;}body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-secondary-fixed-variant":"#005140","secondary-fixed":"#6dfad2","on-primary-container":"#f2f1ff","tertiary-container":"#a65b00","on-tertiary-container":"#ffefe5","inverse-primary":"#bac3ff","background":"#fcf8ff","surface-bright":"#fcf8ff","on-surface":"#181930","on-error":"#ffffff","on-primary":"#ffffff","on-secondary":"#ffffff","on-surface-variant":"#444656","error-container":"#ffdad6","primary-fixed":"#dee0ff","error":"#ba1a1a","surface":"#fcf8ff","inverse-surface":"#2d2e46","on-error-container":"#93000a","surface-container-low":"#f5f2ff","outline":"#747688","on-primary-fixed-variant":"#002fc9","tertiary":"#824700","surface-dim":"#d8d7f6","on-primary-fixed":"#00105b","on-tertiary-fixed":"#2e1500","on-tertiary-fixed-variant":"#6d3a00","primary":"#123de7","secondary-fixed-dim":"#4bddb7","on-secondary-container":"#00725b","surface-container-high":"#e7e6ff","surface-container-highest":"#e1e0ff","tertiary-fixed":"#ffdcc2","on-background":"#181930","inverse-on-surface":"#f1efff","surface-container":"#eeecff","primary-container":"#3a5bff","surface-tint":"#2348ef","on-secondary-fixed":"#002018","surface-container-lowest":"#ffffff","secondary-container":"#6dfad2","tertiary-fixed-dim":"#ffb77a","secondary":"#006b55","on-tertiary":"#ffffff","surface-variant":"#e1e0ff","primary-fixed-dim":"#bac3ff","outline-variant":"#c4c5d9"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"gutter-mobile":"0.75rem","gutter":"1rem","space-xs":"0.25rem","space-md":"1rem","space-lg":"1.5rem","space-xl":"2rem","margin-mobile":"1rem","margin":"1.25rem","space-sm":"0.5rem"},"fontFamily":{"headline-h2":["Inter"],"headline-h1":["Inter"],"label-mono":["IBM Plex Mono"],"headline-h3":["Inter"],"caption-medium":["Inter"],"body-medium":["Inter"],"display-timer":["IBM Plex Mono"],"body-large":["Inter"]},"fontSize":{"headline-h2":["22px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"600"}],"headline-h1":["28px",{"lineHeight":"34px","letterSpacing":"-0.02em","fontWeight":"700"}],"label-mono":["14px",{"lineHeight":"18px","letterSpacing":"0.02em","fontWeight":"600"}],"headline-h3":["18px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}],"caption-medium":["12px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"500"}],"body-medium":["14px",{"lineHeight":"20px","fontWeight":"400"}],"display-timer":["56px",{"lineHeight":"64px","letterSpacing":"-0.04em","fontWeight":"600"}],"body-large":["16px",{"lineHeight":"24px","letterSpacing":"-0.005em","fontWeight":"400"}]}}}};</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+    @keyframes popBounce {
+      0% { transform: scale(1); }
+      40% { transform: scale(0.94); }
+      75% { transform: scale(1.04); }
+      100% { transform: scale(1); }
+    }
+    .animate-pop {
+      animation: popBounce 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes floatParticle {
+      0% { opacity: 1; transform: translate(0, 0) scale(0.8); }
+      100% { opacity: 0; transform: translate(var(--tx, 15px), var(--ty, -35px)) scale(1.25); }
+    }
+    .particle {
+      position: absolute;
+      pointer-events: none;
+      animation: floatParticle 0.75s ease-out forwards;
+    }
+    @keyframes toastSlide {
+      0% { transform: translateY(120%); opacity: 0; }
+      15% { transform: translateY(0); opacity: 1; }
+      85% { transform: translateY(0); opacity: 1; }
+      100% { transform: translateY(120%); opacity: 0; }
+    }
+    .toast-anim {
+      animation: toastSlide 3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head><body class="bg-surface font-body-large text-on-surface min-h-screen flex flex-col relative selection:bg-primary-fixed selection:text-on-primary-fixed"><header class="fixed top-0 inset-x-0 z-50 pt-safe bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.03)]"><div class="h-14 px-margin-mobile flex items-center justify-between"><div class="flex items-center gap-space-xs"><div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">spa</span></div><span class="font-headline-h3 text-headline-h3 text-on-surface tracking-tight">AwareScroll</span></div><div class="flex items-center gap-space-xs"><span class="font-caption-medium text-caption-medium text-on-surface-variant bg-surface-container px-space-sm py-space-xs rounded-full">AI Mindful</span></div></div></header><main class="flex-1 flex flex-col relative w-full pt-14 pb-safe bg-surface"><div class="flex flex-col w-full px-margin-mobile pb-space-xl">
+<!-- Subtle Top Decorative Orb & Back Navigation -->
+<div class="flex items-center justify-between py-space-sm">
+<button aria-label="Go back" class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface shadow-sm active:scale-90 transition-all hover:bg-surface-container-high" id="back-btn" type="button">
+<span class="material-symbols-outlined text-[20px] transition-transform duration-200">arrow_back</span>
+</button>
+<div class="flex items-center gap-space-xs bg-surface-container-low px-space-sm py-space-xs rounded-full shadow-sm">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+<span class="font-caption-medium text-caption-medium text-on-surface-variant">Step 1 of 2</span>
+</div>
+</div>
+<!-- Warm Mascot Delight Banner (Interactive click for advice & sparkles) -->
+<div class="mt-space-sm mb-space-md p-space-sm rounded-2xl bg-surface-container-lowest shadow-sm flex items-center gap-space-sm relative overflow-hidden cursor-pointer select-none active:scale-[0.98] hover:shadow-md transition-all" id="mascot-card">
+<div class="absolute -right-4 -bottom-4 w-16 h-16 bg-secondary-container/30 rounded-full blur-xl pointer-events-none"></div>
+<div class="w-12 h-12 rounded-xl overflow-hidden bg-primary-fixed flex-shrink-0 relative shadow-inner">
+<img class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" data-alt="A soft, whimsical, 3D claymation illustration of a small fluffy cream kitten named Mochi holding a glowing pearl orb next to a tiny bubble tea cup. Gentle pastel lavender, periwinkle, and mint colors, warm cozy lighting, clean isometric aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfmEd7GiZMJJcPLxHfRCmZaaeSvsc4apsRCpp0zd5SSi4-6PyMGs3zBBavxaB6vHP2JvfCUq2gbgy88fKwiRKKTc5XDVi2FR6_AkCXY40PZWPCAYnJLo3Z2e1lAZGAU7bDU-tv92z4yjyY7m-toADplLzMEZM7rKkQudieIKTdvnnQ12QTSS0SlGySGebFj6ajG6P5mG8tXk4GLD1tAKKQov6U89WgxT4XpxY44qOm"/>
+</div>
+<div class="flex-1 min-w-0 pointer-events-none">
+<div class="flex items-center gap-space-xs">
+<span class="font-caption-medium text-caption-medium text-secondary font-semibold">Mochi &amp; Boba</span>
+<span class="text-[10px] bg-secondary-container text-on-secondary-container px-1.5 py-0.5 rounded-full font-medium">Guide</span>
+<span class="text-[11px] text-tertiary ml-auto opacity-70 flex items-center">tap me ✨</span>
+</div>
+<p class="font-caption-medium text-caption-medium text-on-surface-variant truncate transition-all duration-200" id="mascot-tip">
+        “Start your journey to mindful scrolling and focus ✨”
+      </p>
+</div>
+</div>
+<!-- Header Typography Section -->
+<div class="mb-space-md">
+<h1 class="font-headline-h1 text-headline-h1 text-on-surface tracking-tight">Create Account</h1>
+<p class="font-body-medium text-body-medium text-on-surface-variant mt-1">
+      Join thousands breaking free from dopamine doom-scrolls.
+    </p>
+</div>
+<!-- Registration Form Block -->
+<form class="flex flex-col gap-space-md" id="signup-form" onsubmit="event.preventDefault();">
+<!-- Full Name Input -->
+<div class="flex flex-col gap-1.5">
+<label class="font-caption-medium text-caption-medium text-on-surface font-medium" for="fullName">Full Name</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3.5 text-on-surface-variant text-[20px] pointer-events-none">person</span>
+<input class="w-full h-12 pl-11 pr-4 rounded-xl bg-surface-container-lowest font-body-medium text-body-medium text-on-surface placeholder:text-outline shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all" id="fullName" placeholder="Maya Lin" required="" type="text" value="Maya Lin"/>
+</div>
+</div>
+<!-- Email Address Input -->
+<div class="flex flex-col gap-1.5">
+<label class="font-caption-medium text-caption-medium text-on-surface font-medium" for="email">Email Address</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3.5 text-on-surface-variant text-[20px] pointer-events-none">mail</span>
+<input class="w-full h-12 pl-11 pr-4 rounded-xl bg-surface-container-lowest font-body-medium text-body-medium text-on-surface placeholder:text-outline shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all" id="email" placeholder="maya.lin@mindful.me" required="" type="email" value="maya.lin@mindful.me"/>
+</div>
+</div>
+<!-- Password Input with Strength Indicator -->
+<div class="flex flex-col gap-1.5">
+<label class="font-caption-medium text-caption-medium text-on-surface font-medium" for="password">Create Password</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3.5 text-on-surface-variant text-[20px] pointer-events-none">lock</span>
+<input class="w-full h-12 pl-11 pr-11 rounded-xl bg-surface-container-lowest font-body-medium text-body-medium text-on-surface placeholder:text-outline shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all" id="password" placeholder="Create a strong password" required="" type="password" value="AwarePeace2025!"/>
+<button aria-label="Toggle password visibility" class="absolute right-3.5 text-on-surface-variant hover:text-on-surface p-1 rounded-full active:scale-90 transition-all flex items-center justify-center" id="toggle-password" type="button">
+<span class="material-symbols-outlined text-[20px]" id="toggle-icon">visibility</span>
+</button>
+</div>
+<!-- Password Strength Tracker -->
+<div class="mt-1 p-space-sm rounded-xl bg-surface-container-low flex flex-col gap-1.5 transition-all">
+<div class="flex items-center justify-between">
+<span class="font-caption-medium text-caption-medium text-on-surface-variant">Password Strength</span>
+<span class="font-caption-medium text-caption-medium text-secondary font-semibold flex items-center gap-1 transition-colors duration-200" id="strength-label">
+<span class="material-symbols-outlined text-[14px]" id="strength-icon">verified</span> <span id="strength-text">Strong &amp; Calm</span>
+</span>
+</div>
+<div class="grid grid-cols-4 gap-1.5 h-1.5 w-full">
+<div class="rounded-full h-full transition-all duration-300 bg-secondary" id="bar-1"></div>
+<div class="rounded-full h-full transition-all duration-300 bg-secondary" id="bar-2"></div>
+<div class="rounded-full h-full transition-all duration-300 bg-secondary" id="bar-3"></div>
+<div class="rounded-full h-full transition-all duration-300 bg-secondary" id="bar-4"></div>
+</div>
+</div>
+</div>
+<!-- Focus Goal Interactive Chips -->
+<div class="flex flex-col gap-2 pt-1">
+<div class="flex items-center justify-between">
+<label class="font-caption-medium text-caption-medium text-on-surface font-medium">Your Primary Focus Goal</label>
+<span class="font-caption-medium text-caption-medium text-tertiary font-medium transition-colors" id="goal-count-badge">1 of 3 selected</span>
+</div>
+<div class="flex flex-wrap gap-space-xs" id="goal-container">
+<button class="goal-chip h-9 px-3.5 rounded-full flex items-center gap-1.5 bg-primary text-on-primary shadow-sm font-caption-medium text-caption-medium active:scale-95 transition-all select-none" data-goal="curb" type="button">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span>Curb Doom-scrolling</span>
+</button>
+<button class="goal-chip h-9 px-3.5 rounded-full flex items-center gap-1.5 bg-surface-container-lowest text-on-surface-variant shadow-sm font-caption-medium text-caption-medium active:scale-95 transition-all select-none" data-goal="deepwork" type="button">
+<span class="material-symbols-outlined text-[16px]">self_improvement</span>
+<span>Deep Work Focus</span>
+</button>
+<button class="goal-chip h-9 px-3.5 rounded-full flex items-center gap-1.5 bg-surface-container-lowest text-on-surface-variant shadow-sm font-caption-medium text-caption-medium active:scale-95 transition-all select-none" data-goal="sleep" type="button">
+<span class="material-symbols-outlined text-[16px]">bedtime</span>
+<span>Sleep Better</span>
+</button>
+</div>
+</div>
+<!-- Terms Agreement Checkbox -->
+<div class="pt-1 flex items-start gap-space-sm cursor-pointer select-none group" id="terms-toggle">
+<div class="w-5 h-5 rounded-lg bg-primary text-on-primary flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm transition-all duration-200 group-active:scale-90" id="terms-box">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</div>
+<p class="font-caption-medium text-caption-medium text-on-surface-variant leading-tight select-none">
+        I agree to the <span class="text-primary font-medium underline">Mindful Terms of Service</span> &amp; <span class="text-primary font-medium underline">Privacy Policy</span>. We respect your attention.
+      </p>
+</div>
+<!-- Primary Action CTA Button -->
+<div class="pt-space-xs">
+<button class="w-full h-12 rounded-full bg-primary-container text-on-primary font-headline-3 text-headline-3 shadow-md flex items-center justify-center gap-space-xs active:scale-[0.98] transition-all relative overflow-hidden" id="submit-btn" type="submit">
+<span class="flex items-center gap-space-xs" id="btn-content">
+<span>Begin Mindful Journey</span>
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</span>
+<span class="hidden flex items-center gap-2" id="btn-spinner">
+<svg class="animate-spin h-5 w-5 text-on-primary" fill="none" viewbox="0 0 24 24">
+<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+<path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"></path>
+</svg>
+<span>Cultivating your space...</span>
+</span>
+</button>
+</div>
+</form>
+<!-- Divider Section -->
+<div class="relative my-space-lg flex items-center justify-center">
+<div class="w-full h-[1px] bg-surface-container-high absolute"></div>
+<span class="relative px-space-sm bg-surface font-caption-medium text-caption-medium text-on-surface-variant uppercase tracking-wider">
+      or sign up with
+    </span>
+</div>
+<!-- Social Auth Quick Buttons -->
+<div class="grid grid-cols-2 gap-space-sm">
+<button class="h-12 rounded-2xl bg-surface-container-lowest shadow-sm flex items-center justify-center gap-space-xs text-on-surface font-caption-medium text-caption-medium active:scale-95 transition-all hover:bg-surface-container-low" id="google-btn" type="button">
+<svg class="w-5 h-5" fill="currentColor" viewbox="0 0 24 24">
+<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
+<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
+<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"></path>
+<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"></path>
+</svg>
+<span id="google-text">Google</span>
+</button>
+<button class="h-12 rounded-2xl bg-surface-container-lowest shadow-sm flex items-center justify-center gap-space-xs text-on-surface font-caption-medium text-caption-medium active:scale-95 transition-all hover:bg-surface-container-low" id="apple-btn" type="button">
+<svg class="w-5 h-5 text-on-surface" fill="currentColor" viewbox="0 0 24 24">
+<path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.61-.75 1.04-1.8 0.92-2.87-.93.04-2.02.63-2.66 1.38-.56.65-.99 1.71-.85 2.74 1.05.08 2.01-.54 2.59-1.25z"></path>
+</svg>
+<span id="apple-text">Apple</span>
+</button>
+</div>
+<!-- Ambient Micro Testimonial Pill -->
+<div class="mt-space-md p-space-sm rounded-xl bg-surface-container-low flex items-center gap-space-sm transition-all hover:bg-surface-container">
+<div class="w-8 h-8 rounded-full overflow-hidden bg-primary-fixed-dim flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Close up profile portrait of a smiling young creative professional woman in soft ambient studio daylight, wearing warm neutral tones with a subtle serene lavender gradient background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjTPbQnwXxpRZUd4aYeP63uyEbRo4qX5Or-TbQ6sRv3s4FQZ1nmhNtAIFSZ3vr0XpVzHeBPfwD5PIhTPi2RR3zHEio08-j2kU6N3x1mgIPmbXHQhfTUCAXo2bt3bvK3axXCwVTQLIgd6UGIBaexE8T77V7uaP44Uavhmw2QqgoSyZOjxJ8pNGXpnx0of9fafHUs7iXT5yJUEIGcHYuqtF8tejQgumxPREmlVjbq3H0"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-caption-medium text-caption-medium text-on-surface font-medium truncate">
+        “Reclaimed 2.5 hours every day since week one.”
+      </p>
+<span class="font-caption-medium text-caption-medium text-on-surface-variant text-[11px]">
+        Sora K. • Focus Score +42%
+      </span>
+</div>
+</div>
+<!-- Footer Navigation Link -->
+<div class="mt-space-lg text-center">
+<p class="font-body-medium text-body-medium text-on-surface-variant">
+      Already have an account? 
+      <a class="text-primary-container font-semibold hover:underline ml-1 cursor-pointer transition-colors active:opacity-70" href="#signin" id="signin-link">Sign In</a>
+</p>
+</div>
+</div>
+<!-- Floating Celebratory / Notification Toast Container -->
+<div class="fixed bottom-6 inset-x-4 max-w-sm mx-auto z-50 pointer-events-none hidden" id="toast">
+<div class="bg-inverse-surface text-inverse-on-surface px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 border border-white/10">
+<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center flex-shrink-0" id="toast-icon-bg">
+<span class="material-symbols-outlined text-[18px]">sparkles</span>
+</div>
+<div class="flex-1">
+<p class="font-caption-medium font-semibold text-white" id="toast-title">Welcome, Maya! 🎉</p>
+<p class="text-[12px] text-inverse-on-surface/80" id="toast-desc">Your mindful space is prepared.</p>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    // 1. DYNAMIC FOCUS GOAL CHIPS (Toggle multi or single selection with counter)
+    const chips = document.querySelectorAll('.goal-chip');
+    const goalCountBadge = document.getElementById('goal-count-badge');
+    
+    const goalIcons = {
+      'curb': { active: 'check_circle', inactive: 'pause_circle' },
+      'deepwork': { active: 'check_circle', inactive: 'self_improvement' },
+      'sleep': { active: 'check_circle', inactive: 'bedtime' }
+    };
+
+    function updateGoalCount() {
+      let activeCount = 0;
+      chips.forEach(chip => {
+        if (chip.classList.contains('bg-primary')) activeCount++;
+      });
+      if (goalCountBadge) {
+        goalCountBadge.textContent = activeCount === 0 ? 'Select at least one' : `${activeCount} of 3 selected`;
+        goalCountBadge.className = activeCount > 0 
+          ? 'font-caption-medium text-caption-medium text-secondary font-medium transition-colors'
+          : 'font-caption-medium text-caption-medium text-tertiary font-medium transition-colors';
+      }
+    }
+
+    chips.forEach(chip => {
+      chip.addEventListener('click', function() {
+        const goalKey = this.getAttribute('data-goal');
+        const iconEl = this.querySelector('.material-symbols-outlined');
+        const isSelected = this.classList.contains('bg-primary');
+
+        this.classList.add('animate-pop');
+        setTimeout(() => this.classList.remove('animate-pop'), 300);
+
+        if (isSelected) {
+          // Deselect
+          this.classList.remove('bg-primary', 'text-on-primary');
+          this.classList.add('bg-surface-container-lowest', 'text-on-surface-variant');
+          if (iconEl && goalIcons[goalKey]) {
+            iconEl.textContent = goalIcons[goalKey].inactive;
+          }
+        } else {
+          // Select
+          this.classList.remove('bg-surface-container-lowest', 'text-on-surface-variant');
+          this.classList.add('bg-primary', 'text-on-primary');
+          if (iconEl) {
+            iconEl.textContent = 'check_circle';
+          }
+        }
+        updateGoalCount();
+      });
+    });
+
+    // 2. LIVE PASSWORD STRENGTH METER
+    const passInput = document.getElementById('password');
+    const strengthLabel = document.getElementById('strength-label');
+    const strengthIcon = document.getElementById('strength-icon');
+    const strengthText = document.getElementById('strength-text');
+    const bars = [
+      document.getElementById('bar-1'),
+      document.getElementById('bar-2'),
+      document.getElementById('bar-3'),
+      document.getElementById('bar-4')
+    ];
+
+    function evaluatePassword(val) {
+      if (!val || val.length === 0) return 0;
+      let score = 0;
+      if (val.length >= 6) score++;
+      if (val.length >= 10) score++;
+      if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+      if (/[0-9]/.test(val) || /[^A-Za-z0-9]/.test(val)) score++;
+      return Math.min(score, 4);
+    }
+
+    function updateStrengthMeter() {
+      const val = passInput.value;
+      const score = evaluatePassword(val);
+
+      bars.forEach((bar, index) => {
+        bar.className = 'rounded-full h-full transition-all duration-300';
+        if (index < score) {
+          if (score <= 1) {
+            bar.classList.add('bg-error');
+          } else if (score <= 2) {
+            bar.classList.add('bg-tertiary-container');
+          } else if (score === 3) {
+            bar.classList.add('bg-primary');
+          } else {
+            bar.classList.add('bg-secondary');
+          }
+        } else {
+          bar.classList.add('bg-surface-container-high');
+        }
+      });
+
+      if (score === 0) {
+        strengthLabel.className = 'font-caption-medium text-caption-medium text-outline flex items-center gap-1';
+        strengthIcon.textContent = 'shield';
+        strengthText.textContent = 'Enter password';
+      } else if (score === 1) {
+        strengthLabel.className = 'font-caption-medium text-caption-medium text-error font-semibold flex items-center gap-1';
+        strengthIcon.textContent = 'warning';
+        strengthText.textContent = 'Very Weak';
+      } else if (score === 2) {
+        strengthLabel.className = 'font-caption-medium text-caption-medium text-tertiary font-semibold flex items-center gap-1';
+        strengthIcon.textContent = 'speed';
+        strengthText.textContent = 'Moderate';
+      } else if (score === 3) {
+        strengthLabel.className = 'font-caption-medium text-caption-medium text-primary font-semibold flex items-center gap-1';
+        strengthIcon.textContent = 'thumb_up';
+        strengthText.textContent = 'Good Pace';
+      } else {
+        strengthLabel.className = 'font-caption-medium text-caption-medium text-secondary font-semibold flex items-center gap-1';
+        strengthIcon.textContent = 'verified';
+        strengthText.textContent = 'Strong & Calm';
+      }
+    }
+
+    passInput.addEventListener('input', updateStrengthMeter);
+
+    // 3. INTERACTIVE PASSWORD VISIBILITY TOGGLE
+    const togglePassBtn = document.getElementById('toggle-password');
+    const toggleIcon = document.getElementById('toggle-icon');
+    let visible = false;
+
+    togglePassBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      visible = !visible;
+      passInput.type = visible ? 'text' : 'password';
+      toggleIcon.textContent = visible ? 'visibility_off' : 'visibility';
+      toggleIcon.classList.add('animate-pop');
+      setTimeout(() => toggleIcon.classList.remove('animate-pop'), 250);
+    });
+
+    // 4. MASCOT GUIDE CARD INTERACTION (Cute tips cycle & sparkle burst)
+    const mascotCard = document.getElementById('mascot-card');
+    const mascotTip = document.getElementById('mascot-tip');
+    const tips = [
+      '“Start your journey to mindful scrolling and focus ✨”',
+      '“We’ll keep you accountable without guilt 🐱”',
+      '“Small steps bring deep peace and calm 🌿”',
+      '“Reclaim 2+ hours daily with conscious pauses ☕️”',
+      '“Mochi is cheering you on every mindful tap 🐾”'
+    ];
+    let tipIndex = 0;
+
+    mascotCard.addEventListener('click', function(e) {
+      // Bounce animation
+      mascotCard.classList.add('animate-pop');
+      setTimeout(() => mascotCard.classList.remove('animate-pop'), 300);
+
+      // Cycle tip text
+      tipIndex = (tipIndex + 1) % tips.length;
+      mascotTip.style.opacity = '0';
+      setTimeout(() => {
+        mascotTip.textContent = tips[tipIndex];
+        mascotTip.style.opacity = '1';
+      }, 150);
+
+      // Create floating particles
+      const rect = mascotCard.getBoundingClientRect();
+      const sparkles = ['✨', '🐾', '🌸', '🌱', '🫧'];
+      for (let i = 0; i < 4; i++) {
+        const particle = document.createElement('span');
+        particle.className = 'particle text-sm select-none z-30';
+        particle.textContent = sparkles[Math.floor(Math.random() * sparkles.length)];
+        particle.style.left = `${e.clientX - rect.left + (Math.random() * 40 - 20)}px`;
+        particle.style.top = `${e.clientY - rect.top + (Math.random() * 20 - 10)}px`;
+        particle.style.setProperty('--tx', `${(Math.random() - 0.5) * 60}px`);
+        particle.style.setProperty('--ty', `-${25 + Math.random() * 40}px`);
+        mascotCard.appendChild(particle);
+        setTimeout(() => particle.remove(), 750);
+      }
+    });
+
+    // 5. TERMS AGREEMENT CHECKBOX (Controls submit enabled state)
+    const termsToggle = document.getElementById('terms-toggle');
+    const termsBox = document.getElementById('terms-box');
+    const submitBtn = document.getElementById('submit-btn');
+    let accepted = true;
+
+    function updateSubmitState() {
+      if (accepted) {
+        submitBtn.removeAttribute('disabled');
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      } else {
+        submitBtn.setAttribute('disabled', 'true');
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+    }
+
+    termsToggle.addEventListener('click', function() {
+      accepted = !accepted;
+      termsBox.classList.add('animate-pop');
+      setTimeout(() => termsBox.classList.remove('animate-pop'), 250);
+
+      if (accepted) {
+        termsBox.className = 'w-5 h-5 rounded-lg bg-primary text-on-primary flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm transition-all duration-200 group-active:scale-90';
+        termsBox.innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span>';
+      } else {
+        termsBox.className = 'w-5 h-5 rounded-lg bg-surface-container text-transparent flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm transition-all duration-200 group-active:scale-90 border border-outline-variant';
+        termsBox.innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span>';
+      }
+      updateSubmitState();
+    });
+
+    // 6. PRIMARY ACTION CTA BUTTON ('Begin Mindful Journey')
+    const signupForm = document.getElementById('signup-form');
+    const btnContent = document.getElementById('btn-content');
+    const btnSpinner = document.getElementById('btn-spinner');
+    const toast = document.getElementById('toast');
+    const toastTitle = document.getElementById('toast-title');
+    const toastDesc = document.getElementById('toast-desc');
+
+    function showToast(title, desc) {
+      toastTitle.textContent = title;
+      toastDesc.textContent = desc;
+      toast.classList.remove('hidden');
+      toast.classList.add('toast-anim');
+      setTimeout(() => {
+        toast.classList.remove('toast-anim');
+        toast.classList.add('hidden');
+      }, 3100);
+    }
+
+    signupForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      if (!accepted) {
+        termsToggle.classList.add('animate-pop');
+        setTimeout(() => termsToggle.classList.remove('animate-pop'), 300);
+        return;
+      }
+
+      btnContent.classList.add('hidden');
+      btnSpinner.classList.remove('hidden');
+      submitBtn.classList.add('pointer-events-none', 'bg-primary');
+
+      const nameVal = document.getElementById('fullName').value.trim() || 'Maya';
+      const firstName = nameVal.split(' ')[0];
+
+      setTimeout(() => {
+        btnSpinner.classList.add('hidden');
+        btnContent.classList.remove('hidden');
+        btnContent.innerHTML = `
+          <span class="material-symbols-outlined text-[20px]">check_circle</span>
+          <span>Welcome Aboard!</span>
+        `;
+        submitBtn.classList.remove('pointer-events-none', 'bg-primary');
+        submitBtn.classList.add('bg-secondary');
+
+        showToast(`Welcome, ${firstName}! 🎉`, 'Your mindful journey begins now.');
+
+        // Revert button text after 3.5 seconds
+        setTimeout(() => {
+          btnContent.innerHTML = `
+            <span>Begin Mindful Journey</span>
+            <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+          `;
+          submitBtn.classList.remove('bg-secondary');
+          submitBtn.classList.add('bg-primary-container');
+        }, 3500);
+      }, 1200);
+    });
+
+    // 7. SOCIAL SIGN-IN & NAVIGATION FEEDBACK
+    const googleBtn = document.getElementById('google-btn');
+    const googleText = document.getElementById('google-text');
+    const appleBtn = document.getElementById('apple-btn');
+    const appleText = document.getElementById('apple-text');
+    const signinLink = document.getElementById('signin-link');
+
+    googleBtn.addEventListener('click', function() {
+      googleText.textContent = 'Connecting...';
+      googleBtn.classList.add('animate-pop');
+      setTimeout(() => {
+        googleText.textContent = 'Google';
+        showToast('Google Sign-In 🌐', 'Redirecting securely with mindful defaults.');
+      }, 700);
+    });
+
+    appleBtn.addEventListener('click', function() {
+      appleText.textContent = 'Connecting...';
+      appleBtn.classList.add('animate-pop');
+      setTimeout(() => {
+        appleText.textContent = 'Apple';
+        showToast('Apple ID 🍏', 'Authenticating with Apple ID.');
+      }, 700);
+    });
+
+    signinLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      showToast('Welcome Back ✨', 'Heading to Sign In screen...');
+    });
+
+    // 8. INTERACTIVE BACK BUTTON
+    const backBtn = document.getElementById('back-btn');
+    backBtn.addEventListener('click', function() {
+      backBtn.classList.add('animate-pop');
+      const arrow = backBtn.querySelector('.material-symbols-outlined');
+      arrow.style.transform = 'translateX(-3px)';
+      setTimeout(() => {
+        arrow.style.transform = 'translateX(0)';
+      }, 200);
+      showToast('AwareScroll', 'Returning to previous screen...');
+    });
+
+    // Initial check
+    updateStrengthMeter();
+  })();
+</script></main></body></html>
