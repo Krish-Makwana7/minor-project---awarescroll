@@ -1,3 +1,4 @@
+import '../services/user_session_service.dart';
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // ==========================================
 // 1. SET YOUR LIMIT MODAL (PRE-SESSION INTENTION)
+// ==========================================
+// ==========================================
+// 1. SET YOUR LIMIT MODAL (PRE-SESSION INTENTION GATE)
 // ==========================================
 class SetYourLimitModal extends StatefulWidget {
   final VoidCallback onLaunchInstagram;
@@ -35,22 +39,76 @@ class SetYourLimitModal extends StatefulWidget {
 
 class _SetYourLimitModalState extends State<SetYourLimitModal> {
   int _selectedMinutes = 5;
-  String _selectedPurpose = "Reply to DMs";
+  String _selectedPurpose = 'Reply to DMs / Messages';
+  String _selectedPriorActivity = 'Studying / Coursework';
+  String _selectedNecessity = 'Quick check (<2 min)';
+  final TextEditingController _customPurposeController = TextEditingController();
+  bool _isCustomPurpose = false;
 
   final List<String> _purposes = [
-    "Reply to DMs",
-    "Quick check",
-    "Catch up with friends",
-    "Education / Research",
-    "Entertainment / Reels",
+    'Reply to DMs / Messages',
+    'Check specific friend or post',
+    'Educational / Research content',
+    'Entertainment / Reels',
+    'Boredom / Habitual tap',
+    'Other specific goal...',
   ];
 
-  final List<int> _durations = [5, 10, 15, 20];
+  final List<Map<String, dynamic>> _durations = [
+    {'mins': 5, 'label': '5m', 'sub': 'Ideal'},
+    {'mins': 10, 'label': '10m', 'sub': 'Standard'},
+    {'mins': 15, 'label': '15m', 'sub': 'Extended'},
+    {'mins': 20, 'label': '20m', 'sub': 'Max'},
+    {'mins': 1, 'label': '30s', 'sub': 'Test'},
+  ];
+
+  final List<String> _priorActivities = [
+    'Studying / Coursework',
+    'Coding / Working on project',
+    'Resting / Relaxing',
+    'In bed / Sleeping soon',
+    'Doing nothing planned',
+  ];
+
+  final List<String> _necessityLevels = [
+    'Urgent & Important',
+    'Quick check (<2 min)',
+    'Conscious leisure break',
+    'Procrastinating on something else',
+  ];
 
   Future<void> _confirmAndLaunch() async {
+    final finalPurpose = _isCustomPurpose && _customPurposeController.text.trim().isNotEmpty
+        ? _customPurposeController.text.trim()
+        : _selectedPurpose;
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('session_limit_minutes', _selectedMinutes);
-    await prefs.setString('session_intention', _selectedPurpose);
+    await prefs.setString('session_intention', finalPurpose);
+    await prefs.setString('session_prior_activity', _selectedPriorActivity);
+    await prefs.setString('session_necessity', _selectedNecessity);
+    await prefs.setString('session_start_timestamp', DateTime.now().toIso8601String());
+
+    // Record initial intention telemetry
+    try {
+      final email = await UserSessionService.getCurrentUserEmail();
+      final name = await UserSessionService.getCurrentUserName();
+      final record = UserSessionRecord(
+        id: 'session_',
+        studentEmail: email,
+        studentName: name,
+        timestamp: DateTime.now(),
+        intendedMinutes: _selectedMinutes,
+        actualSeconds: 0,
+        purpose: finalPurpose,
+        priorActivity: _selectedPriorActivity,
+        necessity: _selectedNecessity,
+        limitRespected: true,
+        sessionOutcome: 'started',
+      );
+      // Asynchronously post intention to Google Sheet
+      UserSessionService.recordSession(record);
+    } catch (_) {}
 
     if (mounted) {
       Navigator.of(context).pop();
@@ -71,6 +129,9 @@ class _SetYourLimitModalState extends State<SetYourLimitModal> {
         top: 12,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.88,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -88,7 +149,7 @@ class _SetYourLimitModalState extends State<SetYourLimitModal> {
           ),
           const SizedBox(height: 14),
 
-          // Cute Illustration & Tag Header
+          // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -117,140 +178,256 @@ class _SetYourLimitModalState extends State<SetYourLimitModal> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
 
           const Text(
-            'Set Your Focus Boundary',
+            'Pause & Set Your Boundary',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Color(0xFF14152B),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           const Text(
-            'Choose your session purpose and strict duration before entering the feed.',
+            'Answer 4 quick intentionality checks before entering Instagram.',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 12,
               color: Color(0xFF6B6F8C),
             ),
           ),
 
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
 
-          // Purpose Chips
-          const Text(
-            '1. WHAT IS YOUR GOAL?',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.8,
-              color: Color(0xFF747688),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _purposes.map((purpose) {
-              final isSelected = _selectedPurpose == purpose;
-              return ChoiceChip(
-                label: Text(purpose),
-                selected: isSelected,
-                selectedColor: const Color(0xFF3A5BFF),
-                backgroundColor: const Color(0xFFF5F2FF),
-                labelStyle: TextStyle(
-                  color: isSelected ? Colors.white : const Color(0xFF14152B),
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  fontSize: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(
-                    color: isSelected ? const Color(0xFF3A5BFF) : const Color(0xFFE2E4F0),
-                  ),
-                ),
-                onSelected: (val) {
-                  if (val) setState(() => _selectedPurpose = purpose);
-                },
-              );
-            }).toList(),
-          ),
-
-          const SizedBox(height: 18),
-
-          // Duration Chips
-          const Text(
-            '2. STRICT TIME LIMIT',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.8,
-              color: Color(0xFF747688),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: _durations.map((dur) {
-              final isSelected = _selectedMinutes == dur;
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: InkWell(
-                    onTap: () => setState(() => _selectedMinutes = dur),
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFF3A5BFF) : Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isSelected
-                              ? const Color(0xFF3A5BFF)
-                              : const Color(0xFFE2E4F0),
-                          width: 1.5,
-                        ),
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: const Color(0xFF3A5BFF).withOpacity(0.3),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      alignment: Alignment.center,
-                      child: Column(
-                        children: [
-                          Text(
-                            '${dur}m',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: isSelected ? Colors.white : const Color(0xFF14152B),
-                              fontFamily: 'monospace',
-                            ),
-                          ),
-                          if (dur == 5)
-                            Text(
-                              'Ideal',
-                              style: TextStyle(
-                                fontSize: 9,
-                                color: isSelected ? Colors.white70 : const Color(0xFF00B894),
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                        ],
-                      ),
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Q1: Purpose
+                  const Text(
+                    '1. WHY DO YOU WANT TO ACCESS INSTAGRAM?',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.8,
+                      color: Color(0xFF747688),
                     ),
                   ),
-                ),
-              );
-            }).toList(),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _purposes.map((p) {
+                      final isSelected = _selectedPurpose == p;
+                      return ChoiceChip(
+                        label: Text(p),
+                        selected: isSelected,
+                        selectedColor: const Color(0xFF3A5BFF),
+                        backgroundColor: const Color(0xFFF5F2FF),
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.white : const Color(0xFF14152B),
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          fontSize: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          side: BorderSide(
+                            color: isSelected ? const Color(0xFF3A5BFF) : const Color(0xFFE2E4F0),
+                          ),
+                        ),
+                        onSelected: (val) {
+                          if (val) {
+                            setState(() {
+                              _selectedPurpose = p;
+                              _isCustomPurpose = p.contains('Other');
+                            });
+                          }
+                        },
+                      );
+                    }).toList(),
+                  ),
+
+                  if (_isCustomPurpose) ...[
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _customPurposeController,
+                      style: const TextStyle(fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: 'Type your specific reason for opening...',
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFF3A5BFF)),
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 16),
+
+                  // Q2: Strict Time Limit
+                  const Text(
+                    '2. STRICT TIME LIMIT FOR THIS SESSION',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.8,
+                      color: Color(0xFF747688),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: _durations.map((d) {
+                      final dur = d['mins'] as int;
+                      final isSelected = _selectedMinutes == dur;
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 3),
+                          child: InkWell(
+                            onTap: () => setState(() => _selectedMinutes = dur),
+                            borderRadius: BorderRadius.circular(14),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: isSelected ? const Color(0xFF3A5BFF) : Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? const Color(0xFF3A5BFF)
+                                      : const Color(0xFFE2E4F0),
+                                  width: 1.5,
+                                ),
+                                boxShadow: isSelected
+                                    ? [
+                                        BoxShadow(
+                                          color: const Color(0xFF3A5BFF).withOpacity(0.28),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              alignment: Alignment.center,
+                              child: Column(
+                                children: [
+                                  Text(
+                                    d['label'] as String,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: isSelected ? Colors.white : const Color(0xFF14152B),
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                  Text(
+                                    d['sub'] as String,
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      color: isSelected ? Colors.white70 : const Color(0xFF00B894),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Q3: Prior Activity
+                  const Text(
+                    '3. WHAT WERE YOU DOING JUST BEFORE THIS?',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.8,
+                      color: Color(0xFF747688),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _priorActivities.map((act) {
+                      final isSelected = _selectedPriorActivity == act;
+                      return ChoiceChip(
+                        label: Text(act),
+                        selected: isSelected,
+                        selectedColor: const Color(0xFF00B894),
+                        backgroundColor: const Color(0xFFF5F2FF),
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.white : const Color(0xFF14152B),
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          fontSize: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          side: BorderSide(
+                            color: isSelected ? const Color(0xFF00B894) : const Color(0xFFE2E4F0),
+                          ),
+                        ),
+                        onSelected: (val) {
+                          if (val) setState(() => _selectedPriorActivity = act);
+                        },
+                      );
+                    }).toList(),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Q4: Necessity Check
+                  const Text(
+                    '4. HOW NECESSARY IS THIS VISIT?',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.8,
+                      color: Color(0xFF747688),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _necessityLevels.map((lvl) {
+                      final isSelected = _selectedNecessity == lvl;
+                      return ChoiceChip(
+                        label: Text(lvl),
+                        selected: isSelected,
+                        selectedColor: const Color(0xFFFF9F43),
+                        backgroundColor: const Color(0xFFF5F2FF),
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.white : const Color(0xFF14152B),
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          fontSize: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          side: BorderSide(
+                            color: isSelected ? const Color(0xFFFF9F43) : const Color(0xFFE2E4F0),
+                          ),
+                        ),
+                        onSelected: (val) {
+                          if (val) setState(() => _selectedNecessity = lvl);
+                        },
+                      );
+                    }).toList(),
+                  ),
+
+                  const SizedBox(height: 10),
+                ],
+              ),
+            ),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 14),
 
           // Primary Launch Button
           ElevatedButton.icon(
@@ -266,7 +443,7 @@ class _SetYourLimitModalState extends State<SetYourLimitModal> {
             ),
             icon: const Icon(Icons.shield, size: 18),
             label: Text(
-              'LAUNCH INSTAGRAM (${_selectedMinutes}M PROTECTED)',
+              'START PROTECTED SESSION & OPEN INSTAGRAM (M)',
               style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
@@ -280,9 +457,7 @@ class _SetYourLimitModalState extends State<SetYourLimitModal> {
   }
 }
 
-// ==========================================
-// 2. LIMIT EXPIRY BOTTOM SHEET
-// ==========================================
+
 class LimitExpirySheet extends StatelessWidget {
   final VoidCallback onCloseApp;
   final VoidCallback onOpenCatOasis;
@@ -520,19 +695,32 @@ class _ReflectionSurveyModalState extends State<ReflectionSurveyModal> {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final studentId = prefs.getString('student_email') ??
-          prefs.getString('student_id') ??
-          '24bt04d233@gsfcuniversity.ac.in';
+      final email = await UserSessionService.getCurrentUserEmail();
+      final name = await UserSessionService.getCurrentUserName();
+      final limitMins = prefs.getInt('session_limit_minutes') ?? 5;
+      final purpose = prefs.getString('session_intention') ?? 'Instagram visit';
+      final prior = prefs.getString('session_prior_activity') ?? 'Studying';
 
-      // Log telemetry event to native Kotlin & Google Sheet Webhook
-      await platform.invokeMethod('recordTelemetryFeedback', {
-        'studentId': studentId,
-        'wasImportant': _wasImportant,
-        'necessity': _necessity,
-        'reason': _reason,
-        'continued': shouldContinue,
-        'timestamp': DateTime.now().toIso8601String(),
-      });
+      final record = UserSessionRecord(
+        id: 'session_',
+        studentEmail: email,
+        studentName: name,
+        timestamp: DateTime.now(),
+        intendedMinutes: limitMins,
+        actualSeconds: limitMins * 60 + (shouldContinue ? 120 : 0),
+        purpose: purpose,
+        priorActivity: prior,
+        necessity: _necessity,
+        limitRespected: !shouldContinue,
+        wasImportant: _wasImportant,
+        triggerReason: _reason,
+        sessionOutcome: shouldContinue ? 'continued_past_limit' : 'closed_on_limit',
+      );
+      await UserSessionService.recordSession(record);
+
+      try {
+        await platform.invokeMethod('recordTelemetryFeedback', record.toMap());
+      } catch (_) {}
     } catch (_) {}
 
     if (mounted) {

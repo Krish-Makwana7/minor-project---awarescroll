@@ -173,7 +173,7 @@ class WelcomeSignInScreen extends StatelessWidget {
 
               const SizedBox(height: 28),
 
-              // Primary Auth CTA: Google / Study Cohort
+              // Primary Auth CTA: Universal Email Sign In / Registration
               ElevatedButton.icon(
                 onPressed: onProceedToCohort,
                 style: ElevatedButton.styleFrom(
@@ -185,9 +185,9 @@ class WelcomeSignInScreen extends StatelessWidget {
                   ),
                   elevation: 2,
                 ),
-                icon: const Icon(Icons.school, size: 20),
+                icon: const Icon(Icons.email_outlined, size: 20),
                 label: const Text(
-                  'Join Research Cohort',
+                  'Sign In or Register with Email',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -198,7 +198,20 @@ class WelcomeSignInScreen extends StatelessWidget {
               const SizedBox(height: 12),
 
               OutlinedButton.icon(
-                onPressed: onSkipToDashboard,
+                onPressed: () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  if (prefs.getString('student_email') == null || prefs.getString('student_email')!.isEmpty) {
+                    await prefs.setString('student_name', 'Guest Student');
+                    await prefs.setString('student_user_name', 'Guest Student');
+                    await prefs.setString('student_email', 'guest@awarescroll.local');
+                    await prefs.setString('student_user_email', 'guest@awarescroll.local');
+                    await prefs.setString('student_id', 'GUEST');
+                  }
+                  await prefs.setBool('user_logged_in', true);
+                  await prefs.setBool('has_completed_onboarding', true);
+    await prefs.setBool('user_logged_in', true);
+                  onSkipToDashboard();
+                },
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 50),
                   side: const BorderSide(color: Color(0xFFC4C5D9)),
@@ -240,6 +253,9 @@ class WelcomeSignInScreen extends StatelessWidget {
 // ==========================================
 // 2. COHORT REGISTRATION SCREEN
 // ==========================================
+// ==========================================
+// 2. COHORT & UNIVERSAL AUTH SCREEN (ANY EMAIL)
+// ==========================================
 class CohortRegistrationScreen extends StatefulWidget {
   final VoidCallback onProceedToPermissions;
 
@@ -255,8 +271,11 @@ class CohortRegistrationScreen extends StatefulWidget {
 class _CohortRegistrationScreenState extends State<CohortRegistrationScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   final _idController = TextEditingController();
   bool _consentChecked = true;
+  bool _obscurePassword = true;
+  bool _isSignUp = true;
 
   @override
   void initState() {
@@ -268,17 +287,49 @@ class _CohortRegistrationScreenState extends State<CohortRegistrationScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _nameController.text = prefs.getString('student_name') ?? 'Krish Makwana';
-      _emailController.text =
-          prefs.getString('student_email') ?? '24bt04d233@gsfcuniversity.ac.in';
-      _idController.text = prefs.getString('student_id') ?? '24BT04D233';
+      _emailController.text = prefs.getString('student_email') ?? '';
+      _passwordController.text = prefs.getString('student_password') ?? '';
+      _idController.text = prefs.getString('student_id') ?? '';
     });
   }
 
   Future<void> _saveAndProceed() async {
+    final email = _emailController.text.trim().toLowerCase();
+    final name = _nameController.text.trim();
+    final password = _passwordController.text;
+    final id = _idController.text.trim();
+
+    if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid Gmail / Email address.'),
+          backgroundColor: Color(0xFFE53935),
+        ),
+      );
+      return;
+    }
+
+    if (password.length < 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password must be at least 4 characters.'),
+          backgroundColor: Color(0xFFE53935),
+        ),
+      );
+      return;
+    }
+
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('student_name', _nameController.text.trim());
-    await prefs.setString('student_email', _emailController.text.trim());
-    await prefs.setString('student_id', _idController.text.trim());
+    await prefs.setString('student_name', name.isNotEmpty ? name : 'Krish Makwana');
+    await prefs.setString('student_user_name', name.isNotEmpty ? name : 'Krish Makwana');
+    await prefs.setString('student_email', email);
+    await prefs.setString('student_user_email', email);
+    await prefs.setString('student_password', password);
+    await prefs.setString('student_id', id.isNotEmpty ? id : email);
+    await prefs.setBool('user_logged_in', true);
+    await prefs.setBool('has_completed_onboarding', true);
+    await prefs.setBool('user_logged_in', true);
+
     widget.onProceedToPermissions();
   }
 
@@ -293,9 +344,9 @@ class _CohortRegistrationScreenState extends State<CohortRegistrationScreen> {
           icon: const Icon(Icons.arrow_back, color: Color(0xFF181930)),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        title: const Text(
-          'Account Registration',
-          style: TextStyle(
+        title: Text(
+          _isSignUp ? 'Create Student Account' : 'Sign In with Email',
+          style: const TextStyle(
             color: Color(0xFF181930),
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -308,26 +359,86 @@ class _CohortRegistrationScreenState extends State<CohortRegistrationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Step chip
+              // Mode switcher tab
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE7E6FF),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Text(
-                  'Step 2 of 3 • Study Onboarding',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF006B55),
-                  ),
+                padding: const EdgeInsets.all(4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => setState(() => _isSignUp = true),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            color: _isSignUp ? Colors.white : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: _isSignUp
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.06),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    )
+                                  ]
+                                : null,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Register Account',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: _isSignUp ? FontWeight.bold : FontWeight.normal,
+                              color: _isSignUp ? const Color(0xFF3A5BFF) : const Color(0xFF747688),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => setState(() => _isSignUp = false),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            color: !_isSignUp ? Colors.white : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: !_isSignUp
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.06),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    )
+                                  ]
+                                : null,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Sign In',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: !_isSignUp ? FontWeight.bold : FontWeight.normal,
+                              color: !_isSignUp ? const Color(0xFF3A5BFF) : const Color(0xFF747688),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Join Your Cohort',
-                style: TextStyle(
+
+              const SizedBox(height: 16),
+
+              Text(
+                _isSignUp ? 'Join Behavioral Study' : 'Welcome Back',
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF181930),
@@ -335,7 +446,7 @@ class _CohortRegistrationScreenState extends State<CohortRegistrationScreen> {
               ),
               const SizedBox(height: 4),
               const Text(
-                'Connect your device to view your personal scroll telemetry and participate in the study.',
+                'Log in with any personal Gmail or Email account. Your screen telemetry and intention data will be privately isolated to your device profile.',
                 style: TextStyle(
                   fontSize: 13,
                   color: Color(0xFF444656),
@@ -345,9 +456,9 @@ class _CohortRegistrationScreenState extends State<CohortRegistrationScreen> {
 
               const SizedBox(height: 20),
 
-              // 1. Full Name Field
+              // 1. Full Name Field (Always shown or prefilled)
               _buildInputField(
-                label: 'STUDENT FULL NAME',
+                label: 'FULL NAME',
                 controller: _nameController,
                 icon: Icons.person_outline,
                 hint: 'e.g. Krish Makwana',
@@ -355,23 +466,42 @@ class _CohortRegistrationScreenState extends State<CohortRegistrationScreen> {
 
               const SizedBox(height: 14),
 
-              // 2. University Email Field
+              // 2. Universal Email Field
               _buildInputField(
-                label: 'COLLEGE / GMAIL ID',
+                label: 'GMAIL / EMAIL ADDRESS (UNIVERSAL)',
                 controller: _emailController,
                 icon: Icons.alternate_email,
-                hint: 'e.g. 24bt04d233@gsfcuniversity.ac.in',
+                hint: 'e.g. krish@gmail.com',
                 keyboardType: TextInputType.emailAddress,
               ),
 
               const SizedBox(height: 14),
 
-              // 3. Roll No / Student ID
+              // 3. Password Field
               _buildInputField(
-                label: 'STUDENT ID / ROLL NO.',
+                label: 'ACCOUNT PASSWORD',
+                controller: _passwordController,
+                icon: Icons.lock_outline,
+                hint: 'Enter your account password',
+                obscureText: _obscurePassword,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    size: 18,
+                    color: const Color(0xFF747688),
+                  ),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              // 4. Student ID / Roll No (Optional)
+              _buildInputField(
+                label: 'STUDENT ID / ROLL NO. (OPTIONAL)',
                 controller: _idController,
                 icon: Icons.badge_outlined,
-                hint: 'e.g. 24BT04D233',
+                hint: 'e.g. 24BT04D233 or username',
               ),
 
               const SizedBox(height: 20),
@@ -423,19 +553,19 @@ class _CohortRegistrationScreenState extends State<CohortRegistrationScreen> {
                   ),
                   elevation: 2,
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'CONFIRM & PROCEED',
-                      style: TextStyle(
+                      _isSignUp ? 'CONFIRM & REGISTER' : 'SIGN IN & CONTINUE',
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.8,
                       ),
                     ),
-                    SizedBox(width: 8),
-                    Icon(Icons.arrow_forward, size: 18),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.arrow_forward, size: 18),
                   ],
                 ),
               ),
@@ -452,6 +582,8 @@ class _CohortRegistrationScreenState extends State<CohortRegistrationScreen> {
     required IconData icon,
     required String hint,
     TextInputType? keyboardType,
+    bool obscureText = false,
+    Widget? suffixIcon,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -483,6 +615,7 @@ class _CohortRegistrationScreenState extends State<CohortRegistrationScreen> {
           TextField(
             controller: controller,
             keyboardType: keyboardType,
+            obscureText: obscureText,
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
@@ -499,6 +632,7 @@ class _CohortRegistrationScreenState extends State<CohortRegistrationScreen> {
               ),
               prefixIcon: Icon(icon, size: 18, color: const Color(0xFF3A5BFF)),
               prefixIconConstraints: const BoxConstraints(minWidth: 28, maxHeight: 20),
+              suffixIcon: suffixIcon,
             ),
           ),
         ],
@@ -507,9 +641,6 @@ class _CohortRegistrationScreenState extends State<CohortRegistrationScreen> {
   }
 }
 
-// ==========================================
-// 3. PROTECTION SETUP & PERMISSIONS SCREEN
-// ==========================================
 class AppProtectionSetupScreen extends StatefulWidget {
   final VoidCallback onFinishOnboarding;
 
@@ -585,6 +716,7 @@ class _AppProtectionSetupScreenState extends State<AppProtectionSetupScreen>
   Future<void> _completeSetup() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('has_completed_onboarding', true);
+    await prefs.setBool('user_logged_in', true);
     widget.onFinishOnboarding();
   }
 

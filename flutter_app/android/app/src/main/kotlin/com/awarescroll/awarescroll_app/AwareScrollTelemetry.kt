@@ -48,7 +48,8 @@ object AwareScrollTelemetry {
     @Synchronized
     fun getCloudSyncUrl(context: Context): String {
         val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_CLOUD_URL, "") ?: ""
+        val url = prefs.getString(KEY_CLOUD_URL, null)
+        return if (url.isNullOrBlank()) DEFAULT_CLOUD_URL else url
     }
 
     @Synchronized
@@ -228,61 +229,7 @@ object AwareScrollTelemetry {
 
     @Synchronized
     fun loadSampleData(context: Context) {
-        val sampleList = listOf(
-            SampleItem("24bt04d233@gsfcuniversity.ac.in", "Reply to a message", "Boredom", "Comedy / Memes", "Delayed a task", "Neutral", "Working", "Time warning", 5, 310, "Friday", 14),
-            SampleItem("24bt04d233@gsfcuniversity.ac.in", "Check updates", "Interesting content", "Reels / Entertainment", "Delayed a task", "Bored", "Studying", "App closure", 10, 620, "Friday", 16),
-            SampleItem("24sc06007@gsfcuniversity.ac.in", "Nothing to do, so watch reels", "Boredom", "Comedy / Memes", "Interrupted a task", "Bored", "Working", "Time warning", 5, 305, "Thursday", 11),
-            SampleItem("24sc06007@gsfcuniversity.ac.in", "Reply to a message", "Notifications / messages", "Stories / Personal content", "No task planned", "Satisfied", "Relaxing", "Mood check", 2, 130, "Thursday", 19),
-            SampleItem("24sc06028@gsfcuniversity.ac.in", "Finished all tasks, want to watch reels", "Habitual scrolling", "Reels / Entertainment", "No negative impact / planned break", "Relaxed", "Nothing planned", "Break suggestion", 5, 320, "Wednesday", 21),
-            SampleItem("24sc06028@gsfcuniversity.ac.in", "Opened automatically / out of habit", "Habitual scrolling", "Comedy / Memes", "Delayed a task", "Stressed / regretful", "Studying", "Original-purpose reminder", 5, 315, "Wednesday", 15),
-            SampleItem("rohit.patel@gmail.com", "Study or research", "Unfinished original purpose", "Education / Technology", "No negative impact / planned break", "Satisfied", "Working", "Time warning", 10, 600, "Tuesday", 10),
-            SampleItem("rohit.patel@gmail.com", "Nothing to do, so watch reels", "Boredom", "Fitness / Lifestyle", "Delayed a task", "Neutral", "Studying", "Time warning", 5, 302, "Tuesday", 17),
-            SampleItem("sneha.sharma@gmail.com", "Checking someone's reply", "Stress / mood", "Music / Entertainment", "Interrupted a task", "Bored", "Working", "Break suggestion", 5, 340, "Monday", 13),
-            SampleItem("sneha.sharma@gmail.com", "Opened automatically / out of habit", "Boredom", "Reels / Entertainment", "Delayed a task", "Stressed / regretful", "Sleeping", "App closure", 15, 920, "Monday", 23),
-            SampleItem("ananya.shah@gmail.com", "Check updates", "Notifications / messages", "News / Politics", "No negative impact / planned break", "Relaxed", "Socializing", "Mood check", 2, 125, "Sunday", 12),
-            SampleItem("ananya.shah@gmail.com", "Nothing to do, so watch reels", "Interesting content", "Comedy / Memes", "Delayed a task", "Neutral", "Studying", "Time warning", 5, 310, "Saturday", 18),
-            SampleItem("manav.desai@gmail.com", "Finished all tasks, want to watch reels", "Boredom", "Music / Entertainment", "No negative impact / planned break", "Satisfied", "Nothing planned", "Break suggestion", 10, 605, "Saturday", 20),
-            SampleItem("manav.desai@gmail.com", "Reply to a message", "Habitual scrolling", "Stories / Personal content", "Delayed a task", "Bored", "Working", "Time warning", 5, 310, "Friday", 15),
-            SampleItem("dev.joshi@gmail.com", "Opened automatically / out of habit", "Boredom", "Comedy / Memes", "Delayed a task", "Stressed / regretful", "Studying", "App closure", 5, 305, "Thursday", 14),
-            SampleItem("dev.joshi@gmail.com", "Reply to a message", "Notifications / messages", "Reels / Entertainment", "Delayed a task", "Neutral", "Working", "Time warning", 5, 315, "Wednesday", 16),
-            SampleItem("khushi.mehta@gmail.com", "Check updates", "Interesting content", "Comedy / Memes", "Interrupted a task", "Bored", "Studying", "App closure", 5, 320, "Tuesday", 19),
-            SampleItem("khushi.mehta@gmail.com", "Nothing to do, so watch reels", "Boredom", "Reels / Entertainment", "Delayed a task", "Stressed / regretful", "Sleeping", "App closure", 10, 610, "Monday", 22)
-        )
-
-        val arr = JSONArray()
-        val cal = Calendar.getInstance()
-
-        for (i in sampleList.indices) {
-            val s = sampleList[i]
-            cal.time = Date()
-            cal.add(Calendar.DAY_OF_YEAR, -(i % 7))
-            cal.set(Calendar.HOUR_OF_DAY, s.hour)
-
-            val rec = JSONObject().apply {
-                put("id", "sample_${cal.timeInMillis}_$i")
-                put("studentId", s.studentId)
-                put("timestamp", isoFormat.format(cal.time))
-                put("appName", "Instagram")
-                put("packageName", "com.instagram.android")
-                put("limitMinutes", 5)
-                put("elapsedSeconds", s.elapsed)
-                put("extensionMinutes", s.extMin)
-                put("purpose", s.purpose)
-                put("trigger", s.trigger)
-                put("category", s.category)
-                put("workImpact", s.workImpact)
-                put("feeling", s.feeling)
-                put("supposedActivity", s.supposedActivity)
-                put("helpStop", s.helpStop)
-                put("sessionOutcome", "extended")
-                put("dayOfWeek", s.day)
-                put("hourOfDay", s.hour)
-            }
-            arr.put(rec)
-        }
-
-        saveRecordsArray(context, arr)
-        exportFiles(context, arr)
+        // Disabled: Never load fake data. Telemetry is 100% real student usage.
     }
 
     private data class SampleItem(

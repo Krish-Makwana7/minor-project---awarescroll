@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/onboarding_screens.dart';
 import 'screens/cat_oasis_screen.dart';
 import 'screens/limit_modals.dart';
+import 'services/user_session_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -105,9 +106,10 @@ class _AppEntryGateState extends State<AppEntryGate> {
 
   Future<void> _checkStatus() async {
     final prefs = await SharedPreferences.getInstance();
+    final isLoggedIn = prefs.getBool('user_logged_in') ?? false;
+    final hasOnboarded = prefs.getBool('has_completed_onboarding') ?? false;
     setState(() {
-      _hasCompletedOnboarding =
-          prefs.getBool('has_completed_onboarding') ?? false;
+      _hasCompletedOnboarding = isLoggedIn || hasOnboarded;
       _isLoading = false;
     });
   }
@@ -404,6 +406,108 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
 
   late AnimationController _pulseController;
 
+  String _userName = 'Krish Makwana';
+  String _userEmail = '';
+  int _todayTotalSeconds = 0;
+  int _todaySessionCount = 0;
+  int _adherencePct = 100;
+  int _adheredCount = 0;
+  int _meaningfulPct = 35;
+  int _mindlessPct = 65;
+  int _surveyCount = 0;
+  List<UserSessionRecord> _recentSessions = [];
+
+  Future<void> _loadUserTelemetry() async {
+    try {
+      final email = await UserSessionService.getCurrentUserEmail();
+      final name = await UserSessionService.getCurrentUserName();
+      final stats = await UserSessionService.getTodayStats();
+      final allSessions = await UserSessionService.getSessions();
+      if (mounted) {
+        setState(() {
+          _userEmail = email;
+          _userName = name;
+          _todayTotalSeconds = (stats['totalSecondsToday'] as int?) ?? 0;
+          _todaySessionCount = (stats['todaySessionCount'] as int?) ?? 0;
+          _adherencePct = (stats['adherencePct'] as int?) ?? 100;
+          _adheredCount = (stats['adheredCount'] as int?) ?? 0;
+          _meaningfulPct = (stats['meaningfulPct'] as int?) ?? 35;
+          _mindlessPct = (stats['mindlessPct'] as int?) ?? 65;
+          _surveyCount = (stats['surveyCount'] as int?) ?? 0;
+          _recentSessions = allSessions.take(8).toList();
+        });
+      }
+    } catch (_) {}
+  }
+
+  void _showAccountDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AwareScrollTheme.primary.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.person, color: AwareScrollTheme.primary),
+            ),
+            const SizedBox(width: 10),
+            const Text('User Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Signed in as:', style: TextStyle(fontSize: 12, color: AwareScrollTheme.onSurfaceVariant)),
+            const SizedBox(height: 4),
+            Text(_userName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text(
+              _userEmail.isNotEmpty ? _userEmail : 'Local Device Profile',
+              style: const TextStyle(fontSize: 13, color: AwareScrollTheme.primary, fontFamily: 'monospace'),
+            ),
+            const SizedBox(height: 14),
+            const Divider(),
+            const SizedBox(height: 8),
+            const Text(
+              'Your intention logs and session telemetry are stored locally for your account and synchronized with the research Google Sheet.',
+              style: TextStyle(fontSize: 11, color: AwareScrollTheme.onSurfaceVariant, height: 1.3),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setBool('user_logged_in', false);
+              if (mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (c) => const AppEntryGate()),
+                  (route) => false,
+                );
+              }
+            },
+            child: const Text('Log Out / Switch', style: TextStyle(color: Color(0xFFE53935), fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AwareScrollTheme.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   final List<Map<String, dynamic>> _limitOptions = [
     {'label': '30s (Test)', 'min': 1, 'sec': 30},
     {'label': '1 Min', 'min': 1, 'sec': 60},
@@ -422,6 +526,8 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
 
     _checkPermissions();
     _refreshStatus();
+    _loadUserTelemetry();
+    UserSessionService.sessionUpdateNotifier.addListener(_loadUserTelemetry);
 
     _statusTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
@@ -435,6 +541,7 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
   void dispose() {
     _statusTimer?.cancel();
     _pulseController.dispose();
+    UserSessionService.sessionUpdateNotifier.removeListener(_loadUserTelemetry);
     super.dispose();
   }
 
@@ -466,6 +573,8 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
 
   Future<void> _handleGuardButtonClick() async {
     if (_isRestricting) {
+      final savedElapsed = _elapsedSeconds;
+      final savedLimit = _limitSeconds;
       try {
         await _channel.invokeMethod('stopRestriction');
       } catch (_) {}
@@ -474,8 +583,33 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
         _elapsedSeconds = 0;
         _isTargetInForeground = false;
       });
+
+      try {
+        final email = await UserSessionService.getCurrentUserEmail();
+        final name = await UserSessionService.getCurrentUserName();
+        final prefs = await SharedPreferences.getInstance();
+        final purpose = prefs.getString('session_intention') ?? 'Instagram session';
+        final prior = prefs.getString('session_prior_activity') ?? 'Studying';
+        final necessity = prefs.getString('session_necessity') ?? 'Casual leisure';
+
+        final record = UserSessionRecord(
+          id: 'session_',
+          studentEmail: email,
+          studentName: name,
+          timestamp: DateTime.now(),
+          intendedMinutes: _limitMinutes,
+          actualSeconds: savedElapsed,
+          purpose: purpose,
+          priorActivity: prior,
+          necessity: necessity,
+          limitRespected: savedElapsed <= savedLimit + 30,
+          sessionOutcome: 'stopped_by_user',
+        );
+        await UserSessionService.recordSession(record);
+      } catch (_) {}
+
       if (mounted) {
-        if (_elapsedSeconds >= _limitSeconds && _limitSeconds > 0) {
+        if (savedElapsed >= savedLimit && savedLimit > 0) {
           _showLimitExpiry();
         } else {
           _showPostSessionDebrief();
@@ -487,44 +621,8 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
         return;
       }
 
-      // Directly start guard without asking starting questionnaire!
-      try {
-        await _channel.invokeMethod('startRestriction', {
-          'appName': targetAppName,
-          'packageName': targetPackage,
-          'minutes': _limitMinutes,
-          'seconds': _limitSeconds,
-        });
-      } catch (_) {}
-      setState(() {
-        _isRestricting = true;
-        _elapsedSeconds = 0;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: AwareScrollTheme.primary,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            content: Row(
-              children: [
-                const Icon(Icons.verified, color: AwareScrollTheme.secondaryEmerald, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  'Shield Guard Engaged for Instagram (${_limitSeconds >= 60 ? "$_limitMinutes min" : "$_limitSeconds sec"})',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }
+      // Always show mindful intention questions before starting protection & launching
+      _openInstagramWithIntention();
     }
   }
 
@@ -537,9 +635,16 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
         setState(() {
           _limitMinutes = mins;
           _limitSeconds = mins * 60;
+          _isRestricting = true;
+          _elapsedSeconds = 0;
         });
-        await _handleGuardButtonClick();
         try {
+          await _channel.invokeMethod('startRestriction', {
+            'appName': targetAppName,
+            'packageName': targetPackage,
+            'minutes': mins,
+            'seconds': mins * 60,
+          });
           await _channel.invokeMethod('launchApp', {'packageName': targetPackage});
         } catch (_) {}
       },
@@ -804,24 +909,7 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
                       ],
                     ),
                     InkWell(
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (ctx) => CohortRegistrationScreen(
-                              onProceedToPermissions: () {
-                                Navigator.of(ctx).push(
-                                  MaterialPageRoute(
-                                    builder: (c2) => AppProtectionSetupScreen(
-                                      onFinishOnboarding: () =>
-                                          Navigator.of(ctx).popUntil((r) => r.isFirst),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        );
-                      },
+                      onTap: _showAccountDialog,
                       borderRadius: BorderRadius.circular(10),
                       child: Container(
                         width: 36,
@@ -898,40 +986,20 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                children: [
-                                  const Text(
-                                    'AwareScroll',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: AwareScrollTheme.onSurface,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                                    decoration: BoxDecoration(
-                                      color: AwareScrollTheme.primaryFixed,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: const Text(
-                                      'v2.4',
-                                      style: TextStyle(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.bold,
-                                        color: AwareScrollTheme.primary,
-                                        fontFamily: 'monospace',
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                              Text(
+                                _userName,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: AwareScrollTheme.onSurface,
+                                ),
                               ),
-                              const Text(
-                                'Mindful Instagram Habit Control',
-                                style: TextStyle(
+                              Text(
+                                _userEmail.isNotEmpty ? _userEmail : 'Device Local Profile',
+                                style: const TextStyle(
                                   fontSize: 11,
                                   color: AwareScrollTheme.onSurfaceVariant,
+                                  fontFamily: 'monospace',
                                 ),
                               ),
                             ],
@@ -1135,7 +1203,7 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
                               textBaseline: TextBaseline.alphabetic,
                               children: [
                                 Text(
-                                  _formatTime(_elapsedSeconds > 0 ? _elapsedSeconds : 1750),
+                                  _formatTime(_isRestricting && _elapsedSeconds > 0 ? _elapsedSeconds : _todayTotalSeconds),
                                   style: const TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -1155,39 +1223,52 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
                               ],
                             ),
                             const SizedBox(height: 8),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    flex: 75,
-                                    child: Container(height: 6, color: const Color(0xFF3A5BFF)),
+                            Builder(
+                              builder: (context) {
+                                final totalSec = _isRestricting && _elapsedSeconds > 0 ? _elapsedSeconds : _todayTotalSeconds;
+                                final usedFlex = ((totalSec / 1800.0).clamp(0.01, 1.0) * 100).round();
+                                final remFlex = (100 - usedFlex).clamp(1, 100);
+                                return ClipRRect(
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        flex: usedFlex,
+                                        child: Container(height: 6, color: const Color(0xFF3A5BFF)),
+                                      ),
+                                      Expanded(
+                                        flex: remFlex,
+                                        child: Container(height: 6, color: const Color(0xFFE2E4F0)),
+                                      ),
+                                    ],
                                   ),
-                                  Expanded(
-                                    flex: 25,
-                                    child: Container(height: 6, color: const Color(0xFFFF9F43)),
-                                  ),
-                                ],
-                              ),
+                                );
+                              },
                             ),
                             const SizedBox(height: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFFF0F0),
+                                color: _todaySessionCount == 0 ? const Color(0xFFF1F3FB) : const Color(0xFFFFF0F0),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.trending_up, size: 11, color: Color(0xFFE5484D)),
-                                  SizedBox(width: 3),
+                                  Icon(
+                                    _todaySessionCount == 0 ? Icons.check_circle_outline : Icons.trending_up,
+                                    size: 11,
+                                    color: _todaySessionCount == 0 ? const Color(0xFF00B894) : const Color(0xFFE5484D),
+                                  ),
+                                  const SizedBox(width: 3),
                                   Text(
-                                    '+2.3m vs yday',
+                                    _todaySessionCount == 0
+                                        ? '0 sessions today'
+                                        : '+${(_todayTotalSeconds / 60.0).toStringAsFixed(1)}m logged',
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
-                                      color: Color(0xFFE5484D),
+                                      color: _todaySessionCount == 0 ? const Color(0xFF00B894) : const Color(0xFFE5484D),
                                       fontFamily: 'monospace',
                                     ),
                                   ),
@@ -1232,9 +1313,9 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
                               ],
                             ),
                             const SizedBox(height: 8),
-                            const Text(
-                              '67%',
-                              style: TextStyle(
+                            Text(
+                              '$_adherencePct%',
+                              style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 fontFamily: 'monospace',
@@ -1242,9 +1323,11 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
                               ),
                             ),
                             const SizedBox(height: 2),
-                            const Text(
-                              '8 of 12 guarded',
-                              style: TextStyle(
+                            Text(
+                              _todaySessionCount == 0
+                                  ? '0 of 0 guarded'
+                                  : '$_adheredCount of $_todaySessionCount guarded',
+                              style: const TextStyle(
                                 fontSize: 11,
                                 color: Color(0xFF747688),
                                 fontFamily: 'monospace',
@@ -1257,14 +1340,16 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
                                 color: const Color(0xFFE6F8F2),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.shield_outlined, size: 11, color: Color(0xFF00B894)),
-                                  SizedBox(width: 3),
+                                  const Icon(Icons.shield_outlined, size: 11, color: Color(0xFF00B894)),
+                                  const SizedBox(width: 3),
                                   Text(
-                                    'Closed on 5m alarm',
-                                    style: TextStyle(
+                                    _todaySessionCount == 0
+                                        ? 'Ready to guard'
+                                        : (_adherencePct >= 80 ? 'Closed on limit' : 'Boundary alert'),
+                                    style: const TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
                                       color: Color(0xFF00B894),
@@ -1319,9 +1404,9 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
                               color: const Color(0xFFF1F3FB),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Text(
-                              '14 surveys',
-                              style: TextStyle(
+                            child: Text(
+                              '$_surveyCount surveys',
+                              style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 fontFamily: 'monospace',
@@ -1337,12 +1422,12 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
                         child: Row(
                           children: [
                             Expanded(
-                              flex: 35,
+                              flex: _meaningfulPct <= 0 ? 1 : _meaningfulPct,
                               child: Container(height: 10, color: const Color(0xFF3A5BFF)),
                             ),
                             const SizedBox(width: 2),
                             Expanded(
-                              flex: 65,
+                              flex: _mindlessPct <= 0 ? 1 : _mindlessPct,
                               child: Container(height: 10, color: const Color(0xFFFF9F43)),
                             ),
                           ],
@@ -1363,9 +1448,9 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              const Text(
-                                'Meaningful (35%)',
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                              Text(
+                                'Meaningful ($_meaningfulPct%)',
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
                               ),
                             ],
                           ),
@@ -1380,9 +1465,9 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              const Text(
-                                'Mindless Scroll (65%)',
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                              Text(
+                                'Mindless Scroll ($_mindlessPct%)',
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
                               ),
                             ],
                           ),
@@ -1396,15 +1481,17 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: const Color(0xFFE2E4F0)),
                         ),
-                        child: const Row(
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.lightbulb_outline, size: 16, color: Color(0xFFFF9F43)),
-                            SizedBox(width: 8),
+                            const Icon(Icons.lightbulb_outline, size: 16, color: Color(0xFFFF9F43)),
+                            const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Based on 14 completed post-limit surveys. Most unintended scrolling begins after the 4.0m milestone.',
-                                style: TextStyle(fontSize: 11, color: Color(0xFF444656), height: 1.3),
+                                _surveyCount == 0
+                                    ? 'No post-session reflections logged yet today. Complete reflections after Instagram to evaluate mindful quality.'
+                                    : 'Based on $_surveyCount completed post-limit surveys today. Meaningful session rate is $_meaningfulPct%.',
+                                style: const TextStyle(fontSize: 11, color: Color(0xFF444656), height: 1.3),
                               ),
                             ),
                           ],
@@ -1434,36 +1521,76 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
                         ),
                       ),
                     ),
-                    _buildRecentSessionCard(
-                      duration: '4.8m session',
-                      intention: 'Reply to DMs',
-                      status: 'Limit Respected',
-                      statusColor: const Color(0xFF00B894),
-                      subtext: 'Closed on 5m alarm • Calm state recorded',
-                      icon: Icons.check_circle,
-                    ),
-                    const SizedBox(height: 8),
-                    _buildRecentSessionCard(
-                      duration: '14.5m session',
-                      intention: 'Quick check',
-                      status: 'Extended Limit',
-                      statusColor: const Color(0xFFFF9F43),
-                      subtext: 'Rated: Mindless • Hooked on Reels',
-                      icon: Icons.report_problem,
-                    ),
-                    const SizedBox(height: 8),
-                    _buildRecentSessionCard(
-                      duration: '4.0m session',
-                      intention: 'Catch up',
-                      status: 'Limit Respected',
-                      statusColor: const Color(0xFF00B894),
-                      subtext: 'Intent accomplished without distractions',
-                      icon: Icons.check_circle,
-                    ),
+                    if (_recentSessions.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFE2E4F0)),
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF5F2FF),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: const Icon(Icons.spa_outlined, color: Color(0xFF3A5BFF), size: 28),
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              'No Instagram Sessions Yet Today',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF14152B),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Every time you open Instagram through AwareScroll, your intention and screen duration will be recorded here.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF6B6F8C),
+                                height: 1.4,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton.icon(
+                              onPressed: _openInstagramWithIntention,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF3A5BFF),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              icon: const Icon(Icons.shield, size: 16),
+                              label: const Text('SET INTENTION & OPEN', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ..._recentSessions.map((s) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _buildRecentSessionCard(
+                          duration: '${(s.actualSeconds / 60.0).toStringAsFixed(1)}m (${s.intendedMinutes}m limit)',
+                          intention: s.purpose,
+                          status: s.limitRespected ? 'Limit Respected' : 'Extended Limit',
+                          statusColor: s.limitRespected ? const Color(0xFF00B894) : const Color(0xFFFF9F43),
+                          subtext: '${s.wasImportant != null && s.wasImportant!.isNotEmpty ? "Rated: ${s.wasImportant} • " : ""}${s.necessity}',
+                          icon: s.limitRespected ? Icons.check_circle : Icons.report_problem,
+                        ),
+                      )),
                   ],
                 ),
               ),
             ),
+
 
             // Neko Wisdom Lounge Mindful Banner
             SliverToBoxAdapter(
@@ -3549,9 +3676,19 @@ class _UserAccountInsightsTabState extends State<UserAccountInsightsTab> {
           _records = decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
         }
       }
+      // Merge sessions from UserSessionService
+      final flutterSessions = await UserSessionService.getSessions();
+      for (final s in flutterSessions) {
+        final map = s.toMap();
+        if (!_records.any((r) => r['id'] == map['id'] || r['timestamp'] == map['timestamp'])) {
+          _records.add(map);
+        }
+      }
+      _records.sort((a, b) => (b['timestamp'] ?? '').compareTo(a['timestamp'] ?? ''));
+
       final prefs = await SharedPreferences.getInstance();
-      _studentName = prefs.getString('student_user_name') ?? 'Student';
-      _studentEmail = prefs.getString('student_user_email') ?? '';
+      _studentName = prefs.getString('student_name') ?? prefs.getString('student_user_name') ?? 'Student';
+      _studentEmail = prefs.getString('student_email') ?? prefs.getString('student_user_email') ?? '';
 
       final sId = await _channel.invokeMethod<String>('getStudentId');
       if (sId != null && sId.isNotEmpty) {
@@ -6024,18 +6161,43 @@ class _PostSessionDebriefModalState extends State<PostSessionDebriefModal> {
               ),
               onPressed: () async {
                 try {
+                  final email = await UserSessionService.getCurrentUserEmail();
+                  final name = await UserSessionService.getCurrentUserName();
+                  final prefs = await SharedPreferences.getInstance();
+                  final purpose = prefs.getString('session_intention') ?? 'Instagram visit';
+                  final prior = prefs.getString('session_prior_activity') ?? 'Stepped Away';
+                  final necessity = prefs.getString('session_necessity') ?? 'Mindful exit';
+
+                  final record = UserSessionRecord(
+                    id: 'session_${DateTime.now().millisecondsSinceEpoch}',
+                    studentEmail: email,
+                    studentName: name,
+                    timestamp: DateTime.now(),
+                    intendedMinutes: widget.limitSeconds ~/ 60,
+                    actualSeconds: widget.elapsedSeconds,
+                    purpose: purpose,
+                    priorActivity: prior,
+                    necessity: necessity,
+                    limitRespected: widget.elapsedSeconds <= widget.limitSeconds + 30,
+                    wasImportant: _selectedSentiment,
+                    triggerReason: _taskDelayed ? 'Delayed a task' : 'No task planned',
+                    mood: _selectedSentiment,
+                    sessionOutcome: 'closed_mindfully',
+                  );
+                  await UserSessionService.recordSession(record);
+
                   const MethodChannel('com.awarescroll/restriction').invokeMethod('recordSurveyResponse', {
                     'appName': 'Instagram',
                     'packageName': 'com.instagram.android',
                     'limitMinutes': widget.limitSeconds ~/ 60,
                     'elapsedSeconds': widget.elapsedSeconds,
                     'extensionMinutes': 0,
-                    'purpose': 'Mindful Wrap-up',
+                    'purpose': purpose,
                     'trigger': 'Mindful Exit',
                     'category': 'General',
                     'workImpact': _taskDelayed ? 'Delayed a task' : 'No task planned',
                     'feeling': _selectedSentiment,
-                    'supposedActivity': 'Stepped Away',
+                    'supposedActivity': prior,
                     'helpStop': 'App closure',
                     'sessionOutcome': 'closed_mindfully',
                   });
