@@ -862,24 +862,21 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [AwareScrollTheme.primary, Color(0xFF6C8CFF)],
-                            ),
+                            color: Colors.white,
                             borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AwareScrollTheme.outline),
                             boxShadow: const [
                               BoxShadow(
-                                color: Color(0x203A5BFF),
+                                color: Color(0x10141528),
                                 blurRadius: 6,
                                 offset: Offset(0, 2),
                               ),
                             ],
                           ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.shield_outlined,
-                              color: Colors.white,
-                              size: 20,
-                            ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            fit: BoxFit.cover,
                           ),
                         ),
                         const SizedBox(width: 10),

@@ -78,17 +78,23 @@ class WelcomeSignInScreen extends StatelessWidget {
 
               // Brand Icon & Header
               Container(
-                width: 52,
-                height: 52,
+                width: 60,
+                height: 60,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE7E6FF),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF141528).withOpacity(0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.spa,
-                  color: Color(0xFF123DE7),
-                  size: 28,
+                clipBehavior: Clip.antiAlias,
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  fit: BoxFit.cover,
                 ),
               ),
               const SizedBox(height: 12),
