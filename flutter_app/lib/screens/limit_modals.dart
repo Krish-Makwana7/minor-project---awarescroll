@@ -202,6 +202,7 @@ class _SetYourLimitModalState extends State<SetYourLimitModal> {
           Expanded(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.only(bottom: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -435,19 +436,20 @@ class _SetYourLimitModalState extends State<SetYourLimitModal> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF3A5BFF),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
               elevation: 2,
             ),
-            icon: const Icon(Icons.shield, size: 18),
+            icon: const Icon(Icons.shield, size: 20),
             label: Text(
-              'START PROTECTED SESSION & OPEN INSTAGRAM (M)',
+              'START ${_selectedMinutes}M SESSION & OPEN INSTAGRAM',
+              textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
-                letterSpacing: 0.6,
+                letterSpacing: 0.5,
               ),
             ),
           ),

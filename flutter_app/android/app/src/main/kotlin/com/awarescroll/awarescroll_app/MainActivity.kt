@@ -237,6 +237,30 @@ class MainActivity : FlutterActivity() {
                     }.start()
                 }
 
+                "launchApp" -> {
+                    val pkgName = call.argument<String>("packageName") ?: "com.instagram.android"
+                    try {
+                        val launchIntent = packageManager.getLaunchIntentForPackage(pkgName)
+                        if (launchIntent != null) {
+                            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+                            startActivity(launchIntent)
+                            result.success(true)
+                        } else {
+                            try {
+                                val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/")).apply {
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                }
+                                startActivity(webIntent)
+                                result.success(true)
+                            } catch (e: Exception) {
+                                result.success(false)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        result.error("LAUNCH_FAILED", e.message, null)
+                    }
+                }
+
                 "testBlocker" -> {
                     AwareScrollMonitor.triggerBlocker()
                     result.success(true)

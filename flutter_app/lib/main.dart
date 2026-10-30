@@ -951,58 +951,67 @@ class _MainControlDashboardTabState extends State<MainControlDashboardTab>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 38,
-                            height: 38,
-                            padding: const EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  AwareScrollTheme.primary,
-                                  AwareScrollTheme.secondaryEmerald,
-                                  AwareScrollTheme.tertiaryAmber,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 38,
+                              height: 38,
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    AwareScrollTheme.primary,
+                                    AwareScrollTheme.secondaryEmerald,
+                                    AwareScrollTheme.tertiaryAmber,
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.hourglass_top_rounded,
+                                  color: AwareScrollTheme.primary,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _userName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: AwareScrollTheme.onSurface,
+                                    ),
+                                  ),
+                                  Text(
+                                    _userEmail.isNotEmpty ? _userEmail : 'Device Local Profile',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AwareScrollTheme.onSurfaceVariant,
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
                                 ],
                               ),
-                              borderRadius: BorderRadius.circular(10),
                             ),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.hourglass_top_rounded,
-                                color: AwareScrollTheme.primary,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _userName,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: AwareScrollTheme.onSurface,
-                                ),
-                              ),
-                              Text(
-                                _userEmail.isNotEmpty ? _userEmail : 'Device Local Profile',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AwareScrollTheme.onSurfaceVariant,
-                                  fontFamily: 'monospace',
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
