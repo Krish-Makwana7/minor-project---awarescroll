@@ -59,7 +59,7 @@ class WelcomeSignInScreen extends StatelessWidget {
                   const Row(
                     children: [
                       Text(
-                        'v2.4',
+                        'v2.0.0',
                         style: TextStyle(
                           fontSize: 11,
                           fontFamily: 'monospace',
